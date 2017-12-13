@@ -15,17 +15,17 @@ void initGpio() {
 
 void setGpio(int num) {
     if (num < 32) {
-        REG(GPIO_SET0) = 1 << num;
+        GPIO->SET0 = 1 << num;
     } else {
-        REG(GPIO_SET1) = 1 << num;
+        GPIO->SET1 = 1 << num;
     }
 }
 
 
 void clearGpio(int num) {
     if (num < 32) {
-        REG(GPIO_CLR0) = 1 << num;
+        GPIO->CLEAR0 = 1 << num;
     } else {
-        REG(GPIO_CLR1) = 1 << num;
+        GPIO->CLEAR1 = 1 << num;
     }
 }

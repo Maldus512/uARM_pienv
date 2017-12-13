@@ -1,7 +1,7 @@
 ARMGNU ?= arm-none-eabi
 
-FLAGS := -mfpu=vfp -mfloat-abi=hard -march=armv8-a 
-CFLAGS := -Wall -pedantic -ffreestanding
+FLAGS := -march=armv8-a 
+CFLAGS := -Wall -pedantic -ffreestanding $(FLAGS)
 
 # The intermediate directory for compiled object files.
 BUILD = build/
