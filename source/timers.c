@@ -1,0 +1,41 @@
+#include "timers.h"
+#include "interrupts.h"
+
+void initTimers() {
+    IRQ_CONTROLLER->Enable_Basic_IRQs = 0x1;
+    ARMTIMER->LOAD = 0x400;         // 
+    ARMTIMER->CONTROL |= (1 << 1); // enable "23-bit" counter
+    ARMTIMER->CONTROL |= (1 << 5); // enable timer interrupt
+    ARMTIMER->CONTROL |= (1 << 7); // enable timer
+    ARMTIMER->CONTROL |= (0x2 << 2); // prescaler = clock/256
+}
+
+int set_timer(uint32_t delay, uint8_t timer) {
+    if (timer < 0 || timer > 3) {
+        return -1;
+    }
+
+    SYSTIMER->COMPARE[timer] = SYSTIMER->COUNTER_LOW + delay;
+    return timer;
+}
+
+int is_timer_reached(uint8_t timer) {
+    if (timer < 0 || timer > 3) {
+        return -1;
+    }
+
+    return (SYSTIMER->STATUS & (1 << timer));
+}
+
+void delay_us(uint32_t delay) {
+    set_timer(delay, 0);
+
+    while ( !is_timer_reached(0) )
+        nop();
+}
+
+void rawDelay() {
+    int tim = 0;
+    while(tim++ < 2000000)
+        nop();
+}

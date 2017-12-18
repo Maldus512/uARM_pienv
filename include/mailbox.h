@@ -28,18 +28,18 @@ typedef struct {
 
 
 struct msg_tag {
-	uint32_t tag_id;				// the message id
-	uint32_t buffer_size;			// size of the buffer (which in this case is always 8 bytes)
-	uint32_t data_size;				// amount of data being sent or received
-	uint32_t dev_id;				// the ID of the clock/voltage to get or set
-	uint32_t val;					// the value (e.g. rate (in Hz)) to set
+	volatile uint32_t tag_id;				// the message id
+	volatile uint32_t buffer_size;			// size of the buffer (which in this case is always 8 bytes)
+	volatile uint32_t data_size;				// amount of data being sent or received
+	volatile uint32_t dev_id;				// the ID of the clock/voltage to get or set
+	volatile uint32_t val;					// the value (e.g. rate (in Hz)) to set
 };
 
 struct mailbox_msg {
-	uint32_t msg_size;				// simply, sizeof(struct vc_msg)
-	uint32_t request_code;			// holds various information like the success and number of bytes returned (refer to mailboxes wiki)
+	volatile uint32_t msg_size;				// simply, sizeof(struct vc_msg)
+	volatile uint32_t request_code;			// holds various information like the success and number of bytes returned (refer to mailboxes wiki)
 	struct msg_tag tag;	            // the tag structure above to make
-	uint32_t end_tag;				// an end identifier, should be set to NULL
+	volatile uint32_t end_tag;				// an end identifier, should be set to NULL
 } __attribute__((aligned(16)));
 
 

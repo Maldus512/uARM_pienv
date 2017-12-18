@@ -13,26 +13,26 @@ void initLedRequest(struct mailbox_msg* msg, uint32_t val) {
     msg->end_tag = 0x0; 
 }
 
-void wait_mailbox_write() {
-    while (MAILBOX0->status & MBOX_FULL) 
+void wait_mailbox_write(Mailbox *m) {
+    while (m->status & MBOX_FULL) 
         nop();
 }
 
-void wait_mailbox_read() {
-    while (MAILBOX0->status & MBOX_EMPTY) 
+void wait_mailbox_read(Mailbox *m) {
+    while (m->status & MBOX_EMPTY) 
         nop();
 }
 
 
 void writeMailbox0(uint32_t data, uint8_t channel) {
-    wait_mailbox_write();
+    wait_mailbox_write(MAILBOX0);
     MAILBOX0->write = (data & ~0xf) | (uint32_t) (channel & 0xf);
 }
 
 void readMailbox0(uint8_t channel) {
     uint32_t res;
     uint8_t read_channel;
-    wait_mailbox_read();
+    wait_mailbox_read(MAILBOX0);
 
     do {
         res = MAILBOX0->read;

@@ -1,0 +1,3 @@
+- Correctly understand and setup memory share between CPU and GPU
+- Set up every needed interrupt (uart, swi, ...)
+- Set up JTAG debugging

@@ -4,19 +4,15 @@
 
 
 void initGpio() {
-    uint32_t* gpio;
-
-    gpio = (uint32_t*)GPIO_BASE;
-
     //Activate gpio 4 as output
-    gpio[0] |= (1 << 12);
+    GPIO->SEL[0] |= (1 << 12);
 }
 
 
 void setGpio(int num) {
     if (num < 32) {
         GPIO->SET0 = 1 << num;
-    } else {
+    } else if (num > 0) {
         GPIO->SET1 = 1 << num;
     }
 }
@@ -25,7 +21,7 @@ void setGpio(int num) {
 void clearGpio(int num) {
     if (num < 32) {
         GPIO->CLEAR0 = 1 << num;
-    } else {
+    } else if (num > 0){
         GPIO->CLEAR1 = 1 << num;
     }
 }
