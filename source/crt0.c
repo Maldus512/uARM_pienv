@@ -3,7 +3,7 @@
 extern int __bss_start;
 extern int __bss_end;
 
-extern void main( uint32_t r0, uint32_t r1, uint32_t atags );
+extern void bios_main( uint32_t r0, uint32_t r1, uint32_t atags );
 
 void _crt0( uint32_t r0, uint32_t r1, uint32_t r2 ) {
     /*__bss_start and __bss_end are defined in the linker script */
@@ -14,7 +14,7 @@ void _crt0( uint32_t r0, uint32_t r1, uint32_t r2 ) {
         *bss++ = 0;
     }
 
-    main( r0, r1, r2 );
+    bios_main( r0, r1, r2 );
 
     while(1) {
         nop();

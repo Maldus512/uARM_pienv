@@ -1,6 +1,6 @@
 ARMGNU ?= arm-none-eabi
 
-FLAGS := -march=armv8-a 
+FLAGS := -march=armv8-a# -mfpu=neon-vfpv4 -mfloat-abi=hard -mtune=cortex-a8
 CFLAGS := -Wall -pedantic -ffreestanding $(FLAGS)
 
 # The intermediate directory for compiled object files.
@@ -43,7 +43,7 @@ $(TARGET) : $(BUILD)output.elf
 
 # Rule to make the elf file.
 $(BUILD)output.elf : $(OBJECTS) $(LINKER) $(INIT)
-	$(ARMGNU)-ld --no-undefined $(INIT) $(OBJECTS) -Map $(MAP) -o $(BUILD)output.elf -T $(LINKER)
+	$(ARMGNU)-gcc -nostartfiles $(INIT) $(OBJECTS) -Wl,-Map,$(MAP),-T,$(LINKER) -o $(BUILD)output.elf
 
 $(INIT): $(SOURCE)init.s
 	$(ARMGNU)-as -I $(SOURCE) -g $< -o $@

@@ -1,3 +1,8 @@
+
+MEMORY {
+    RAM (xrw)      : ORIGIN = 0x8000 , LENGTH = 0x40000000 - 0x8000000 /* 1GB - 128MB */
+}
+
 ENTRY (_start)
 /*
  * Very simple linker script, combing the text and data sections
@@ -12,30 +17,30 @@ SECTIONS {
     .text : {
         KEEP(*(.init))
         *(.text)
-    }
     . = ALIGN(4096); /* Align to page size */
+    }  > RAM
     __text_end = .;
 
     __rodata_start = .;
     .rodata : {
         *(.rodata)
-    }
-    . = ALIGN(4096); 
+        . = ALIGN(4096); 
+    } > RAM
     __rodata_end = .;
 
 
     __data_start = .;
     .data : {
         *(.data)
-    }
-    . = ALIGN(4096); 
+        . = ALIGN(4096); 
+    } > RAM
     __data_end = .;
 
     __bss_start = .;
     .bss : {
         *(.data)
-    }
-    . = ALIGN(4096);
+        . = ALIGN(4096);
+    } > RAM
     __bss_end = .;
-    __end = .;
+    _end = .;
 }

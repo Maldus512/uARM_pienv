@@ -33,7 +33,7 @@ _software_interrupt_vector_h:       .word   stub_vector
 _prefetch_abort_vector_h:           .word   stub_vector
 _data_abort_vector_h:               .word   stub_vector
 _unused_handler_h:                  .word   _reset
-_interrupt_vector_h:                .word   interrupt_vector
+_interrupt_vector_h:                .word   c_irq_handler
 _fast_interrupt_vector_h:           .word   stub_vector
 
 _reset:

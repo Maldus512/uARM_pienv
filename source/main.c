@@ -1,3 +1,6 @@
+#include <string.h>
+#include <stdlib.h>
+
 #include "hardwareprofile.h"
 #include "mailbox.h"
 #include "gpio.h"
@@ -16,9 +19,16 @@ void initSystem() {
 }
 
 
-int main(uint32_t r1, uint32_t r2, uint32_t atags) {
+int bios_main(uint32_t r1, uint32_t r2, uint32_t atags) {
     initSystem();
-    puts("hello world!\n");
+
+//    char *example = (char*) malloc(sizeof(char)*32);
+ //   strcpy(example, "hello world\n");
+//    uart_puts(example);
+
+    while(1) {
+        flushRxBuffer();
+    }
 
     while(1) {
         delay_us(1000000);

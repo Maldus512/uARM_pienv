@@ -3,11 +3,11 @@
 
 void initTimers() {
     IRQ_CONTROLLER->Enable_Basic_IRQs = 0x1;
-    ARMTIMER->LOAD = 0x400;         // 
+    ARMTIMER->LOAD = 0xF4240;//0x400;         // 
     ARMTIMER->CONTROL |= (1 << 1); // enable "23-bit" counter
     ARMTIMER->CONTROL |= (1 << 5); // enable timer interrupt
     ARMTIMER->CONTROL |= (1 << 7); // enable timer
-    ARMTIMER->CONTROL |= (0x2 << 2); // prescaler = clock/256
+    ARMTIMER->CONTROL |= 0;//(0x2 << 2); // prescaler = clock/256timertimer
 }
 
 int set_timer(uint32_t delay, uint8_t timer) {
