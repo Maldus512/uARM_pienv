@@ -17,14 +17,14 @@ SECTIONS {
     .text : {
         KEEP(*(.init))
         *(.text)
-    . = ALIGN(4096); /* Align to page size */
+        //. = ALIGN(4096); /* Align to page size */
     }  > RAM
     __text_end = .;
 
     __rodata_start = .;
     .rodata : {
         *(.rodata)
-        . = ALIGN(4096); 
+        //. = ALIGN(4096); 
     } > RAM
     __rodata_end = .;
 
@@ -32,15 +32,16 @@ SECTIONS {
     __data_start = .;
     .data : {
         *(.data)
-        . = ALIGN(4096); 
+        //. = ALIGN(4096); 
     } > RAM
     __data_end = .;
 
     __bss_start = .;
     .bss : {
         *(.data)
-        . = ALIGN(4096);
+        //. = ALIGN(4096);
     } > RAM
     __bss_end = .;
-    _end = .;
+    __end__ = .;
+    _end = .; PROVIDE(end = .);
 }
