@@ -2,12 +2,19 @@
 #include "gpio.h"
 #include "timers.h"
 #include "uart.h"
-
+#include "bios_const.h"
 
 
 void stub_vector() {
     while(1) {
         nop();
+    }
+}
+
+void __attribute__((interrupt("SWI"))) c_swi_handler(uint32_t code, uint32_t *registers)
+{
+    if (code == BIOS_SRV_PANIC) {
+        uart_puts("KERNEL PANIC!\n");
     }
 }
 

@@ -15,7 +15,6 @@
 .equ    CPSR_THUMB,             0x20
 
 
-
 .section .init
 _start:
     ldr pc, _reset_h
@@ -29,7 +28,7 @@ _start:
 
 _reset_h:                           .word   _reset
 _undefined_instruction_vector_h:    .word   stub_vector
-_software_interrupt_vector_h:       .word   stub_vector
+_software_interrupt_vector_h:       .word   _swi_handler
 _prefetch_abort_vector_h:           .word   stub_vector
 _data_abort_vector_h:               .word   stub_vector
 _unused_handler_h:                  .word   _reset
@@ -98,5 +97,45 @@ _enable_interrupts:
 
     mov     pc, lr
 
+_swi_handler:
+    push     {r0-r12,lr}       //; Store registers.
+    mov      r1, sp               //; Set pointer to parameters.
+    mrs      r0, spsr             //; Get SPSR.
+    push     {r0,r3}              //; Store SPSR onto stack and another register to maintain
+                                  //; 8-byte-aligned stack. Only required for nested SVCs.
+    tst      r0,#0x20             //; Occurred in Thumb state?
+    ldrneh   r0,[lr,#-2]          //; Yes: load halfword and...
+    bicne    r0,r0,#0xFF00        //; ...extract comment field.
+    ldreq    r0,[lr,#-4]          //; No: load word and...
+    biceq    r0,r0,#0xFF000000    //; ...extract comment field.
+                                  //; R0 now contains SVC number
+                                  //; R1 now contains pointer to stacked registers
+    bl       c_swi_handler        //; Call C routine to handle the SVC.
+    pop      {r0,r3}              //; Get SPSR from stack.
+    msr      spsr_cf, r0          //; Restore SPSR.
+    ldm      sp!, {r0-r12,pc}^ //; Restore registers and return.
+    // the '^' indicates to copy spsr in cpsr (if the register list contains the pc)
+    // it is effectively the return from the exception. Not to use in user or system mode
+
+.global PANIC
+PANIC:
+//TODO: WARNING: CAUTION: we have to push lr and spsr onto the stack only if 
+// we already are in svc mode.
+    mrs     r0, spsr
+    push    {r0, lr}
+    swi     #0x2  // PANIC code
+    pop     {r0, lr}
+    msr     spsr, r0
+    mov     pc, lr
+
+.global WAIT
+WAIT:
+    wfi
+    mov     pc, lr
+
+.global HALT
+HALT:
+    wfe
+    b   HALT
 
 .end
