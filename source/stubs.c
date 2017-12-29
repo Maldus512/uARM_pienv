@@ -1,4 +1,7 @@
 #include <sys/stat.h>
+#include <stdio.h>
+#include <string.h>
+#include "uart.h"
 
 
 /* Increase program data space. As malloc and related functions depend on this,
@@ -9,12 +12,21 @@ caddr_t _sbrk( int incr ) {
     extern char _end;
     static char* heap_end = 0;
     char* prev_heap_end;
+    heap_end = 0x11ed0;
 
     if( heap_end == 0 )
         heap_end = &_end;
 
-     prev_heap_end = heap_end;
+    char hex[10];
+    memset(hex, 0, 10);
 
-     heap_end += incr;
-     return (caddr_t)prev_heap_end;
+    sprintf(hex, "%x", (unsigned int)heap_end); 
+    uart_puts("sbrk: ");
+    uart_puts(hex);
+    uart_putc('\n');
+
+    prev_heap_end = heap_end;
+
+    heap_end += incr;
+    return (caddr_t)prev_heap_end;
 }

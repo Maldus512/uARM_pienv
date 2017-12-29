@@ -1,6 +1,7 @@
+#$(ARMGNU)-gcc -nostartfiles -Wl,--unresolved-symbols=ignore-all,-r $(INIT) $(OBJECTS) -Wl,-Map,$(MAP),-T,$(LINKER) -o $(BUILD)output.elf
 ARMGNU ?= arm-none-eabi
 
-FLAGS := -march=armv8-a# -mfpu=neon-vfpv4 -mfloat-abi=hard -mtune=cortex-a8
+FLAGS := -march=armv8-a -mfpu=neon-vfpv4 -mtune=cortex-a8
 CFLAGS := -Wall -pedantic -ffreestanding $(FLAGS)
 
 # The intermediate directory for compiled object files.
