@@ -69,6 +69,10 @@ int uart_puts (const char *s) {
     return i;
 }
 
+void tprint(char *s) {
+    uart_puts(s);
+}
+
 int flushRxBuffer() {
     int rx = 0;
     while (rx_tail != rx_head) {

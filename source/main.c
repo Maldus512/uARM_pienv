@@ -23,6 +23,7 @@ void initSystem() {
     uart_puts("************************************\n");
 }
 
+extern int main();
 
 int bios_main(uint32_t r1, uint32_t r2, uint32_t atags) {
     initSystem();
@@ -31,6 +32,9 @@ int bios_main(uint32_t r1, uint32_t r2, uint32_t atags) {
     strcpy(example, "hello world\n");
     uart_puts(example);
 
+#ifdef APP
+    main();
+#endif
     //while(1) {
         //flushRxBuffer();
     //}

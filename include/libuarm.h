@@ -23,9 +23,7 @@
 #include "uart.h"
 
 /* prints a string *s 0-termianted on terminal 0 */
-static inline void tprint(char *s) {
-    uart_puts(s);
-}
+void tprint(char *s);
 
 /* prints HALT message and terminates execution */
 void HALT();
