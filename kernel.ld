@@ -1,17 +1,15 @@
+/* Default linker script, for normal executables */
+OUTPUT_FORMAT("elf32-littlearm", "elf32-bigarm",
+	      "elf32-littlearm")
+OUTPUT_ARCH(arm)
 
 MEMORY {
     RAM (xrw)      : ORIGIN = 0x8000 , LENGTH = 0x40000000 - 0x8000000 /* 1GB - 128MB */
 }
 
-ENTRY (_start)
-/*
- * Very simple linker script, combing the text and data sections
- * and putting them starting at address 0x800.
- */
-SECTIONS {
-  /* Put the code at 0x8000, leaving room for ARM and
-   * the stack. It also conforms to the standard expectations.
-   */
+ENTRY(_start)
+SECTIONS
+{
     . = 0x8000;
     __text_start = .;
     .text : {
@@ -29,19 +27,17 @@ SECTIONS {
     __rodata_end = .;
 
 
-    __data_start = .;
-    .data : {
-        *(.data)
-        //. = ALIGN(4096); 
+    __data_start = . ;
+    .data  : {
+        *(.data .data.*)
     } > RAM
-    __data_end = .;
 
     __bss_start = .;
     .bss : {
-        *(.data)
+        *(.bss)
         //. = ALIGN(4096);
     } > RAM
-    __bss_end = .;
+    __bss_end__ = .;
     __end__ = .;
     _end = .; PROVIDE(end = .);
 }

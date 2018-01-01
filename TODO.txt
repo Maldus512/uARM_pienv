@@ -3,3 +3,4 @@
 - Set up JTAG debugging
 - Set up caches and MMU
 - Work with multiprocessors
+- Try to use fillexp in linker script to zero the bss section instead of crt0

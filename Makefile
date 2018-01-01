@@ -47,7 +47,8 @@ $(BUILD)output.elf : $(OBJECTS) $(LINKER) $(INIT)
 	$(ARMGNU)-gcc -nostartfiles $(INIT) $(OBJECTS) -Wl,-Map,$(MAP),-T,$(LINKER) -o $(BUILD)output.elf
 
 $(INIT): $(SOURCE)init.s
-	$(ARMGNU)-as -I $(SOURCE) -g $< -o $@
+	$(ARMGNU)-gcc $(CFLAGS) -c -I $(INCLUDE) -g $< -o $@
+	#$(ARMGNU)-as -I $(SOURCE) -g $< -o $@
 
 # Rule to make the object files.
 $(BUILD)%.o: $(SOURCE)%.c $(BUILD)
