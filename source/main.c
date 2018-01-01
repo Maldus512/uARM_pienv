@@ -8,6 +8,7 @@
 #include "uart.h"
 #include "timers.h"
 #include "interrupts.h"
+#include "libuarm.h"
 
 
 
@@ -22,10 +23,6 @@ void initSystem() {
     uart_puts("************************************\n");
 }
 
-extern void PANIC();
-extern void WAIT();
-
-extern char _end;
 
 int bios_main(uint32_t r1, uint32_t r2, uint32_t atags) {
     initSystem();
@@ -37,7 +34,6 @@ int bios_main(uint32_t r1, uint32_t r2, uint32_t atags) {
     //while(1) {
         //flushRxBuffer();
     //}
-    PANIC();
 
     while(1) {
         //delay_us(1000000);

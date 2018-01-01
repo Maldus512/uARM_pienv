@@ -135,7 +135,13 @@ WAIT:
 
 .global HALT
 HALT:
-    wfe
-    b   HALT
+//TODO: WARNING: CAUTION: we have to push lr and spsr onto the stack only if 
+// we already are in svc mode.
+    mrs     r0, spsr
+    push    {r0, lr}
+    swi     #0x1  // HALT code
+    pop     {r0, lr}
+    msr     spsr, r0
+    mov     pc, lr
 
 .end

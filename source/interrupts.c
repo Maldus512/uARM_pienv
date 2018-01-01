@@ -5,6 +5,13 @@
 #include "bios_const.h"
 
 
+void _halt() {
+    while (1) {
+        asm volatile ("wfe");
+    }
+}
+
+
 void stub_vector() {
     while(1) {
         nop();
@@ -13,8 +20,15 @@ void stub_vector() {
 
 void __attribute__((interrupt("SWI"))) c_swi_handler(uint32_t code, uint32_t *registers)
 {
-    if (code == BIOS_SRV_PANIC) {
-        uart_puts("KERNEL PANIC!\n");
+    switch (code) {
+        case BIOS_SRV_HALT:
+            uart_puts("HALT\n");
+            _halt();
+            break;
+        case BIOS_SRV_PANIC:
+            uart_puts("KERNEL PANIC!\n");
+            _halt();
+            break;
     }
 }
 

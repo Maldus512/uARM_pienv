@@ -20,9 +20,12 @@
 
 #ifndef UARM_LIBUARM_H
 #define UARM_LIBUARM_H
+#include "uart.h"
 
 /* prints a string *s 0-termianted on terminal 0 */
-void tprint(char *s);
+static inline void tprint(char *s) {
+    uart_puts(s);
+}
 
 /* prints HALT message and terminates execution */
 void HALT();
