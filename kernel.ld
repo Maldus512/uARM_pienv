@@ -14,7 +14,7 @@ SECTIONS
     __text_start = .;
     .text : {
         KEEP(*(.init))
-        *(.text)
+        *(.text .text.*)
         //. = ALIGN(4096); /* Align to page size */
     }  > RAM
     __text_end = .;
