@@ -36,6 +36,11 @@ _interrupt_vector_h:                .word   c_irq_handler
 _fast_interrupt_vector_h:           .word   stub_vector
 
 _reset:
+    //mov sp,#0x8000
+    // TODO setup the interrupts again.
+    mov sp, #(63 * 1024 * 1024)
+    bl bios_main
+
     // We start on hypervisor mode. Switch back to SVC
     mrs r0,cpsr
     bic r0,r0,#0x1F
@@ -77,7 +82,7 @@ _reset:
     // initialise the ro data section (most things that have the const
     // declaration) and initialise the bss section variables to 0 (generally
     // known as automatics). It'll then call main, which should never return.
-    bl _crt0
+    bl bios_main
 
 _hang:
     bl _hang

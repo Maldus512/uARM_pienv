@@ -1,17 +1,8 @@
-#$(ARMGNU)-gcc -nostartfiles -Wl,--unresolved-symbols=ignore-all,-r $(INIT) $(OBJECTS) -Wl,-Map,$(MAP),-T,$(LINKER) -o $(BUILD)output.elf
 ARMGNU ?= arm-none-eabi
 
 FLAGS := -march=armv8-a -mfpu=neon-vfpv4 -mtune=cortex-a8
-CFLAGS := -Wall -pedantic -ffreestanding $(FLAGS)
-ifdef APP
-	CFLAGS += -DAPP
-endif
-ifdef RPI0
-	CFLAGS += -DRPI0
-endif
-ifdef RPI3
-	CFLAGS += -DRPI3
-endif
+#TODO find out why it doesn't work without the -O2 flag (or -O)
+CFLAGS := -Wall -pedantic -nostdlib -nostartfiles -ffreestanding #$(FLAGS)
 
 # The intermediate directory for compiled object files.
 BUILD = build/

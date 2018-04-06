@@ -1,14 +1,12 @@
 #include "interrupts.h"
 #include "gpio.h"
 #include "timers.h"
-#include "uart.h"
 #include "bios_const.h"
-#include "mailbox.h"
 
 
 void _halt() {
     while (1) {
-        asm volatile ("wfe");
+        //asm volatile ("wfe");
     }
 }
 
@@ -23,11 +21,11 @@ void __attribute__((interrupt("SWI"))) c_swi_handler(uint32_t code, uint32_t *re
 {
     switch (code) {
         case BIOS_SRV_HALT:
-            uart_puts("HALT\n");
+            //uart_puts("HALT\n");
             _halt();
             break;
         case BIOS_SRV_PANIC:
-            uart_puts("KERNEL PANIC!\n");
+            //uart_puts("KERNEL PANIC!\n");
             _halt();
             break;
     }
@@ -40,7 +38,7 @@ void  __attribute__((interrupt("IRQ")))  c_irq_handler() {
 
     unsigned int rb;
 
-    if (IRQ_CONTROLLER->IRQ_pending_1 & (1 << 29)) { // Mini UART
+/*    if (IRQ_CONTROLLER->IRQ_pending_1 & (1 << 29)) { // Mini UART
         while(1) //resolve all interrupts to uart
         {
             rb=MU_IIR;
@@ -52,16 +50,16 @@ void  __attribute__((interrupt("IRQ")))  c_irq_handler() {
                 rx_head = rx_head % MU_RX_BUFFER_SIZE;
             }
         }
-    }
+    }*/
 
     if (IRQ_CONTROLLER->IRQ_basic_pending & 0x1) { // ARM TIMER
         ARMTIMER->IRQCLEAR = 1;
-        if (led) {
+        if (l) {
             setGpio(4);
         } else {
             clearGpio(4);
         }
-        led(l);
+        //led(l);
         l = 1-l;
     }
 }

@@ -5,13 +5,7 @@
 
 #define nop()      asm volatile ("nop") 
 
-#ifdef RPI3
-    // Raspberry pi 3 (bcm2837 SoC) IO peripherals base
-    #define IO_BASE       0x3F000000
-#endif
-#ifdef RPI0
-    // Raspberry pi 0 (bcm2835 SoC) IO peripherals base
-    #define IO_BASE       0x20000000
-#endif
+// Raspberry pi 0 (bcm2835 SoC) IO peripherals base
+#define IO_BASE       0x20000000
 
 #endif

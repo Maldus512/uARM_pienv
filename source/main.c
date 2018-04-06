@@ -1,51 +1,23 @@
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
+//-------------------------------------------------------------------------
+//-------------------------------------------------------------------------
+
+extern void PUT32 ( unsigned int, unsigned int );
+extern unsigned int GET32 ( unsigned int );
+extern void dummy ( unsigned int );
 
 #include "hardwareprofile.h"
-#include "mailbox.h"
 #include "gpio.h"
-#include "uart.h"
 #include "timers.h"
-#include "interrupts.h"
-#include "libuarm.h"
 
 
-
-
-void initSystem() {
-    initGpio();
-    initUart();
-    initTimers();
-    _enable_interrupts();
-    uart_puts("************************************\n");
-    uart_puts("*        MaldOS running...         *\n");
-    uart_puts("************************************\n");
-}
-
-extern int main();
 
 int bios_main(uint32_t r1, uint32_t r2, uint32_t atags) {
-    initSystem();
-
-    char *example = (char*) malloc(sizeof(char)*32);
-    strcpy(example, "hello world\n");
-    uart_puts(example);
-
-#ifdef APP
-    main();
-#endif
-    //while(1) {
-        //flushRxBuffer();
-    //}
+    initGpio();
 
     while(1) {
-        //delay_us(1000000);
-        WAIT();
-        led(1);
-
-        //delay_us(1000000);
-        WAIT();
-        led(0);
+        setGpio(47);
+        rawDelay();
+        clearGpio(47);
+        rawDelay();
     }
 }

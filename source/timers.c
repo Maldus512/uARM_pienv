@@ -1,5 +1,5 @@
 #include "timers.h"
-#include "interrupts.h"
+/*#include "interrupts.h"
 
 void initTimers() {
     IRQ_CONTROLLER->Enable_Basic_IRQs = 0x1;
@@ -33,9 +33,10 @@ void delay_us(uint32_t delay) {
     while ( !is_timer_reached(0) )
         nop();
 }
+*/
 
 void rawDelay() {
     int tim = 0;
-    while(tim++ < 100000)
+    while(tim++ < 2000000)
         nop();
 }
