@@ -24,7 +24,7 @@ void wait_mailbox_read(Mailbox *m) {
 }
 
 
-void writeMailbox0(uint32_t data, uint8_t channel) {
+void writeMailbox0(uint32_t data, mailbox0_channel_t channel) {
     wait_mailbox_write(MAILBOX0);
     MAILBOX0->write = (data & ~0xf) | (uint32_t) (channel & 0xf);
 }
@@ -43,6 +43,6 @@ void readMailbox0(uint8_t channel) {
 void led(uint32_t onoff) {
     struct mailbox_msg local;
     initLedRequest(&local, onoff);
-    writeMailbox0((uint32_t)&local, 8);
+    writeMailbox0((uint32_t)&local, MB0_TAGS_ARM_TO_VC);
     readMailbox0(8);
 }

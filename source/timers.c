@@ -36,6 +36,6 @@ void delay_us(uint32_t delay) {
 
 void rawDelay() {
     int tim = 0;
-    while(tim++ < 2000000)
+    while(tim++ < 100000)
         nop();
 }

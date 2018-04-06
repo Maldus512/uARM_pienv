@@ -6,6 +6,12 @@ CFLAGS := -Wall -pedantic -ffreestanding $(FLAGS)
 ifdef APP
 	CFLAGS += -DAPP
 endif
+ifdef RPI0
+	CFLAGS += -DRPI0
+endif
+ifdef RPI3
+	CFLAGS += -DRPI3
+endif
 
 # The intermediate directory for compiled object files.
 BUILD = build/

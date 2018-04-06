@@ -42,6 +42,19 @@ struct mailbox_msg {
 	volatile uint32_t end_tag;				// an end identifier, should be set to NULL
 } __attribute__((aligned(16)));
 
+typedef enum {
+    MB0_POWER_MANAGEMENT = 0,
+    MB0_FRAMEBUFFER,
+    MB0_VIRTUAL_UART,
+    MB0_VCHIQ,
+    MB0_LEDS,
+    MB0_BUTTONS,
+    MB0_TOUCHSCREEN,
+    MB0_UNUSED,
+    MB0_TAGS_ARM_TO_VC,
+    MB0_TAGS_VC_TO_ARM,
+} mailbox0_channel_t;
+
 
 /* Functions */
 

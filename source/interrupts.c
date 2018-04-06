@@ -3,6 +3,7 @@
 #include "timers.h"
 #include "uart.h"
 #include "bios_const.h"
+#include "mailbox.h"
 
 
 void _halt() {
@@ -35,7 +36,7 @@ void __attribute__((interrupt("SWI"))) c_swi_handler(uint32_t code, uint32_t *re
 
 
 void  __attribute__((interrupt("IRQ")))  c_irq_handler() {
-    static uint8_t led = 0;
+    static uint8_t l = 0;
 
     unsigned int rb;
 
@@ -60,6 +61,7 @@ void  __attribute__((interrupt("IRQ")))  c_irq_handler() {
         } else {
             clearGpio(4);
         }
-        led = 1-led;
+        led(l);
+        l = 1-l;
     }
 }

@@ -40,7 +40,7 @@ void initUart (void) {
 
     MU_CNTL = 3;		/* Enable Tx and Rx.  */
 
-     IRQ_CONTROLLER->Enable_IRQs_1 = 1<<29;
+    IRQ_CONTROLLER->Enable_IRQs_1 = 1<<29;
 }
 
 
