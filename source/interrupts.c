@@ -2,6 +2,7 @@
 #include "gpio.h"
 #include "timers.h"
 #include "bios_const.h"
+#include "uart.h"
 
 void _halt() {
     while (1) {
@@ -34,8 +35,24 @@ void c_irq_handler ( void )
 {
     static uint8_t blink = 0;
     static uint16_t millis = 0;
+    unsigned int rb;
+
+    if (IRQ_CONTROLLER->IRQ_pending_1 & (1 << 29)) { // Mini UART
+        while(1) //resolve all interrupts to uart
+        {
+            rb=MU_IIR;
+            if((rb&1)==1) break; //no more interrupts
+            if((rb&6)==4)
+            {
+                //receiver holds a valid byte
+                RxBuffer[rx_head++] = MU_IO & 0xFF; //read byte from rx fifo
+                rx_head = rx_head % MU_RX_BUFFER_SIZE;
+            }
+        }
+    }
+
     if (IRQ_CONTROLLER->IRQ_basic_pending & 0x1) { // ARM TIMER
-        if(millis++ > 1000) {
+        if(millis++ > 1000 && 0) {
             if (blink) {
                 setGpio(47);
             } else {

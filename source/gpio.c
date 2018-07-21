@@ -4,8 +4,10 @@
 
 
 void initGpio() {
-    //Activate gpio 4 as output
-    GPIO->SEL[0] |= (1 << 12);
+    //Activate gpio 47 as output
+    GPIO->SEL[4] = 0;
+    GPIO->SEL[4] |= (1 << 21);
+
 }
 
 
