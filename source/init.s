@@ -74,7 +74,7 @@ _reset:
     // boundary!
     mov     sp, #(64 * 1024 * 1024)
 
-    bl bios_main
+    bl _crt0
 
 _hang:
     bl _hang

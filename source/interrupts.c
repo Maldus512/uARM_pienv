@@ -32,9 +32,6 @@ void __attribute__((interrupt("SWI"))) c_swi_handler(uint32_t code, uint32_t *re
 
 void c_irq_handler ( void )
 {
-    //TODO: c'era un problema con le variabili static; forse
-    // non vengono azzerate correttamente. Prova a mettere l'azzeramento 
-    // dell'area bss
     static uint8_t blink = 0;
     static uint16_t millis = 0;
     if (IRQ_CONTROLLER->IRQ_basic_pending & 0x1) { // ARM TIMER
@@ -44,7 +41,7 @@ void c_irq_handler ( void )
             } else {
                 clearGpio(47);
             }
-            blink = (blink+1)%2;
+            blink = !blink;
             millis = 0;
         }
 
