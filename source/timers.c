@@ -1,15 +1,16 @@
 #include "timers.h"
-//#include "interrupts.h"
+#include "interrupts.h"
 
 void initTimers() {
-//    IRQ_CONTROLLER->Enable_Basic_IRQs = 0x1;
-    ARMTIMER->LOAD = 0xF4240;//0x400;         // 
-    ARMTIMER->CONTROL |= (0xF9 << 16);
+    IRQ_CONTROLLER->Enable_Basic_IRQs = 0x1;
+    ARMTIMER->CONTROL |= (0x3E << 16);
+    ARMTIMER->LOAD = 1000-1;// 0xF4240;//0x400;         // 
+    //ARMTIMER->RELOAD = 500000-1;// 0xF4240;//0x400;         // 
     ARMTIMER->CONTROL |= (1 << 1); // enable "23-bit" counter
-//    ARMTIMER->CONTROL |= (1 << 5); // enable timer interrupt
+    ARMTIMER->CONTROL |= (1 << 5); // enable timer interrupt
     ARMTIMER->CONTROL |= (1 << 7); // enable timer
-    ARMTIMER->CONTROL |= (1 << 9); // enable free running counter
-    ARMTIMER->CONTROL |= 0;//(0x2 << 2); // prescaler = clock/256timertimer
+    //ARMTIMER->CONTROL |= (1 << 9); // enable free running counter
+    //ARMTIMER->CONTROL |= (0x2 << 2); // prescaler = clock/256timertimer
 }
 
 int set_timer(uint32_t delay, uint8_t timer) {

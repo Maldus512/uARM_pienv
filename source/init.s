@@ -32,14 +32,10 @@ _software_interrupt_vector_h:       .word   _swi_handler
 _prefetch_abort_vector_h:           .word   stub_vector
 _data_abort_vector_h:               .word   stub_vector
 _unused_handler_h:                  .word   _reset
-_interrupt_vector_h:                .word   c_irq_handler
+_interrupt_vector_h:                .word   irq
 _fast_interrupt_vector_h:           .word   stub_vector
 
 _reset:
-    mov sp,#0x8000
-    // TODO setup the interrupts again.
-    //mov sp, #(63 * 1024 * 1024)
-    bl bios_main
 /*
     // We start on hypervisor mode. Switch back to SVC
     mrs r0,cpsr
@@ -48,7 +44,7 @@ _reset:
     msr spsr_cxsf,r0
     add r0,pc,#4
     msr ELR_hyp,r0
-    eret
+    eret*/
 
     // Move the exception vector
     mov     r0, #0x8000
@@ -78,12 +74,7 @@ _reset:
     // boundary!
     mov     sp, #(64 * 1024 * 1024)
 
-    // The c-startup function which we never return from. This function will
-    // initialise the ro data section (most things that have the const
-    // declaration) and initialise the bss section variables to 0 (generally
-    // known as automatics). It'll then call main, which should never return.
     bl bios_main
-    */
 
 _hang:
     bl _hang
@@ -102,6 +93,15 @@ _enable_interrupts:
     msr     cpsr_c, r0
 
     mov     pc, lr
+
+
+
+irq:
+    push {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,lr}
+    bl c_irq_handler
+    pop  {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,lr}
+    subs pc,lr,#4
+
 
 _swi_handler:
     push     {r0-r12,lr}       //; Store registers.

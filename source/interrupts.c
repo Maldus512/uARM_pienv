@@ -3,7 +3,6 @@
 #include "timers.h"
 #include "bios_const.h"
 
-
 void _halt() {
     while (1) {
         //asm volatile ("wfe");
@@ -31,35 +30,24 @@ void __attribute__((interrupt("SWI"))) c_swi_handler(uint32_t code, uint32_t *re
     }
 }
 
-
-
-void  __attribute__((interrupt("IRQ")))  c_irq_handler() {
-    static uint8_t l = 0;
-
-    unsigned int rb;
-
-/*    if (IRQ_CONTROLLER->IRQ_pending_1 & (1 << 29)) { // Mini UART
-        while(1) //resolve all interrupts to uart
-        {
-            rb=MU_IIR;
-            if((rb&1)==1) break; //no more interrupts
-            if((rb&6)==4)
-            {
-                //receiver holds a valid byte
-                RxBuffer[rx_head++] = MU_IO & 0xFF; //read byte from rx fifo
-                rx_head = rx_head % MU_RX_BUFFER_SIZE;
-            }
-        }
-    }*/
-
+void c_irq_handler ( void )
+{
+    //TODO: c'era un problema con le variabili static; forse
+    // non vengono azzerate correttamente. Prova a mettere l'azzeramento 
+    // dell'area bss
+    static uint8_t blink = 0;
+    static uint16_t millis = 0;
     if (IRQ_CONTROLLER->IRQ_basic_pending & 0x1) { // ARM TIMER
-        ARMTIMER->IRQCLEAR = 1;
-        if (l) {
-            setGpio(4);
-        } else {
-            clearGpio(4);
+        if(millis++ > 1000) {
+            if (blink) {
+                setGpio(47);
+            } else {
+                clearGpio(47);
+            }
+            blink = (blink+1)%2;
+            millis = 0;
         }
-        //led(l);
-        l = 1-l;
+
+        ARMTIMER->IRQCLEAR = 1;
     }
 }
