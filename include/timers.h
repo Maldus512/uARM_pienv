@@ -91,7 +91,7 @@ struct ARMTIMER_REG {
 
         This register will be halted too if bit 8 of the control register is
         set and the ARM is in Debug Halt mode. */
-    volatile uint32_t FreeRunningCounter;
+    volatile uint32_t COUNTER;
 };
 
 #define     ARMTIMER       ((struct ARMTIMER_REG*) ARMTIMER_BASE)
@@ -99,6 +99,7 @@ struct ARMTIMER_REG {
 
 void initTimers();
 void delay_us(uint32_t delay);
+void delay_us_arm(uint32_t delay);
 void rawDelay();
 
 #endif

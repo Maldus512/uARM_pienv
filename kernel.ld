@@ -4,7 +4,7 @@ OUTPUT_FORMAT("elf32-littlearm", "elf32-bigarm",
 OUTPUT_ARCH(arm)
 
 MEMORY {
-    RAM (xrw) : ORIGIN = 0x8000, LENGTH = 0x10000
+    RAM (xrw) : ORIGIN = 0x8000, LENGTH = 0x20000000 - 0x8000000 /*500 MB - 128 MB*/
 }
 
 ENTRY(_start)

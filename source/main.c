@@ -13,11 +13,12 @@ extern void dummy ( unsigned int );
 
 int bios_main(uint32_t r1, uint32_t r2, uint32_t atags) {
     initGpio();
+    initTimers();
 
     while(1) {
         setGpio(47);
-        delay_us(1000*1000);
+        delay_us_arm(1000*1000);
         clearGpio(47);
-        delay_us(1000*2);
+        delay_us_arm(1000*2);
     }
 }

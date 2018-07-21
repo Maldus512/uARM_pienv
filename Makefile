@@ -1,8 +1,8 @@
 ARMGNU ?= arm-none-eabi
 
-FLAGS := -march=armv8-a -mfpu=neon-vfpv4 -mtune=cortex-a8
+FLAGS := -mfpu=vfp -mfloat-abi=hard -march=armv6zk -mtune=arm1176jzf-s# -march=armv8-a -mfpu=neon-vfpv4 -mtune=cortex-a8
 #TODO find out why it doesn't work without the -O2 flag (or -O)
-CFLAGS := -Wall -pedantic -nostdlib -nostartfiles -ffreestanding #$(FLAGS)
+CFLAGS := -Wall -pedantic -nostdlib -nostartfiles -ffreestanding $(FLAGS)
 
 # The intermediate directory for compiled object files.
 BUILD = build/
@@ -41,6 +41,7 @@ $(LIST) : $(BUILD)output.elf
 # Rule to make the image file.
 $(TARGET) : $(BUILD)output.elf
 	$(ARMGNU)-objcopy $(BUILD)output.elf -O binary $(TARGET) 
+	cp $(TARGET) boot
 
 # Rule to make the elf file.
 $(BUILD)output.elf : $(OBJECTS) $(LINKER) $(INIT)
