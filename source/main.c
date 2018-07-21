@@ -16,8 +16,8 @@ int bios_main(uint32_t r1, uint32_t r2, uint32_t atags) {
 
     while(1) {
         setGpio(47);
-        rawDelay();
+        delay_us(1000*1000);
         clearGpio(47);
-        rawDelay();
+        delay_us(1000*2);
     }
 }
