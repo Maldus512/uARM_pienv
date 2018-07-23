@@ -6,7 +6,7 @@
 
 void _halt() {
     while (1) {
-        //asm volatile ("wfe");
+        asm volatile ("wfe");
     }
 }
 
@@ -21,11 +21,11 @@ void __attribute__((interrupt("SWI"))) c_swi_handler(uint32_t code, uint32_t *re
 {
     switch (code) {
         case BIOS_SRV_HALT:
-            //uart_puts("HALT\n");
+            uart_puts("HALT\n");
             _halt();
             break;
         case BIOS_SRV_PANIC:
-            //uart_puts("KERNEL PANIC!\n");
+            uart_puts("KERNEL PANIC!\n");
             _halt();
             break;
     }
@@ -52,7 +52,7 @@ void c_irq_handler ( void )
     }
 
     if (IRQ_CONTROLLER->IRQ_basic_pending & 0x1) { // ARM TIMER
-        if(millis++ > 1000 && 0) {
+        if(millis++ > 1000) {
             if (blink) {
                 setGpio(47);
             } else {

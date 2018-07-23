@@ -134,11 +134,13 @@ PANIC:
     msr     spsr, r0
     mov     pc, lr
 
-/*.global WAIT
+.global WAIT
 WAIT:
-    wfi
+    //wfi
+    mov r1, #0
+    mcr p15, #0, r1, c7, c0, #4
     mov     pc, lr
-    */
+
 
 .global HALT
 HALT:
