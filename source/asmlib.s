@@ -1,3 +1,12 @@
+.equ    BIOS_SRV_PANIC,  2
+
+.equ BIOS_SRV_SYS, 8
+.equ BIOS_SRV_BP, 9
+.equ BIOS_SRV_HALT, 1
+.equ BIOS_SRV_PANIC, 2
+.equ BIOS_SRV_LDST, 3
+.equ BIOS_SRV_WAIT, 4
+
 .global GETSP
 GETSP:
     // Return the stack pointer value
@@ -12,7 +21,7 @@ PANIC:
 // we already are in svc mode.
     mrs     r0, spsr
     push    {r0, lr}
-    swi     #0x2  // PANIC code
+    swi     #BIOS_SRV_PANIC  // PANIC code
     pop     {r0, lr}
     msr     spsr, r0
     mov     pc, lr
@@ -31,7 +40,7 @@ HALT:
 // we already are in svc mode.
     mrs     r0, spsr
     push    {r0, lr}
-    swi     #0x1  // HALT code
+    swi     #BIOS_SRV_HALT  // HALT code
     pop     {r0, lr}
     msr     spsr, r0
     mov     pc, lr
@@ -42,7 +51,7 @@ SYSCALL:
 // we already are in svc mode.
     mrs     r7, spsr
     push    {r7, lr}
-    swi     #0x5 
+    swi     #BIOS_SRV_SYS
     pop     {r0, lr}
     msr     spsr, r0
     mov     pc, lr
@@ -52,4 +61,15 @@ SYSCALL:
 .globl GETCPSR
 GETCPSR:
     mrs r0, cpsr
+    bx lr
+
+
+.globl PUT32
+PUT32:
+    str r1,[r0]
+    bx lr
+
+.globl GET32
+GET32:
+    ldr r0,[r0]
     bx lr

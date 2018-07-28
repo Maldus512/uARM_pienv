@@ -101,5 +101,6 @@ void initTimers();
 void delay_us(uint32_t delay);
 void delay_us_arm(uint32_t delay);
 void rawDelay();
+void rebootSystem();
 
 #endif

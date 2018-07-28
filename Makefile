@@ -30,6 +30,8 @@ LINKER = kernel.ld
 OBJECTS := $(patsubst $(SOURCE)%.c,$(BUILD)%.o,$(wildcard $(SOURCE)*.c))
 OBJECTS += $(patsubst $(SOURCE)%.s,$(BUILD)%.o,$(wildcard $(SOURCE)*.s))
 
+HAL		= hal.elf
+
 # Rule to make everything.
 all: $(TARGET) $(LIST)
 
@@ -46,8 +48,11 @@ $(TARGET) : $(BUILD)output.elf
 	cp $(TARGET) boot
 
 # Rule to make the elf file.
-$(BUILD)output.elf : $(OBJECTS) $(LINKER)# $(INIT)
-	$(ARMGNU)-gcc -nostartfiles $(OBJECTS) $(APP) -Wl,-Map,$(MAP),-T,$(LINKER) -o $(BUILD)output.elf
+$(BUILD)output.elf : $(HAL) $(LINKER)
+	$(ARMGNU)-gcc -nostartfiles $(HAL) $(APP) -Wl,-Map,$(MAP),-T,$(LINKER) -o $(BUILD)output.elf
+
+$(HAL): $(OBJECTS)
+	$(ARMGNU)-gcc -nostartfiles -Wl,-r $(OBJECTS) -o $(HAL) 
 
 $(BUILD)%.o: $(SOURCE)%.s $(BUILD)
 	$(ARMGNU)-gcc $(CFLAGS) -c -I $(INCLUDE) -g $< -o $@

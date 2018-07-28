@@ -1,6 +1,7 @@
 #include "gpio.h"
 #include "uart.h"
 #include "interrupts.h"
+#include "timers.h"
 
 volatile int rx_tail = 0;
 volatile int rx_head = 0;
@@ -103,6 +104,13 @@ void hexstring ( unsigned int d )
 int flushRxBuffer() {
     int rx = 0;
     while (rx_tail != rx_head) {
+        if (RxBuffer[rx_tail] == '@') {
+            uart_putc('\n');
+            uart_puts("Rebooting system!");
+            uart_putc('\n');
+            delay_us(1000);
+            rebootSystem();
+        }
         uart_putc(RxBuffer[rx_tail++]);
         rx_tail = rx_tail % MU_RX_BUFFER_SIZE;
         rx++;

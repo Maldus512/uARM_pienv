@@ -33,7 +33,7 @@ void c_swi_handler(uint32_t code, uint32_t *registers)
             _halt();
             break;
 
-        default:
+        case BIOS_SRV_SYS:
             uart_puts("Current Program Status Register: ");
             hexstring(GETCPSR());
             hexstring(*registers);
