@@ -1,5 +1,4 @@
 .global _start
-.global _get_stack_pointer
 .global _enable_interrupts
 
 .equ    CPSR_MODE_USER,         0x10
@@ -74,26 +73,14 @@ _reset:
     // boundary!
     mov     sp, #(64 * 1024 * 1024)
 
+    mov r0, #(CPSR_MODE_USER | CPSR_FIQ_INHIBIT)
+    msr cpsr_c, r0
+    mov     sp, #(62*1024*1024)
+
     bl _crt0
 
 _hang:
     bl _hang
-
-_get_stack_pointer:
-    // Return the stack pointer value
-    str     sp, [sp]
-    ldr     r0, [sp]
-    // Return from the function
-    mov     pc, lr
-
-
-_enable_interrupts:
-    mrs     r0, cpsr
-    bic     r0, r0, #0x80
-    msr     cpsr_c, r0
-
-    mov     pc, lr
-
 
 
 irq:
@@ -123,34 +110,14 @@ _swi_handler:
     // the '^' indicates to copy spsr in cpsr (if the register list contains the pc)
     // it is effectively the return from the exception. Not to use in user or system mode
 
-.global PANIC
-PANIC:
-//TODO: WARNING: CAUTION: we have to push lr and spsr onto the stack only if 
-// we already are in svc mode.
-    mrs     r0, spsr
-    push    {r0, lr}
-    swi     #0x2  // PANIC code
-    pop     {r0, lr}
-    msr     spsr, r0
+
+.global _enable_interrupts
+_enable_interrupts:
+    mrs     r0, cpsr
+    bic     r0, r0, #CPSR_IRQ_INHIBIT
+    msr     cpsr_c, r0
+
     mov     pc, lr
 
-.global WAIT
-WAIT:
-    //wfi
-    mov r1, #0
-    mcr p15, #0, r1, c7, c0, #4
-    mov     pc, lr
-
-
-.global HALT
-HALT:
-//TODO: WARNING: CAUTION: we have to push lr and spsr onto the stack only if 
-// we already are in svc mode.
-    mrs     r0, spsr
-    push    {r0, lr}
-    swi     #0x1  // HALT code
-    pop     {r0, lr}
-    msr     spsr, r0
-    mov     pc, lr
 
 .end

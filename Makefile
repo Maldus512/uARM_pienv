@@ -3,6 +3,9 @@ ARMGNU ?= arm-none-eabi
 FLAGS := -mfpu=vfp -mfloat-abi=softfp -march=armv6zk -mtune=arm1176jzf-s
 #TODO find out why it doesn't work without the -O2 flag (or -O)
 CFLAGS := -Wall -pedantic -nostdlib -nostartfiles -ffreestanding $(FLAGS)
+ifdef APP
+	CFLAGS += -DAPP
+endif
 
 # The intermediate directory for compiled object files.
 BUILD = build/
@@ -25,8 +28,7 @@ LINKER = kernel.ld
 # The names of all object files that must be generated. Deduced from the 
 # assembly code files in source.
 OBJECTS := $(patsubst $(SOURCE)%.c,$(BUILD)%.o,$(wildcard $(SOURCE)*.c))
-
-INIT := $(BUILD)init.o
+OBJECTS += $(patsubst $(SOURCE)%.s,$(BUILD)%.o,$(wildcard $(SOURCE)*.s))
 
 # Rule to make everything.
 all: $(TARGET) $(LIST)
@@ -44,10 +46,10 @@ $(TARGET) : $(BUILD)output.elf
 	cp $(TARGET) boot
 
 # Rule to make the elf file.
-$(BUILD)output.elf : $(OBJECTS) $(LINKER) $(INIT)
-	$(ARMGNU)-gcc -nostartfiles $(INIT) $(OBJECTS) $(APP) -Wl,-Map,$(MAP),-T,$(LINKER) -o $(BUILD)output.elf
+$(BUILD)output.elf : $(OBJECTS) $(LINKER)# $(INIT)
+	$(ARMGNU)-gcc -nostartfiles $(OBJECTS) $(APP) -Wl,-Map,$(MAP),-T,$(LINKER) -o $(BUILD)output.elf
 
-$(INIT): $(SOURCE)init.s
+$(BUILD)%.o: $(SOURCE)%.s $(BUILD)
 	$(ARMGNU)-gcc $(CFLAGS) -c -I $(INCLUDE) -g $< -o $@
 	#$(ARMGNU)-as -I $(SOURCE) -g $< -o $@
 

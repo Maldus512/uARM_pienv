@@ -3,6 +3,7 @@
 #include "timers.h"
 #include "bios_const.h"
 #include "uart.h"
+#include "asmlib.h"
 
 void _halt() {
     while (1) {
@@ -17,7 +18,10 @@ void stub_vector() {
     }
 }
 
-void __attribute__((interrupt("SWI"))) c_swi_handler(uint32_t code, uint32_t *registers)
+//TODO: Understand why it doesnt work with the attribute
+// (calls the handler twice, never returns)
+//void __attribute__((interrupt("SWI"))) c_swi_handler(uint32_t code, uint32_t *registers)
+void c_swi_handler(uint32_t code, uint32_t *registers)
 {
     switch (code) {
         case BIOS_SRV_HALT:
@@ -28,6 +32,14 @@ void __attribute__((interrupt("SWI"))) c_swi_handler(uint32_t code, uint32_t *re
             uart_puts("KERNEL PANIC!\n");
             _halt();
             break;
+
+        default:
+            uart_puts("Current Program Status Register: ");
+            hexstring(GETCPSR());
+            hexstring(*registers);
+            uart_putc('\n');
+            break;
+
     }
 }
 

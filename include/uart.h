@@ -30,5 +30,6 @@ void initUart();
 int uart_puts(const char *s);
 void uart_putc(char c);
 int flushRxBuffer();
+void hexstring ( unsigned int d );
 
 #endif

@@ -22,8 +22,10 @@ void initUart (void) {
     MU_IIR = 0xC6;
 
     MU_BAUD = 270;	/* 115200 baud.  */
-    GPIO->SEL[1] &= ~((7 << 12) | (7 << 15));	/* GPIO14 & 15: alt5  */
-    GPIO->SEL[1] |= (2 << 12) | (2 << 15);
+    setupGpio(14, GPIO_ALTFUNC5);
+    setupGpio(15, GPIO_ALTFUNC5);
+    //GPIO->SEL[1] &= ~((7 << 12) | (7 << 15));	/* GPIO14 & 15: alt5  */
+    //GPIO->SEL[1] |= (2 << 12) | (2 << 15);
 
     /* Disable pull-up/down.  */
     GPIO->PUDEN = 0;
@@ -73,10 +75,35 @@ void tprint(char *s) {
     uart_puts(s);
 }
 
+
+void hexstrings ( unsigned int d )
+{
+    unsigned int rb;
+    unsigned int rc;
+
+    rb=32;
+    while(1)
+    {
+        rb-=4;
+        rc=(d>>rb)&0xF;
+        if(rc>9) rc+=0x37; else rc+=0x30;
+        raw_putc(rc);
+        if(rb==0) break;
+    }
+    raw_putc(0x20);
+}
+
+void hexstring ( unsigned int d )
+{
+    hexstrings(d);
+    raw_putc(0x0D);
+    raw_putc(0x0A);
+}
+
 int flushRxBuffer() {
     int rx = 0;
     while (rx_tail != rx_head) {
-        raw_putc(RxBuffer[rx_tail++]);
+        uart_putc(RxBuffer[rx_tail++]);
         rx_tail = rx_tail % MU_RX_BUFFER_SIZE;
         rx++;
     }
