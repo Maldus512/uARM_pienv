@@ -46,3 +46,18 @@ _start:
 3:  bl      _crt0
     // for failsafe, halt this core too
     b       1b
+
+
+.global PANIC
+PANIC:
+    b PANIC
+
+.global WAIT
+WAIT:
+    wfi
+    //mov     pc, lr
+    ret
+
+.global HALT
+HALT:
+    b HALT
