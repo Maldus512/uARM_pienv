@@ -1,11 +1,10 @@
-#$(ARMGNU)-gcc -nostartfiles -Wl,--unresolved-symbols=ignore-all,-r $(INIT) $(OBJECTS) -Wl,-Map,$(MAP),-T,$(LINKER) -o $(BUILD)output.elf
-ARMGNU ?= arm-none-eabi
+ARMGNU ?= aarch64-elf
 
-FLAGS := -march=armv8-a -mfpu=neon-vfpv4 -mtune=cortex-a8
-CFLAGS := -Wall -pedantic -ffreestanding $(FLAGS)
+CFLAGS := -Wall -pedantic -ffreestanding -nostdlib -nostartfiles
 ifdef APP
 	CFLAGS += -DAPP
 endif
+
 
 # The intermediate directory for compiled object files.
 BUILD = build/
@@ -14,7 +13,7 @@ SOURCE = source/
 # The directory in which header files are stored.
 INCLUDE = include/
 # The name of the output file to generate.
-TARGET = kernel.img
+TARGET = kernel8.img
 
 # The name of the assembler listing file to generate.
 LIST = kernel.list
@@ -35,35 +34,35 @@ INIT := $(BUILD)init.o
 all: $(TARGET) $(LIST)
 
 # Rule to remake everything. Does not include clean.
-rebuild: all
+rebuild: clean all
 
 # Rule to make the listing file.
 $(LIST) : $(BUILD)output.elf
-	$(ARMGNU)-objdump -g -d $(BUILD)output.elf > $(LIST)
+	$(ARMGNU)-objdump -d $(BUILD)output.elf > $(LIST)
 
 # Rule to make the image file.
 $(TARGET) : $(BUILD)output.elf
-	$(ARMGNU)-objcopy $(BUILD)output.elf -O binary $(TARGET) 
+	$(ARMGNU)-objcopy $(BUILD)output.elf -O binary $(TARGET)
 
 # Rule to make the elf file.
-$(BUILD)output.elf : $(OBJECTS) $(LINKER) $(INIT)
-	$(ARMGNU)-gcc -nostartfiles $(INIT) $(OBJECTS) $(APP) -Wl,-Map,$(MAP),-T,$(LINKER) -o $(BUILD)output.elf
+$(BUILD)output.elf : $(OBJECTS) $(LINKER) $(INIT) $(APP)
+	$(ARMGNU)-ld -nostdlib -nostartfiles $(INIT) $(OBJECTS) $(APP) -Map $(MAP) -T $(LINKER) -o $(BUILD)output.elf
 
 $(INIT): $(SOURCE)init.s
 	$(ARMGNU)-gcc $(CFLAGS) -c -I $(INCLUDE) -g $< -o $@
-	#$(ARMGNU)-as -I $(SOURCE) -g $< -o $@
 
-# Rule to make the object files.
-$(BUILD)%.o: $(SOURCE)%.c $(BUILD)
+$(BUILD)%.o: $(SOURCE)%.c
 	$(ARMGNU)-gcc $(CFLAGS) -c -I $(INCLUDE) -g $< -o $@
 
+run: all
+	qemu-system-aarch64 -M raspi3 -kernel $(TARGET) -serial null -serial stdio
 
-$(BUILD):
-	mkdir $@
 
 # Rule to clean files.
 clean : 
-	-rm -rf $(BUILD)
+	-rm -rf $(BUILD)*
 	-rm -f $(TARGET)
 	-rm -f $(LIST)
 	-rm -f $(MAP)
+
+.PHONY: all rebuild clean run

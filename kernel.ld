@@ -1,16 +1,14 @@
 /* Default linker script, for normal executables */
-OUTPUT_FORMAT("elf32-littlearm", "elf32-bigarm",
-	      "elf32-littlearm")
-OUTPUT_ARCH(arm)
+/*OUTPUT_ARCH(arm)*/
 
 MEMORY {
-    RAM (xrw)      : ORIGIN = 0x8000 , LENGTH = 0x40000000 - 0x8000000 /* 1GB - 128MB */
+    RAM (xrw)      : ORIGIN = 0x80000 , LENGTH = 0x40000000 - 0x8000000 /* 1GB - 128MB */
 }
 
 ENTRY(_start)
 SECTIONS
 {
-    . = 0x8000;
+    . = 0x80000;
     __text_start = .;
     .text : {
         KEEP(*(.init))
@@ -32,12 +30,13 @@ SECTIONS
         *(.data .data.*)
     } > RAM
 
+    . = ALIGN(16);
     __bss_start = .;
     .bss : {
         *(.bss)
         //. = ALIGN(4096);
     } > RAM
-    __bss_end__ = .;
+    __bss_end = .;
     __end__ = .;
     _end = .; PROVIDE(end = .);
 }

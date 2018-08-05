@@ -2,6 +2,7 @@
 #define __HARDWAREPROFILE_H__
 
 #include <stdint.h>
+//#define uint32_t    unsigned int
 
 #define nop()      asm volatile ("nop") 
 

@@ -18,7 +18,7 @@ void stub_vector() {
     }
 }
 
-void __attribute__((interrupt("SWI"))) c_swi_handler(uint32_t code, uint32_t *registers)
+void c_swi_handler(uint32_t code, uint32_t *registers)
 {
     switch (code) {
         case BIOS_SRV_HALT:
@@ -34,7 +34,7 @@ void __attribute__((interrupt("SWI"))) c_swi_handler(uint32_t code, uint32_t *re
 
 
 
-void  __attribute__((interrupt("IRQ")))  c_irq_handler() {
+void  c_irq_handler() {
     static uint8_t led = 0;
 
     unsigned int rb;

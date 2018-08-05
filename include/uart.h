@@ -29,6 +29,7 @@ extern volatile int rx_head, rx_tail;
 void initUart();
 int uart_puts(const char *s);
 void uart_putc(char c);
+char uart_getc();
 int flushRxBuffer();
 
 #endif
