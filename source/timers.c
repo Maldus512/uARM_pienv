@@ -1,5 +1,6 @@
 #include "timers.h"
 #include "interrupts.h"
+#include "asmlib.h"
 
 void initTimers() {
     IRQ_CONTROLLER->Enable_Basic_IRQs = 0x1;
