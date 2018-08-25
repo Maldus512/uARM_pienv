@@ -1,6 +1,6 @@
 #include "gpio.h"
 #include "uart.h"
-//#include "interrupts.h"
+#include "interrupts.h"
 
 volatile int rx_tail = 0;
 volatile int rx_head = 0;
@@ -9,7 +9,7 @@ volatile char RxBuffer[MU_RX_BUFFER_SIZE];
 void initUart (void) {
     int i;
 
-    //IRQ_CONTROLLER->Disable_IRQs_1 = 1 << 29;
+    IRQ_CONTROLLER->Disable_IRQs_1 = 1 << 29;
 
     AUX_EN |= 1;		/* Enable mini-uart */
 
@@ -40,7 +40,7 @@ void initUart (void) {
 
     MU_CNTL = 3;		/* Enable Tx and Rx.  */
 
-     //IRQ_CONTROLLER->Enable_IRQs_1 = 1<<29;
+    //IRQ_CONTROLLER->Enable_IRQs_1 = 1<<29;
 }
 
 char uart_getc() {

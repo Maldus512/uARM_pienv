@@ -5,7 +5,19 @@
 
 void initGpio() {
     //Activate gpio 4 as output
-    GPIO->SEL[0] |= (1 << 12);
+    setupGpio(4, GPIO_OUTPUT);
+}
+
+void setupGpio (uint_fast8_t gpio, GPIOMODE mode) 
+{
+    int reg = gpio/10;
+	if (gpio > 54) return;									// Check GPIO pin number valid, return false if invalid
+	if (mode < 0 || mode > GPIO_ALTFUNC3) return;				// Check requested mode is valid, return false if invalid
+	uint_fast32_t bit = ((gpio % 10) * 3);							// Create bit mask
+	uint32_t mem = GPIO->SEL[reg];							// Read register
+	mem &= ~(7 << bit);												// Clear GPIO mode bits for that port
+	mem |= (mode << bit);											// Logical OR GPIO mode bits
+	GPIO->SEL[reg] = mem;									// Write value to register
 }
 
 

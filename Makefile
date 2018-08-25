@@ -27,8 +27,8 @@ LINKER = kernel.ld
 # The names of all object files that must be generated. Deduced from the 
 # assembly code files in source.
 OBJECTS := $(patsubst $(SOURCE)%.c,$(BUILD)%.o,$(wildcard $(SOURCE)*.c))
+OBJECTS += $(patsubst $(SOURCE)%.S,$(BUILD)%.o,$(wildcard $(SOURCE)*.S))
 
-INIT := $(BUILD)init.o
 
 # Rule to make everything.
 all: $(TARGET) $(LIST)
@@ -43,12 +43,13 @@ $(LIST) : $(BUILD)output.elf
 # Rule to make the image file.
 $(TARGET) : $(BUILD)output.elf
 	$(ARMGNU)-objcopy $(BUILD)output.elf -O binary $(TARGET)
+	cp $(TARGET) boot/
 
 # Rule to make the elf file.
-$(BUILD)output.elf : $(OBJECTS) $(LINKER) $(INIT) $(APP)
-	$(ARMGNU)-ld -nostdlib -nostartfiles $(INIT) $(OBJECTS) $(APP) -Map $(MAP) -T $(LINKER) -o $(BUILD)output.elf
+$(BUILD)output.elf : $(OBJECTS) $(LINKER) $(APP)
+	$(ARMGNU)-ld -nostdlib -nostartfiles $(OBJECTS) $(APP) -Map $(MAP) -T $(LINKER) -o $(BUILD)output.elf
 
-$(INIT): $(SOURCE)init.s
+$(BUILD)%.o: $(SOURCE)%.S
 	$(ARMGNU)-gcc $(CFLAGS) -c -I $(INCLUDE) -g $< -o $@
 
 $(BUILD)%.o: $(SOURCE)%.c
@@ -57,6 +58,8 @@ $(BUILD)%.o: $(SOURCE)%.c
 run: all
 	qemu-system-aarch64 -M raspi3 -kernel $(TARGET) -serial null -serial stdio
 
+debug: all
+	qemu-system-aarch64 -M raspi3 -kernel $(TARGET) -serial null -serial stdio -s -S
 
 # Rule to clean files.
 clean : 
@@ -64,5 +67,6 @@ clean :
 	-rm -f $(TARGET)
 	-rm -f $(LIST)
 	-rm -f $(MAP)
+	-rm -f *.img
 
 .PHONY: all rebuild clean run

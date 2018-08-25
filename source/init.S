@@ -23,7 +23,7 @@
  *
  */
 
-.section ".text.boot"
+.section .init
 
 .global _start
 
@@ -38,9 +38,8 @@ _start:
 2:  // cpu id == 0
 
     // set stack before our code
-    //ldr     x1, =_start
-    //mov     sp, x1
-    mov     sp, #0x8000
+    ldr     x1, =_start
+    mov     sp, x1
 
     // jump to C code, should not return
 3:  bl      _crt0

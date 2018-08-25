@@ -8,6 +8,7 @@ void initTimers() {
     ARMTIMER->CONTROL |= (1 << 5); // enable timer interrupt
     ARMTIMER->CONTROL |= (1 << 7); // enable timer
     ARMTIMER->CONTROL |= 0;//(0x2 << 2); // prescaler = clock/256timertimer
+    ARMTIMER->IRQCLEAR = 0;
 }
 
 int set_timer(uint32_t delay, uint8_t timer) {

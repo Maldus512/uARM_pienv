@@ -11,6 +11,10 @@ void _halt() {
     }
 }
 
+void _wait() {
+    asm volatile("wfi");
+}
+
 
 void stub_vector() {
     while(1) {
@@ -29,18 +33,21 @@ void c_swi_handler(uint32_t code, uint32_t *registers)
             uart_puts("KERNEL PANIC!\n");
             _halt();
             break;
+        case BIOS_SRV_WAIT:
+            _wait();
     }
 }
 
 
 
 void  c_irq_handler() {
-    static uint8_t led = 0;
+    static uint8_t f_led = 0;
 
     unsigned int rb;
+    int i = 0;
 
     if (IRQ_CONTROLLER->IRQ_pending_1 & (1 << 29)) { // Mini UART
-        while(1) //resolve all interrupts to uart
+        while(i++ < 1000) //resolve all interrupts to uart
         {
             rb=MU_IIR;
             if((rb&1)==1) break; //no more interrupts
@@ -55,11 +62,14 @@ void  c_irq_handler() {
 
     if (IRQ_CONTROLLER->IRQ_basic_pending & 0x1) { // ARM TIMER
         ARMTIMER->IRQCLEAR = 1;
-        if (led) {
-            setGpio(4);
+        if (f_led) {
+            setGpio(21);
         } else {
-            clearGpio(4);
+            clearGpio(21);
         }
-        led = 1-led;
+        f_led = 1-f_led;
+        if (f_led != 1 && f_led != 0) {
+            f_led = 0;
+        }
     }
 }

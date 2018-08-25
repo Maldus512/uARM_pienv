@@ -47,7 +47,20 @@ struct GPIOREG {
 #define GPIO            ((struct GPIOREG*) GPIO_BASE)
 
 
+typedef enum {
+	GPIO_INPUT = 0x00,
+	GPIO_OUTPUT = 0x01,
+	GPIO_ALTFUNC5 = 0x02,
+	GPIO_ALTFUNC4 = 0x03,
+	GPIO_ALTFUNC0 = 0x04,
+	GPIO_ALTFUNC1 = 0x05,
+	GPIO_ALTFUNC2 = 0x06,
+	GPIO_ALTFUNC3 = 0x07,
+} GPIOMODE;
+
+
 void initGpio();
+void setupGpio(uint_fast8_t num, GPIOMODE mode);
 
 void setGpio(int num);
 void clearGpio(int num);
