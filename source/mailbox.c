@@ -1,16 +1,26 @@
 #include "hardwareprofile.h"
 #include "mailbox.h"
 
+void initSerialNumberRequest(struct mailbox_msg* msg) {
+    msg->msg_size = 8*4;
+    msg->request_code = MBOX_REQUEST;
+    msg->tag.tag_id = MBOX_TAG_GETSERIAL;
+    msg->tag.buffer_size = 0x8;
+    msg->tag.data_size = 0x8;
+    msg->tag.dev_id = 0;
+    msg->tag.val = 0;
+    msg->end_tag = MBOX_TAG_LAST; 
+}
 
 void initLedRequest(struct mailbox_msg* msg, uint32_t val) {
     msg->msg_size = sizeof(struct mailbox_msg);
-    msg->request_code = 0x0;
+    msg->request_code = MBOX_REQUEST;
     msg->tag.tag_id = 0x00038041;
     msg->tag.buffer_size = 0x8;
     msg->tag.data_size = 0x0;
     msg->tag.dev_id = 130;
     msg->tag.val = val;
-    msg->end_tag = 0x0; 
+    msg->end_tag = MBOX_TAG_LAST;
 }
 
 void wait_mailbox_write(Mailbox *m) {
@@ -24,9 +34,9 @@ void wait_mailbox_read(Mailbox *m) {
 }
 
 
-void writeMailbox0(uint32_t data, uint8_t channel) {
+void writeMailbox0(uint32_t *data, uint8_t channel) {
     wait_mailbox_write(MAILBOX0);
-    MAILBOX0->write = (data & ~0xf) | (uint32_t) (channel & 0xf);
+    MAILBOX0->write = ((uint32_t)((uint64_t)data) & ~0xf) | (uint32_t) (channel & 0xf);
 }
 
 void readMailbox0(uint8_t channel) {
@@ -43,6 +53,15 @@ void readMailbox0(uint8_t channel) {
 void led(uint32_t onoff) {
     struct mailbox_msg local;
     initLedRequest(&local, onoff);
-    writeMailbox0((uint32_t)&local, 8);
-    readMailbox0(8);
+    writeMailbox0((uint32_t*)&local, MBOX_TAG_PROPERTY);
+    readMailbox0(MBOX_TAG_PROPERTY);
+}
+
+void serialNumber(uint32_t serial[2]) {
+    struct mailbox_msg local;
+    initSerialNumberRequest(&local);
+    writeMailbox0((uint32_t*)&local, MBOX_TAG_PROPERTY);
+    readMailbox0(MBOX_TAG_PROPERTY);
+    serial[0] = local.tag.dev_id;
+    serial[1] = local.tag.val;
 }

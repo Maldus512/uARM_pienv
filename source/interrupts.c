@@ -3,6 +3,8 @@
 #include "timers.h"
 #include "uart.h"
 #include "bios_const.h"
+#include "asmlib.h"
+#include "libuarmv2.h"
 
 
 void _halt() {
@@ -22,23 +24,22 @@ void stub_vector() {
     }
 }
 
-void c_swi_handler(uint32_t code, uint32_t *registers)
+uint32_t c_swi_handler(uint32_t code, uint32_t *registers)
 {
-    uart_puts("ciao\n");
-    hexstring(GETEL());
-    /*
     switch (code) {
-        case BIOS_SRV_HALT:
-            uart_puts("HALT\n");
-            _halt();
+        case SYS_GETARMCLKFRQ:
+            return GETARMCLKFRQ();
+        case SYS_GETARMCOUNTER:
+            return GETARMCOUNTER();
+
+        default:
+            uart_puts("ciao\n");
+            hexstring(GETEL());
+            hexstring(GETSAVEDSTATE());
             break;
-        case BIOS_SRV_PANIC:
-            uart_puts("KERNEL PANIC!\n");
-            _halt();
-            break;
-        case BIOS_SRV_WAIT:
-            _wait();
-    }*/
+
+    }
+    return 0;
 }
 
 

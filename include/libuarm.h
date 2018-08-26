@@ -20,7 +20,6 @@
 
 #ifndef UARM_LIBUARM_H
 #define UARM_LIBUARM_H
-#include "uart.h"
 
 /* prints a string *s 0-termianted on terminal 0 */
 void tprint(char *s);
@@ -41,7 +40,7 @@ void LDST(void *addr);
 void STST(void *addr);
 
 /* call kernel system call handler */
-//int SYSCALL(unsigned int sysNum, unsigned int arg1, unsigned int arg2, unsigned int arg3);
+int SYSCALL(unsigned int sysNum, unsigned int arg1, unsigned int arg2, unsigned int arg3);
 
 /* rasie breakpoint exception */
 void BREAK(unsigned int arg0, unsigned int arg1, unsigned int arg2, unsigned int arg3);

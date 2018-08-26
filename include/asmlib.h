@@ -1,9 +1,13 @@
 #ifndef __ASMLIB_H__
 #define __ASMLIB_H__
 
-void hang(unsigned int d);
-unsigned int GETEL();
+#include "hardwareprofile.h"
 
-void SYSCALL();
+void hang(unsigned int d);
+uint32_t GETEL();
+uint32_t GETSAVEDSTATE();
+uint32_t GETARMCLKFRQ();
+uint32_t GETARMCOUNTER();
+
 
 #endif

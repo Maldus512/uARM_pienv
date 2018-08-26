@@ -1,5 +1,8 @@
 #include "timers.h"
 #include "interrupts.h"
+#include "asmlib.h"
+#include "libuarm.h"
+#include "libuarmv2.h"
 
 void initTimers() {
     IRQ_CONTROLLER->Enable_Basic_IRQs = 0x1;
@@ -29,10 +32,17 @@ int is_timer_reached(uint8_t timer) {
 }
 
 void delay_us(uint32_t delay) {
-    set_timer(delay, 0);
-
-    while ( !is_timer_reached(0) )
-        nop();
+    /**
+     * Wait N microsec (ARM CPU only)
+     */
+    unsigned long f, t, r;
+    // get the current counter frequency
+    f = SYSCALL(SYS_GETARMCLKFRQ,0,0,0);
+    t = SYSCALL(SYS_GETARMCOUNTER,0,0,0);
+    t+=((f/1000)*delay)/1000;
+    do {
+        r = SYSCALL(SYS_GETARMCOUNTER,0,0,0);
+    } while(r<t);
 }
 
 void rawDelay() {

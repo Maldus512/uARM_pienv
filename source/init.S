@@ -1,27 +1,4 @@
-/*
- * Copyright (C) 2018 bzt (bztsrc@github)
- *
- * Permission is hereby granted, free of charge, to any person
- * obtaining a copy of this software and associated documentation
- * files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use, copy,
- * modify, merge, publish, distribute, sublicense, and/or sell copies
- * of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- *
- */
+#include "libuarmv2.h"
 
 .SECTION .init
 
@@ -71,7 +48,7 @@ _start:
     /*ldr     x1, =__EL1_stack
     mov     sp, x1*/
 
-    /*change execution level to EL0? */
+    /*change executio8 level to EL0? */
     mov     x2, #0x3c0
     msr     spsr_el1, x2
     adr     x2, 3f
@@ -87,6 +64,7 @@ _start:
 .global hang
 hang:
     bl hexstring
+    wfi
     b hang
 
 .macro	vector handler
@@ -104,28 +82,37 @@ hang:
 .global interrupt_vector
 interrupt_vector:
 /* Current EL with SP0 */
-    vector swi_handler
+    vector syncronousException
     stub 0x01
     stub 0x02
     stub 0x03
 
 /* Current EL with SPX */
-    vector swi_handler
+    vector syncronousException
     stub 0x04
     stub 0x05
     stub 0x06
 
 /* Lower EL using AARCH64 */
-    vector swi_handler
+    vector syncronousException
     stub 0x07
     stub 0x08
     stub 0x09
 
 /* Lower EL using AARCH32 */
-    vector swi_handler
+    vector syncronousException
     stub 0x0A
     stub 0x0B
     stub 0x0C
+
+
+syncronousException:
+    mrs    x25, esr_el1                     // read the syndrome register
+    lsr    x24, x25, #26      // exception class
+    cmp    x24, #EC_SVC           // SVC in 64-bit state
+    beq    swi_handler
+    mov     x0, x24
+    b      hang
 
 swi_handler:
     stp   x0,  x1,  [sp, #-16]!
@@ -141,7 +128,7 @@ swi_handler:
     str   x30, [sp, #-16]!
     // call c handler.
     bl    c_swi_handler
-    
+    mov   x20, x0 
     ldr   x30, [sp], #16
     ldp   x18, x19, [sp], #16
     ldp   x16, x17, [sp], #16
@@ -153,4 +140,5 @@ swi_handler:
     ldp   x4,  x5,  [sp], #16
     ldp   x2,  x3,  [sp], #16
     ldp   x0,  x1,  [sp], #16
+    mov   x0,  x20
     eret

@@ -10,8 +10,28 @@
  
  
 /* Status register value when mailbox is full/empty */
+#define   MBOX_RESPONSE 0x80000000      
 #define   MBOX_FULL     0x80000000      
 #define   MBOX_EMPTY    0x40000000
+
+#define MBOX_REQUEST    0
+
+/* channels */
+#define MBOX_CH_POWER   0
+#define MBOX_CH_FB      1
+#define MBOX_CH_VUART   2
+#define MBOX_CH_VCHIQ   3
+#define MBOX_CH_LEDS    4
+#define MBOX_CH_BTNS    5
+#define MBOX_CH_TOUCH   6
+#define MBOX_CH_COUNT   7
+#define MBOX_CH_PROP    8
+
+/* tags */
+#define MBOX_TAG_GETSERIAL      0x10004
+#define MBOX_TAG_LAST           0
+#define MBOX_TAG_PROPERTY       8
+
  
 #define MAILBOX0	((Mailbox *) MBOX0_BASE) 
 
@@ -46,5 +66,6 @@ struct mailbox_msg {
 /* Functions */
 
 void led(uint32_t onoff);
+void serialNumber(uint32_t serial[2]);
 
 #endif

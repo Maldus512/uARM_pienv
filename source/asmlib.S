@@ -1,3 +1,4 @@
+#include "bios_const.h"
 
 .globl PUT32
 PUT32:
@@ -13,6 +14,11 @@ GET32:
 .globl GETEL
 GETEL:
     mrs x0,CurrentEL
+    ret
+
+.globl GETSAVEDSTATE
+GETSAVEDSTATE:
+    mrs x0,spsr_el1
     ret
 
 
@@ -33,5 +39,16 @@ HALT:
 
 .global SYSCALL
 SYSCALL:
-    svc #0
+    svc #BIOS_SRV_SYS
+    ret
+
+
+.global GETARMCLKFRQ
+GETARMCLKFRQ:
+    mrs x0, cntfrq_el0
+    ret
+
+.global GETARMCOUNTER
+GETARMCOUNTER:
+    mrs x0, cntpct_el0
     ret
