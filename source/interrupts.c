@@ -24,6 +24,9 @@ void stub_vector() {
 
 void c_swi_handler(uint32_t code, uint32_t *registers)
 {
+    uart_puts("ciao\n");
+    hexstring(GETEL());
+    /*
     switch (code) {
         case BIOS_SRV_HALT:
             uart_puts("HALT\n");
@@ -35,7 +38,7 @@ void c_swi_handler(uint32_t code, uint32_t *registers)
             break;
         case BIOS_SRV_WAIT:
             _wait();
-    }
+    }*/
 }
 
 

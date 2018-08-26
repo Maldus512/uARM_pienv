@@ -5,7 +5,7 @@
 
 void initGpio() {
     //Activate gpio 4 as output
-    setupGpio(4, GPIO_OUTPUT);
+    setupGpio(LED_RUN, GPIO_OUTPUT);
 }
 
 void setupGpio (uint_fast8_t gpio, GPIOMODE mode) 
