@@ -7,23 +7,6 @@
 #include "libuarmv2.h"
 
 
-void _halt() {
-    while (1) {
-        asm volatile ("wfe");
-    }
-}
-
-void _wait() {
-    asm volatile("wfi");
-}
-
-
-void stub_vector() {
-    while(1) {
-        nop();
-    }
-}
-
 uint32_t c_swi_handler(uint32_t code, uint32_t *registers)
 {
     switch (code) {
@@ -33,7 +16,7 @@ uint32_t c_swi_handler(uint32_t code, uint32_t *registers)
             return GETARMCOUNTER();
 
         default:
-            uart_puts("ciao\n");
+            uart0_puts("ciao\n");
             hexstring(GETEL());
             hexstring(GETSAVEDSTATE());
             break;
@@ -42,16 +25,28 @@ uint32_t c_swi_handler(uint32_t code, uint32_t *registers)
     return 0;
 }
 
-
-
-void  c_irq_handler() {
-    static uint8_t f_led = 0;
-
+void c_irq_handler(void)
+{
+    char c;
     unsigned int rb;
-    int i = 0;
+    // check inteerupt source
+    if (*CORE0_INTERRUPT_SOURCE & (1 << 8)) {
+        if (IRQ_CONTROLLER->IRQ_basic_pending & (1 << 9)) {
+            if (IRQ_CONTROLLER->IRQ_pending_2 & (1 << 25)) {
+                if (UART0->MASKED_IRQ & (1 << 4)) {
+                    c = (unsigned char) UART0->DATA; // read for clear tx interrupt.
+                    uart0_putc(c);
+                    uart0_puts(" c_irq_handler\n");
+                    return;
+                }
+            }
+        }
+    }
+
+    return;
 
     if (IRQ_CONTROLLER->IRQ_pending_1 & (1 << 29)) { // Mini UART
-        while(i++ < 1000) //resolve all interrupts to uart
+        while(1) //resolve all interrupts to uart
         {
             rb=MU_IIR;
             if((rb&1)==1) break; //no more interrupts
@@ -61,8 +56,29 @@ void  c_irq_handler() {
                 RxBuffer[rx_head++] = MU_IO & 0xFF; //read byte from rx fifo
                 rx_head = rx_head % MU_RX_BUFFER_SIZE;
             }
+            else
+                break;
         }
     }
+}
+
+// TODO: it doesn't work on real hardware, only on qemu
+void startUart0Int() {
+    // enable UART RX interrupt.
+    UART0->IRQ_MASK = 1 << 4;
+
+    // UART interrupt routing.
+    IRQ_CONTROLLER->Enable_IRQs_2 = 1 << 25;
+    //*IRQ_ENABLE2 = 1 << 25;
+
+    // IRQ routeing to CORE0.
+    *GPU_INTERRUPTS_ROUTING = 0x00;
+}
+
+/*void  c_irq_handler() {
+    static uint8_t f_led = 0;
+
+
 
     if (IRQ_CONTROLLER->IRQ_basic_pending & 0x1) { // ARM TIMER
         ARMTIMER->IRQCLEAR = 1;
@@ -76,4 +92,4 @@ void  c_irq_handler() {
             f_led = 0;
         }
     }
-}
+}*/

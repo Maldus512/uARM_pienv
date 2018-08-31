@@ -19,8 +19,14 @@ struct IRQ_CONTROLLER_REG {
     volatile uint32_t Disable_Basic_IRQs;
 };
 
+#define GPU_INTERRUPTS_ROUTING ((volatile uint32_t *)(0x4000000C))
+#define CORE0_INTERRUPT_SOURCE ((volatile uint32_t *)(0x40000060))
+
 #define IRQ_CONTROLLER ((struct IRQ_CONTROLLER_REG*) INTERRUPT_CONTROLLER_BASE)
 
-void _enable_interrupts();
+void enable_irq();
+
+
+void startUart0Int();
 
 #endif

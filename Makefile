@@ -56,10 +56,13 @@ $(BUILD)%.o: $(SOURCE)%.c
 	$(ARMGNU)-gcc $(CFLAGS) -c -I $(INCLUDE) -g $< -o $@
 
 run: all
+	qemu-system-aarch64 -M raspi3 -kernel $(TARGET) -serial stdio
+
+run2: all
 	qemu-system-aarch64 -M raspi3 -kernel $(TARGET) -serial null -serial stdio
 
 debug: all
-	qemu-system-aarch64 -M raspi3 -kernel $(TARGET) -serial null -serial stdio -s -S
+	qemu-system-aarch64 -M raspi3 -kernel $(TARGET) -serial stdio -s -S
 
 # Rule to clean files.
 clean : 

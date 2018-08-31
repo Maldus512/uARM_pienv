@@ -14,41 +14,29 @@ extern void main();
 
 void initSystem() {
     initGpio();
-    initUart();
+    initUart0();
     initRand();
-    uart_puts("************************************\n");
-    uart_puts("*        MaldOS running...         *\n");
-    uart_puts("************************************\n");
+    tprint("************************************\n");
+    tprint("*        MaldOS running...         *\n");
+    tprint("************************************\n");
 }
 
 void systemCheckup() {
     uint32_t serial[2];
     int i;
 
-    uart_puts("Turning on LED RUN and blink...\n");
+    tprint("Turning on LED RUN and blink...\n");
     setGpio(LED_RUN);
     led(1);
 
-    //delay_us(1000*1000);
-
-    SYSCALL(0,0,0,0);
-    uart_puts("returned from syscall\n");
-
-    //delay_us(1000*1000);
-
     serialNumber(serial);
-    uart_puts("My serial number is:\n");
+    tprint("My serial number is:\n");
     hexstring(serial[0]);
     hexstring(serial[1]);
 
-    uart_puts("Ten random numbers\n");
-    for (i = 0; i < 10; i++) {
-        hexstring(rand(0,0xFFFFFFFF));
-    }
-
     for (i = 0; i <3; i++) {
         delay_us(500*1000);
-        uart_puts("blink - ");
+        tprint("blink - ");
         setGpio(LED_RUN);
         led(0);
         delay_us(500*1000);
@@ -56,7 +44,14 @@ void systemCheckup() {
         led(1);
     }
 
-    uart_puts("System ready!\n");
+    clearGpio(LED_RUN);
+    led(0);
+    SYSCALL(0,0,0,0);
+    tprint("returned from syscall\n");
+    setGpio(LED_RUN);
+    led(1);
+
+    tprint("System ready!\n");
 }
 
 
@@ -71,6 +66,7 @@ void bios_main()
 
     // echo everything back
     while(1) {
-        uart_putc(uart_getc());
+        nop();
+        uart0_putc(uart0_getc());
     }
 }

@@ -83,25 +83,25 @@ hang:
 interrupt_vector:
 /* Current EL with SP0 */
     vector syncronousException
-    stub 0x01
+    vector irq_handler
     stub 0x02
     stub 0x03
 
 /* Current EL with SPX */
     vector syncronousException
-    stub 0x04
+    vector irq_handler
     stub 0x05
     stub 0x06
 
 /* Lower EL using AARCH64 */
     vector syncronousException
-    stub 0x07
+    vector irq_handler
     stub 0x08
     stub 0x09
 
 /* Lower EL using AARCH32 */
     vector syncronousException
-    stub 0x0A
+    vector irq_handler
     stub 0x0B
     stub 0x0C
 
@@ -128,6 +128,36 @@ swi_handler:
     str   x30, [sp, #-16]!
     // call c handler.
     bl    c_swi_handler
+    mov   x20, x0 
+    ldr   x30, [sp], #16
+    ldp   x18, x19, [sp], #16
+    ldp   x16, x17, [sp], #16
+    ldp   x14, x15, [sp], #16
+    ldp   x12, x13, [sp], #16
+    ldp   x10, x11, [sp], #16
+    ldp   x8,  x9,  [sp], #16
+    ldp   x6,  x7,  [sp], #16
+    ldp   x4,  x5,  [sp], #16
+    ldp   x2,  x3,  [sp], #16
+    ldp   x0,  x1,  [sp], #16
+    mov   x0,  x20
+    eret
+
+
+irq_handler:
+    stp   x0,  x1,  [sp, #-16]!
+    stp   x2,  x3,  [sp, #-16]!
+    stp   x4,  x5,  [sp, #-16]!
+    stp   x6,  x7,  [sp, #-16]!
+    stp   x8,  x9,  [sp, #-16]!
+    stp   x10, x11, [sp, #-16]!
+    stp   x12, x13, [sp, #-16]!
+    stp   x14, x15, [sp, #-16]!
+    stp   x16, x17, [sp, #-16]!
+    stp   x18, x19, [sp, #-16]!
+    str   x30, [sp, #-16]!
+    // call c handler.
+    bl    c_irq_handler
     mov   x20, x0 
     ldr   x30, [sp], #16
     ldp   x18, x19, [sp], #16
