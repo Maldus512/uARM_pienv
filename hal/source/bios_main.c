@@ -68,7 +68,6 @@ void bios_main()
 
     // echo everything back
     while(1) {
-        nop();
-        //uart0_putc(uart0_getc());
+        uart0_putc(uart0_getc());
     }
 }

@@ -12,4 +12,6 @@ uint32_t GETARMCOUNTER();
 void enable_irq();
 void disable_irq();
 
+void STELR(uint64_t);
+uint64_t LDELR();
 #endif

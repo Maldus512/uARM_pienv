@@ -22,11 +22,6 @@ GETSAVEDSTATE:
     ret
 
 
-
-.global PANIC
-PANIC:
-    b PANIC
-
 .global WAIT
 WAIT:
     wfi
@@ -62,4 +57,20 @@ enable_irq:
 .globl disable_irq
 disable_irq:
     msr   daifset, #2
-ret
+    ret
+
+.globl STELR
+STELR:
+    msr     elr_el1, x0
+    ret
+
+.globl LDELR
+LDELR:
+    mrs     x0, elr_el1 
+    ret
+
+
+.globl PANIC
+PANIC:
+    wfe
+    b PANIC

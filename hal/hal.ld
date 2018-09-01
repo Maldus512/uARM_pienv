@@ -1,0 +1,63 @@
+/* Default linker script, for normal executables */
+/*OUTPUT_ARCH(arm)*/
+
+MEMORY {
+    RAM (xrw)      : ORIGIN = 0x80000 , LENGTH = 0x40000000 - 0x8000000 /* 1GB - 128MB */
+}
+
+ENTRY(_start)
+SECTIONS
+{
+    . = 0x80000;
+    __text_start = .;
+    .text : {
+        KEEP(*(.init))
+        *(.text .text.*)
+    }  > RAM
+    __text_end = .;
+
+    __rodata_start = .;
+    .rodata : {
+        *(.rodata .rodata.*)
+    } > RAM
+    __rodata_end = .;
+
+
+    __data_start = . ;
+    .data  : {
+        *(.data .data.*)
+    } > RAM
+
+    . = ALIGN(16);
+    __bss_start = .;
+    .bss : {
+        *(.bss .bss.*)
+        *(COMMON)
+    } > RAM
+    __bss_end = .;
+    __end__ = .;
+
+    .stack : {
+        . = ALIGN(16);  /* Stack must always be aligned to 8 byte boundary AAPCS64 call standard */
+        __stack_start__ = .;
+        . = . + 512;    /* EL0 stack size */
+        __EL0_stack = .;
+        . = . + 16384;    /* EL1 stack size */
+        __EL1_stack = .;
+        . = . + 4096;  /* EL2 stack size (start-up) */
+        __EL2_stack = .;
+        . = ALIGN(16);
+        __stack_end__ = .;    
+    } > RAM
+
+
+    .heap : {
+        . = ALIGN(4);
+        __heap_start__ = .;	/* Label in case we want address of heap section start */
+            _end = .; PROVIDE (end = .); /* Any memory from here is free to use so this is end of code and start of heap */
+    } > RAM
+
+	/*/DISCARD/ : {
+		*(*)
+    }*/
+}

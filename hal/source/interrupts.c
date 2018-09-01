@@ -4,7 +4,12 @@
 #include "uart.h"
 #include "bios_const.h"
 #include "asmlib.h"
+#include "libuarm.h"
 #include "libuarmv2.h"
+
+void test() {
+    tprint("printing stuff\n");
+}
 
 
 uint32_t c_swi_handler(uint32_t code, uint32_t *registers)
@@ -26,6 +31,7 @@ uint32_t c_swi_handler(uint32_t code, uint32_t *registers)
             break;
 
     }
+    STELR((uint64_t)test);
     return 0;
 }
 
