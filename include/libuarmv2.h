@@ -7,5 +7,6 @@
 /* System call codes */
 #define SYS_GETARMCLKFRQ        0x01
 #define SYS_GETARMCOUNTER         0x02
+#define SYS_ENABLEIRQ         0x03
 
 #endif

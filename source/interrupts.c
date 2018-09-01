@@ -14,6 +14,10 @@ uint32_t c_swi_handler(uint32_t code, uint32_t *registers)
             return GETARMCLKFRQ();
         case SYS_GETARMCOUNTER:
             return GETARMCOUNTER();
+        case SYS_ENABLEIRQ:
+            tprint("interrupts enabled!\n");
+            enable_irq();
+            return 0;
 
         default:
             uart0_puts("ciao\n");
@@ -29,7 +33,11 @@ void c_irq_handler(void)
 {
     char c;
     unsigned int rb;
+    disable_irq();
     // check inteerupt source
+    hexstring(IRQ_CONTROLLER->IRQ_basic_pending);
+    hexstring(IRQ_CONTROLLER->IRQ_pending_1);
+    hexstring(IRQ_CONTROLLER->IRQ_pending_2);
     if (*CORE0_INTERRUPT_SOURCE & (1 << 8)) {
         if (IRQ_CONTROLLER->IRQ_basic_pending & (1 << 9)) {
             if (IRQ_CONTROLLER->IRQ_pending_2 & (1 << 25)) {
@@ -43,6 +51,7 @@ void c_irq_handler(void)
         }
     }
 
+    enable_irq();
     return;
 
     if (IRQ_CONTROLLER->IRQ_pending_1 & (1 << 29)) { // Mini UART
@@ -62,17 +71,21 @@ void c_irq_handler(void)
     }
 }
 
+
+
 // TODO: it doesn't work on real hardware, only on qemu
 void startUart0Int() {
     // enable UART RX interrupt.
     UART0->IRQ_MASK = 1 << 4;
 
     // UART interrupt routing.
-    IRQ_CONTROLLER->Enable_IRQs_2 = 1 << 25;
+    IRQ_CONTROLLER->Enable_IRQs_2 |= 1 << 25;
     //*IRQ_ENABLE2 = 1 << 25;
 
     // IRQ routeing to CORE0.
     *GPU_INTERRUPTS_ROUTING = 0x00;
+
+    enable_irq();
 }
 
 /*void  c_irq_handler() {

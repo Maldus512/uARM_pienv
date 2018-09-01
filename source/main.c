@@ -6,6 +6,8 @@
 #include "rand.h"
 #include "timers.h"
 #include "libuarm.h"
+#include "libuarmv2.h"
+#include "interrupts.h"
 
 #ifdef APP
 extern void main();
@@ -67,6 +69,6 @@ void bios_main()
     // echo everything back
     while(1) {
         nop();
-        uart0_putc(uart0_getc());
+        //uart0_putc(uart0_getc());
     }
 }
