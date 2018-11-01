@@ -74,3 +74,25 @@ LDELR:
 PANIC:
     wfe
     b PANIC
+
+.globl STST
+STST:
+    adr     x20, .
+    str     w0, [x0]
+    str     w1, [x0, #4]!
+    str     w2, [x0, #4]!
+    str     w3, [x0, #4]!
+    str     w4, [x0, #4]!
+    str     w5, [x0, #4]!
+    str     w6, [x0, #4]!
+    str     w7, [x0, #4]!
+    str     w8, [x0, #4]!
+    str     w9, [x0, #4]!
+    str     w10, [x0, #4]!
+    str     w29, [x0, #4]! /* frame pointer */
+    str     w11, [x0, #4]!
+    str     wzr, [x0, #4]! /* stack pointer (not accessible) */
+    str     w30, [x0, #4]!  /* Link register */
+    str     w20, [x0, #4]!
+
+    ret

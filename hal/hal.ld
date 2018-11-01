@@ -2,7 +2,7 @@
 /*OUTPUT_ARCH(arm)*/
 
 MEMORY {
-    RAM (xrw)      : ORIGIN = 0x80000 , LENGTH = 0x40000000 - 0x8000000 /* 1GB - 128MB */
+    RAM (xrw)      : ORIGIN = 0x80000 , LENGTH = 0x8000000 /* 128MB */
 }
 
 ENTRY(_start)

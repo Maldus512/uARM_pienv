@@ -8,6 +8,7 @@
 #include "libuarm.h"
 #include "libuarmv2.h"
 #include "interrupts.h"
+#include "uARMtypes.h"
 
 #ifdef APP
 extern void main();
@@ -26,6 +27,8 @@ void initSystem() {
 void systemCheckup() {
     uint32_t serial[2];
     int i;
+    state_t test;
+    STST(&test);
 
     tprint("Turning on LED RUN and blink...\n");
     setGpio(LED_RUN);
@@ -60,7 +63,7 @@ void systemCheckup() {
 void bios_main()
 {
     initSystem();
-    systemCheckup();
+//    systemCheckup();
     
     #ifdef APP
     main();
