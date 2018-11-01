@@ -19,6 +19,8 @@ void initSystem() {
     initGpio();
     initUart0();
     initRand();
+    SYSCALL(SYS_INITARMTIMER,0,0,0);
+    SYSCALL(SYS_ENABLEIRQ,0,0,0);
     tprint("************************************\n");
     tprint("*        MaldOS running...         *\n");
     tprint("************************************\n");
@@ -52,15 +54,14 @@ void systemCheckup() {
         clearGpio(LED_RUN);
         led(1);
     }
+    tprint("\n");
 
     clearGpio(LED_RUN);
     led(0);
-    tprint("returned from syscall just now\n");
+    tprint("check if I return from an interrupt\n");
+    DOWFI();
     setGpio(LED_RUN);
     led(1);
-    initTimers();
-    SYSCALL(SYS_ENABLEIRQ,0,0,0);
-    //enable_irq();
 
     tprint("System ready!\n");
 }

@@ -3,21 +3,21 @@
 
 #include "hardwareprofile.h"
 
-#define SYSTIMER_BASE       (IO_BASE + 0x3000)
+#define SYSTIMER_BASE (IO_BASE + 0x3000)
 
-//System timer
+// System timer
 struct SYSTIMER_REG {
-    volatile uint32_t STATUS;        // status register
-    volatile uint32_t COUNTER_LOW;   // least significant 32 bits of the free running counter
-    volatile uint32_t COUNTER_HIGH;  // most significant 32 bits of the free running counter
-    volatile uint32_t COMPARE[4];      // timer sets
+    volatile uint32_t STATUS;           // status register
+    volatile uint32_t COUNTER_LOW;      // least significant 32 bits of the free running counter
+    volatile uint32_t COUNTER_HIGH;     // most significant 32 bits of the free running counter
+    volatile uint32_t COMPARE[4];       // timer sets
 };
 
-#define SYSTIMER            ((struct SYSTIMER_REG*) SYSTIMER_BASE)
+#define SYSTIMER ((struct SYSTIMER_REG *)SYSTIMER_BASE)
 
-#define ARMTIMER_BASE               ( IO_BASE + 0xB400 )
+#define ARMTIMER_BASE (IO_BASE + 0xB400)
 
-//ARM timer
+// ARM timer
 struct ARMTIMER_REG {
     /** The timer load register sets the time for the timer to count down.
         This value is loaded into the timer value register after the load
@@ -94,11 +94,17 @@ struct ARMTIMER_REG {
     volatile uint32_t FreeRunningCounter;
 };
 
-#define     ARMTIMER       ((struct ARMTIMER_REG*) ARMTIMER_BASE)
+#define ARMTIMER ((struct ARMTIMER_REG *)ARMTIMER_BASE)
 
+#define CORE0_TIMER_IRQCNTL 0x40000040
+#define CORE0_IRQ_SOURCE 0x40000060
 
 void initTimers();
 void delay_us(uint32_t delay);
 void rawDelay();
+void initArmTimer();
+uint64_t readCounterCount(void);
+uint32_t readCounterValue(void);
+void resetTimerCounter();
 
 #endif

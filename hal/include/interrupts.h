@@ -25,7 +25,7 @@ struct IRQ_CONTROLLER_REG {
 #define IRQ_CONTROLLER ((struct IRQ_CONTROLLER_REG*) INTERRUPT_CONTROLLER_BASE)
 
 void enable_irq();
-
+void enable_irq_el0();
 
 void startUart0Int();
 

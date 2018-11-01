@@ -15,6 +15,7 @@ void _crt0( uint32_t r0, uint32_t r1, uint32_t r2 ) {
     }
 
     bios_main( r0, r1, r2 );
+    //kernel_main();
 
     while(1) {
         nop();

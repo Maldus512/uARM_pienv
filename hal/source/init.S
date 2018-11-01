@@ -46,8 +46,6 @@ _start:
 5:
     LDR    X1, = interrupt_vector
     MSR    VBAR_EL1, X1
-    ldr     x1, =__EL2_stack
-    mov     sp, x1
 
     /*change executio8 level to EL0? */
     mov     x2, #0x3c0

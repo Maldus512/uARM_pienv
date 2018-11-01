@@ -9,6 +9,8 @@ uint32_t GETSAVEDSTATE();
 uint32_t GETARMCLKFRQ();
 uint32_t GETARMCOUNTER();
 
+void DOWFI();
+
 void enable_irq();
 void disable_irq();
 
