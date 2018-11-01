@@ -15,13 +15,15 @@ void test() {
 uint32_t c_swi_handler(uint32_t code, uint32_t *registers)
 {
     switch (code) {
+        case SYS_GETCURRENTEL:
+            return GETEL();
         case SYS_GETARMCLKFRQ:
             return GETARMCLKFRQ();
         case SYS_GETARMCOUNTER:
             return GETARMCOUNTER();
         case SYS_ENABLEIRQ:
+            enable_irq_el0();
             tprint("interrupts enabled!\n");
-            enable_irq();
             return 0;
 
         default:
@@ -39,11 +41,27 @@ void c_irq_handler(void)
 {
     char c;
     unsigned int rb;
-    disable_irq();
+    static uint8_t f_led = 0;
+    //disable_irq();
     // check inteerupt source
+    tprint("interrupt: \n");
     hexstring(IRQ_CONTROLLER->IRQ_basic_pending);
     hexstring(IRQ_CONTROLLER->IRQ_pending_1);
     hexstring(IRQ_CONTROLLER->IRQ_pending_2);
+
+    if (IRQ_CONTROLLER->IRQ_basic_pending & 0x1) { // ARM TIMER
+        ARMTIMER->IRQCLEAR = 1;
+        if (f_led) {
+            setGpio(21);
+        } else {
+            clearGpio(21);
+        }
+        f_led = 1-f_led;
+        if (f_led != 1 && f_led != 0) {
+            f_led = 0;
+        }
+    }
+
     if (*CORE0_INTERRUPT_SOURCE & (1 << 8)) {
         if (IRQ_CONTROLLER->IRQ_basic_pending & (1 << 9)) {
             if (IRQ_CONTROLLER->IRQ_pending_2 & (1 << 25)) {
@@ -57,7 +75,7 @@ void c_irq_handler(void)
         }
     }
 
-    enable_irq();
+    //enable_irq();
     return;
 
     if (IRQ_CONTROLLER->IRQ_pending_1 & (1 << 29)) { // Mini UART
@@ -93,22 +111,3 @@ void startUart0Int() {
 
     enable_irq();
 }
-
-/*void  c_irq_handler() {
-    static uint8_t f_led = 0;
-
-
-
-    if (IRQ_CONTROLLER->IRQ_basic_pending & 0x1) { // ARM TIMER
-        ARMTIMER->IRQCLEAR = 1;
-        if (f_led) {
-            setGpio(21);
-        } else {
-            clearGpio(21);
-        }
-        f_led = 1-f_led;
-        if (f_led != 1 && f_led != 0) {
-            f_led = 0;
-        }
-    }
-}*/

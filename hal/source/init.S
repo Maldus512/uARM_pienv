@@ -37,6 +37,7 @@ _start:
     mrs x0, hcr_el2
     /* change execution level to EL1 */
     mov     x2, #0x3c4
+    //mov     x2, #0x3c5
     msr     spsr_el2, x2
     adr     x2, 5f
     msr     elr_el2, x2
@@ -45,8 +46,8 @@ _start:
 5:
     LDR    X1, = interrupt_vector
     MSR    VBAR_EL1, X1
-    /*ldr     x1, =__EL1_stack
-    mov     sp, x1*/
+    ldr     x1, =__EL2_stack
+    mov     sp, x1
 
     /*change executio8 level to EL0? */
     mov     x2, #0x3c0

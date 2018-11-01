@@ -54,6 +54,14 @@ enable_irq:
     msr   daifclr, #2
     ret
 
+.globl enable_irq_el0
+enable_irq_el0:
+    mrs   x0, spsr_el1
+    and   x0, x0, #0xFFFFFFFFFFFFFF7F //cler irq bit
+    msr   spsr_el1, x0
+    ret
+
+
 .globl disable_irq
 disable_irq:
     msr   daifset, #2
@@ -95,4 +103,10 @@ STST:
     str     w30, [x0, #4]!  /* Link register */
     str     w20, [x0, #4]!
 
+    ret
+
+.globl DOWFI
+DOWFI:
+    wfi
+    //msr daifset,#2
     ret

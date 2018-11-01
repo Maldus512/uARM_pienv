@@ -41,10 +41,13 @@ SECTIONS
         . = ALIGN(16);  /* Stack must always be aligned to 8 byte boundary AAPCS64 call standard */
         __stack_start__ = .;
         . = . + 512;    /* EL0 stack size */
+        . = ALIGN(16);
         __EL0_stack = .;
         . = . + 16384;    /* EL1 stack size */
+        . = ALIGN(16);
         __EL1_stack = .;
         . = . + 4096;  /* EL2 stack size (start-up) */
+        . = ALIGN(16);
         __EL2_stack = .;
         . = ALIGN(16);
         __stack_end__ = .;    

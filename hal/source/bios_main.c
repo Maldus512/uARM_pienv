@@ -27,8 +27,12 @@ void initSystem() {
 void systemCheckup() {
     uint32_t serial[2];
     int i;
+    int x;
     state_t test;
     STST(&test);
+
+    x = SYSCALL(SYS_GETCURRENTEL, 0,0,0);
+    hexstring(x);
 
     tprint("Turning on LED RUN and blink...\n");
     setGpio(LED_RUN);
@@ -40,21 +44,23 @@ void systemCheckup() {
     hexstring(serial[1]);
 
     for (i = 0; i <3; i++) {
-        delay_us(500*1000);
+        delay_us(100*1000);
         tprint("blink - ");
         setGpio(LED_RUN);
         led(0);
-        delay_us(500*1000);
+        delay_us(100*1000);
         clearGpio(LED_RUN);
         led(1);
     }
 
     clearGpio(LED_RUN);
     led(0);
-    SYSCALL(0,0,0,0);
-    tprint("returned from syscall\n");
+    tprint("returned from syscall just now\n");
     setGpio(LED_RUN);
     led(1);
+    initTimers();
+    SYSCALL(SYS_ENABLEIRQ,0,0,0);
+    //enable_irq();
 
     tprint("System ready!\n");
 }
@@ -63,7 +69,7 @@ void systemCheckup() {
 void bios_main()
 {
     initSystem();
-//    systemCheckup();
+    systemCheckup();
     
     #ifdef APP
     main();
