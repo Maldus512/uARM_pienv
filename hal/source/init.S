@@ -47,12 +47,12 @@ _start:
     LDR    X1, = interrupt_vector
     MSR    VBAR_EL1, X1
 
-    /*change executio8 level to EL0? */
-    mov     x2, #0x3c0
+    /*change execution level to EL0? */
+    /*mov     x2, #0x3c0
     msr     spsr_el1, x2
     adr     x2, 3f
     msr     elr_el1, x2
-    eret
+    eret*/
 
     // jump to C code, should not return
 3:  
@@ -83,20 +83,20 @@ interrupt_vector:
 /* Current EL with SP0 */
     vector syncronousException
     vector irq_handler
-    stub 0x02
-    stub 0x03
+    stub 0x00000002
+    stub 0x00000003
 
 /* Current EL with SPX */
     vector syncronousException
     vector irq_handler
-    stub 0x05
-    stub 0x06
+    stub 0x00000005
+    stub 0x00000006
 
 /* Lower EL using AARCH64 */
     vector syncronousException
     vector irq_handler
-    stub 0x08
-    stub 0x09
+    stub 0x00000008
+    stub 0x00000009
 
 /* Lower EL using AARCH32 */
     vector syncronousException

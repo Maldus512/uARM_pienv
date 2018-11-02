@@ -32,7 +32,7 @@ uint32_t c_swi_handler(uint32_t code, uint32_t *registers) {
             hexstring(GETSAVEDSTATE());
             break;
     }
-    STELR((uint64_t)test);
+    //LDELR((uint64_t)test);
     return 0;
 }
 

@@ -69,12 +69,12 @@ disable_irq:
 
 .globl STELR
 STELR:
-    msr     elr_el1, x0
+    mrs     x0, elr_el1 
     ret
 
 .globl LDELR
 LDELR:
-    mrs     x0, elr_el1 
+    msr     elr_el1, x0
     ret
 
 
@@ -86,6 +86,7 @@ PANIC:
 .globl STST
 STST:
     adr     x20, .
+//    mrs     x21, sp_el1
     str     w0, [x0]
     str     w1, [x0, #4]!
     str     w2, [x0, #4]!
@@ -98,12 +99,32 @@ STST:
     str     w9, [x0, #4]!
     str     w10, [x0, #4]!
     str     w29, [x0, #4]! /* frame pointer */
-    str     w11, [x0, #4]!
-    str     wzr, [x0, #4]! /* stack pointer (not accessible) */
+    str     w11, [x0, #4]! /* ip */
+    str     w21, [x0, #4]! /* stack pointer (not accessible) */
     str     w30, [x0, #4]!  /* Link register */
     str     w20, [x0, #4]!
-
     ret
+
+.globl LDST
+LDST:
+    ldr     w0, [x0]
+    ldr     w1, [x0, #4]!
+    ldr     w2, [x0, #4]!
+    ldr     w3, [x0, #4]!
+    ldr     w4, [x0, #4]!
+    ldr     w5, [x0, #4]!
+    ldr     w6, [x0, #4]!
+    ldr     w7, [x0, #4]!
+    ldr     w8, [x0, #4]!
+    ldr     w9, [x0, #4]!
+    ldr     w10, [x0, #4]!
+    ldr     w29, [x0, #4]! /* frame pointer */
+    ldr     w11, [x0, #4]!
+    ldr     x21, [x0, #4]!
+    msr     sp_el1, x21    /* stack pointer (not accessible) */
+    ldr     w30, [x0, #4]!  /* Link register */
+    ldr     w20, [x0, #4]!
+    msr     elr_el1, x20
 
 .globl DOWFI
 DOWFI:

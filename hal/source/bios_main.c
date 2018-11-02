@@ -33,7 +33,7 @@ void systemCheckup() {
     state_t test;
     STST(&test);
 
-    x = SYSCALL(SYS_GETCURRENTEL, 0,0,0);
+    x = GETEL();//SYSCALL(SYS_GETCURRENTEL, 0,0,0);
     hexstring(x);
 
     tprint("Turning on LED RUN and blink...\n");
