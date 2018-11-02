@@ -1,4 +1,5 @@
 #include "asmlib.h"
+#include "libuarm.h"
 #include "libuarmv2.h"
 #include "uARMtypes.h"
 
@@ -11,7 +12,15 @@ typedef struct _state64_t {
 
 
 
-void STST_c(void *addr) {
-    state_t *state = addr;
-    state->pc = LDELR();
+void STST(void *addr) {
+    state_t *state;
+    STST_EL0(addr);
+    uint32_t sp = SYSCALL(SYS_GETSPEL0, 0,0,0);
+    state = (state_t*) addr;
+    state->sp = sp;
+}
+
+
+void LDST(void *addr) {
+    LDST_EL0(addr);
 }

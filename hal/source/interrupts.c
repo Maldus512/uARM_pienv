@@ -5,12 +5,13 @@
 #include "uart.h"
 #include "bios_const.h"
 #include "asmlib.h"
+#include "uARMtypes.h"
 #include "libuarm.h"
 #include "libuarmv2.h"
 
-void test() { tprint("printing stuff\n"); }
 
 uint32_t c_swi_handler(uint32_t code, uint32_t *registers) {
+    state_t *state;
     switch (code) {
         case SYS_GETCURRENTEL:
             return GETEL();
@@ -26,6 +27,13 @@ uint32_t c_swi_handler(uint32_t code, uint32_t *registers) {
             initArmTimer();
             tprint("arm timer enabled!\n");
             return 0;
+        case SYS_GETSPEL0:
+            return GETSP_EL0();
+        case SYS_LAUNCHSTATE:
+            state = registers;
+            LDST(state);
+            return 0;
+
         default:
             uart0_puts("ciao\n");
             hexstring(GETEL());

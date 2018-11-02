@@ -68,7 +68,7 @@ int devSemIndex( int int_line, int dev_num ){
 void init_area(memaddr area, memaddr handler){	
 //i parametri sono l'area da inizializzare e il gestore relativo
 	state_t *newArea = (state_t*) area;
-	//STST(newArea);
+	STST(newArea);
 	newArea->pc = handler;
 	newArea->sp = RAM_TOP;
 	//interrupt disabilitati e kernel-mode
@@ -159,10 +159,10 @@ int p2test_init(){
 	int i, j;
 	state_t *statep;
 	//popolo le aree della ROM
-	/*init_area(INT_NEWAREA, (memaddr) int_handler);
-	init_area(TLB_NEWAREA, (memaddr) tlb_handler);
-	init_area(PGMTRAP_NEWAREA, (memaddr) trap_handler);
-	init_area(SYSBK_NEWAREA, (memaddr) sys_handler);*/
+	init_area(INT_NEWAREA, (memaddr) test);
+	init_area(TLB_NEWAREA, (memaddr) test);
+	init_area(PGMTRAP_NEWAREA, (memaddr) test);
+	init_area(SYSBK_NEWAREA, (memaddr) test);
 	//inizializzo le strutture di phase1
 	initPcbs();
 	initASL();

@@ -10,5 +10,8 @@
 #define SYS_ENABLEIRQ         0x03
 #define SYS_GETCURRENTEL       0x04
 #define SYS_INITARMTIMER       0x05
+#define SYS_GETSPEL0            0x06
+#define SYS_LAUNCHSTATE            0x07
+
 
 #endif

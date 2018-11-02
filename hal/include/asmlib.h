@@ -14,6 +14,10 @@ void DOWFI();
 void enable_irq();
 void disable_irq();
 
-void STELR(uint64_t);
-uint64_t LDELR();
+void STST_EL0(void *addr);
+void LDST_EL0(void *addr);
+
+uint64_t STELR();
+uint64_t GETSP_EL0();
+void LDELR(uint64_t);
 #endif

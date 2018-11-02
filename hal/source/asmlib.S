@@ -83,10 +83,24 @@ PANIC:
     wfe
     b PANIC
 
-.globl STST
-STST:
+
+
+.globl DOWFI
+DOWFI:
+    wfi
+    //msr daifset,#2
+    ret
+
+.globl GETSP_EL0
+GETSP_EL0:
+    mrs    x0, sp_el0
+    ret
+
+
+.globl STST_EL0
+STST_EL0:
     adr     x20, .
-//    mrs     x21, sp_el1
+    //mrs     x21, sp_el0
     str     w0, [x0]
     str     w1, [x0, #4]!
     str     w2, [x0, #4]!
@@ -100,13 +114,13 @@ STST:
     str     w10, [x0, #4]!
     str     w29, [x0, #4]! /* frame pointer */
     str     w11, [x0, #4]! /* ip */
-    str     w21, [x0, #4]! /* stack pointer (not accessible) */
+    str     wzr, [x0, #4]! /* stack pointer (not accessible) */
     str     w30, [x0, #4]!  /* Link register */
     str     w20, [x0, #4]!
     ret
 
-.globl LDST
-LDST:
+.globl LDST_EL0
+LDST_EL0:
     ldr     w0, [x0]
     ldr     w1, [x0, #4]!
     ldr     w2, [x0, #4]!
@@ -120,14 +134,12 @@ LDST:
     ldr     w10, [x0, #4]!
     ldr     w29, [x0, #4]! /* frame pointer */
     ldr     w11, [x0, #4]!
-    ldr     x21, [x0, #4]!
-    msr     sp_el1, x21    /* stack pointer (not accessible) */
+    ldr     w21, [x0, #4]! /* stack pointer (not accessible) */
     ldr     w30, [x0, #4]!  /* Link register */
-    ldr     w20, [x0, #4]!
+    ldr     w20, [x0, #4]! /* program counter (to be loaded in the exception link register) */
     msr     elr_el1, x20
-
-.globl DOWFI
-DOWFI:
-    wfi
-    //msr daifset,#2
-    ret
+    msr     sp_el0, x21
+    /*change execution level to EL0? */
+    mov     x2, #0x3c0
+    msr     spsr_el1, x2
+    eret

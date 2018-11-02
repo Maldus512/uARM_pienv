@@ -29,6 +29,7 @@ _start:
     msr     sp_el1, x1
     ldr     x1, =__EL0_stack
     msr     sp_el0, x1
+    mrs     x1, sp_el1
 
     /* Enable AArch64 in EL1 */
     mov     x0, #(1 << 31)      // AArch64
@@ -36,8 +37,8 @@ _start:
     msr     hcr_el2, x0
     mrs x0, hcr_el2
     /* change execution level to EL1 */
-    mov     x2, #0x3c4
-    //mov     x2, #0x3c5
+    //mrs     x0, SPSel
+    mov     x2, #0x3c5
     msr     spsr_el2, x2
     adr     x2, 5f
     msr     elr_el2, x2
@@ -48,11 +49,11 @@ _start:
     MSR    VBAR_EL1, X1
 
     /*change execution level to EL0? */
-    /*mov     x2, #0x3c0
+    mov     x2, #0x3c0
     msr     spsr_el1, x2
     adr     x2, 3f
     msr     elr_el1, x2
-    eret*/
+    eret
 
     // jump to C code, should not return
 3:  
@@ -81,8 +82,10 @@ hang:
 .global interrupt_vector
 interrupt_vector:
 /* Current EL with SP0 */
-    vector syncronousException
-    vector irq_handler
+    //vector syncronousException
+    //vector irq_handler
+    stub 0x00000000
+    stub 0x00000001
     stub 0x00000002
     stub 0x00000003
 

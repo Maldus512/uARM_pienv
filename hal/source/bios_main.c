@@ -9,18 +9,31 @@
 #include "libuarmv2.h"
 #include "interrupts.h"
 #include "uARMtypes.h"
+#include "arch.h"
 
 #ifdef APP
 extern void main();
 #endif
 
+void test() {
+    tprint("printing stuff\n");
+    while (1) {
+        tprint("alive");
+        delay_us(1000*1000);
+    }
+}
+
+extern int __uMPS_stack;
 
 void initSystem() {
+    /* Memory info expected by uMPS */
+    *((uint32_t*)BUS_REG_RAM_BASE) = &__uMPS_stack;
+    *((uint32_t*) BUS_REG_RAM_SIZE) = 4096;
     initGpio();
     initUart0();
     initRand();
-    SYSCALL(SYS_INITARMTIMER,0,0,0);
-    SYSCALL(SYS_ENABLEIRQ,0,0,0);
+    SYSCALL(SYS_INITARMTIMER, 0, 0, 0);
+    SYSCALL(SYS_ENABLEIRQ, 0, 0, 0);
     tprint("************************************\n");
     tprint("*        MaldOS running...         *\n");
     tprint("************************************\n");
@@ -28,13 +41,10 @@ void initSystem() {
 
 void systemCheckup() {
     uint32_t serial[2];
-    int i;
-    int x;
-    state_t test;
-    STST(&test);
+    int      i;
+    int      x;
 
-    x = GETEL();//SYSCALL(SYS_GETCURRENTEL, 0,0,0);
-    hexstring(x);
+    hexstring(*((uint32_t*)BUS_REG_RAM_BASE));
 
     tprint("Turning on LED RUN and blink...\n");
     setGpio(LED_RUN);
@@ -45,12 +55,12 @@ void systemCheckup() {
     hexstring(serial[0]);
     hexstring(serial[1]);
 
-    for (i = 0; i <3; i++) {
-        delay_us(100*1000);
+    for (i = 0; i < 3; i++) {
+        delay_us(100 * 1000);
         tprint("blink - ");
         setGpio(LED_RUN);
         led(0);
-        delay_us(100*1000);
+        delay_us(100 * 1000);
         clearGpio(LED_RUN);
         led(1);
     }
@@ -67,17 +77,20 @@ void systemCheckup() {
 }
 
 
-void bios_main()
-{
+void bios_main() {
     initSystem();
     systemCheckup();
-    
-    #ifdef APP
+
+#ifdef APP
     main();
-    #endif
+    state_t *state;
+    state = INT_NEWAREA;
+    SYSCALL(SYS_LAUNCHSTATE, (unsigned int) state, 0, 0);
+#endif
+
 
     // echo everything back
-    while(1) {
+    while (1) {
         uart0_putc(uart0_getc());
     }
 }
