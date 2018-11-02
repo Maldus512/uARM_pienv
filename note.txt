@@ -1,6 +1,9 @@
 https://static.docs.arm.com/ddi0487/ca/DDI0487C_a_armv8_arm.pdf?_ga=2.165482935.963182237.1535268795-1985726002.1535268795
 pagina 1863 ci sono i codici dei livelli di esecuzione (dannazione ci voleva tanto)
 
+http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.den0024a/ch09s01s01.html
+info sui registri general purpose
+
 
 A volte l'uart non funziona (uart0)
 se invece uso l'uart1 sono le system call a non funzionare... 

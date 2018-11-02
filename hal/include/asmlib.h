@@ -20,4 +20,5 @@ void LDST_EL0(void *addr);
 uint64_t STELR();
 uint64_t GETSP_EL0();
 void LDELR(uint64_t);
+uint32_t GETSAVEDEL();
 #endif

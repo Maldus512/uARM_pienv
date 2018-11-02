@@ -16,9 +16,11 @@ $(app):
 $(hal): $(app)
 	$(MAKE) --directory=$@ APP=app.elf
 
-
 run:
-	$(MAKE) --directory=$(hal) run
+	$(MAKE) --directory=$(hal) run APP=app.elf
+
+debug:
+	$(MAKE) --directory=$(hal) debug APP=app.elf
 
 clean:
 	for dir in $(targets); do \

@@ -16,6 +16,12 @@ GETEL:
     mrs x0,CurrentEL
     ret
 
+.globl GETSAVEDEL
+GETSAVEDEL:
+    mrs x0, spsr_el1
+    and x0, x0, #7
+    ret
+
 .globl GETSAVEDSTATE
 GETSAVEDSTATE:
     mrs x0,spsr_el1
@@ -97,8 +103,9 @@ GETSP_EL0:
     ret
 
 
-.globl STST_EL0
-STST_EL0:
+.globl STST
+STST:
+    mov     x21, sp
     adr     x20, .
     //mrs     x21, sp_el0
     str     w0, [x0]
@@ -114,7 +121,7 @@ STST_EL0:
     str     w10, [x0, #4]!
     str     w29, [x0, #4]! /* frame pointer */
     str     w11, [x0, #4]! /* ip */
-    str     wzr, [x0, #4]! /* stack pointer (not accessible) */
+    str     w21, [x0, #4]! /* stack pointer (not accessible) */
     str     w30, [x0, #4]!  /* Link register */
     str     w20, [x0, #4]!
     ret

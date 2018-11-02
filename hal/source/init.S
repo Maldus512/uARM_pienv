@@ -1,4 +1,5 @@
 #include "libuarmv2.h"
+//#include "uARMconst.h"
 
 .SECTION .init
 
@@ -147,6 +148,7 @@ swi_handler:
 
 
 irq_handler:
+    /* save register values on the stack */
     stp   x0,  x1,  [sp, #-16]!
     stp   x2,  x3,  [sp, #-16]!
     stp   x4,  x5,  [sp, #-16]!
@@ -158,6 +160,31 @@ irq_handler:
     stp   x16, x17, [sp, #-16]!
     stp   x18, x19, [sp, #-16]!
     str   x30, [sp, #-16]!
+
+    /* Save also said values in the old area (uMPS way) */
+    //mov   x0, #INT_OLDAREA
+    /* I didn't call the STST assembly function because
+     It would have corrupted the link register */
+    /*mov     x21, sp
+    adr     x20, .
+    //mrs     x21, sp_el0
+    str     w0, [x0]
+    str     w1, [x0, #4]!
+    str     w2, [x0, #4]!
+    str     w3, [x0, #4]!
+    str     w4, [x0, #4]!
+    str     w5, [x0, #4]!
+    str     w6, [x0, #4]!
+    str     w7, [x0, #4]!
+    str     w8, [x0, #4]!
+    str     w9, [x0, #4]!
+    str     w10, [x0, #4]!
+    str     w29, [x0, #4]! // frame pointer 
+    str     w11, [x0, #4]! // ip 
+    str     w21, [x0, #4]! // stack pointer (not accessible) 
+    str     w30, [x0, #4]!  // Link register 
+    str     w20, [x0, #4]!*/
+
     // call c handler.
     bl    c_irq_handler
     mov   x20, x0 

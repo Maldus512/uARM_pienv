@@ -38,6 +38,10 @@ void writeTimerValue(uint32_t val) {
     return;
 }
 
+void setTimer(unsigned int timer) {
+    writeTimerValue((armTimerFrequency)*timer);
+}
+
 void resetTimerCounter() {
     /* by setting the next value to the frequency I wait 1 second */
     writeTimerValue(armTimerFrequency);

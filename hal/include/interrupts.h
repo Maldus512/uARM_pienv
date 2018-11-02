@@ -26,6 +26,7 @@ struct IRQ_CONTROLLER_REG {
 
 void enable_irq();
 void enable_irq_el0();
+unsigned int setNextTimerInterrupt(unsigned int timer);
 
 void startUart0Int();
 

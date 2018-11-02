@@ -17,8 +17,10 @@ extern void main();
 
 void test() {
     tprint("printing stuff\n");
+    uint32_t x = SYSCALL(SYS_GETCURRENTEL, 0,0,0);
     while (1) {
-        tprint("alive");
+        tprint("alive ");
+        hexstring(x);
         delay_us(1000*1000);
     }
 }
@@ -27,7 +29,7 @@ extern int __uMPS_stack;
 
 void initSystem() {
     /* Memory info expected by uMPS */
-    *((uint32_t*)BUS_REG_RAM_BASE) = &__uMPS_stack;
+    *((uint32_t*)BUS_REG_RAM_BASE) = (uint64_t)&__uMPS_stack;
     *((uint32_t*) BUS_REG_RAM_SIZE) = 4096;
     initGpio();
     initUart0();
@@ -42,7 +44,6 @@ void initSystem() {
 void systemCheckup() {
     uint32_t serial[2];
     int      i;
-    int      x;
 
     hexstring(*((uint32_t*)BUS_REG_RAM_BASE));
 
@@ -83,9 +84,7 @@ void bios_main() {
 
 #ifdef APP
     main();
-    state_t *state;
-    state = INT_NEWAREA;
-    SYSCALL(SYS_LAUNCHSTATE, (unsigned int) state, 0, 0);
+    setNextTimerInterrupt(1);
 #endif
 
 
