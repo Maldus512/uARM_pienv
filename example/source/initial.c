@@ -191,6 +191,6 @@ int p2test_init(){
 	current_process = NULL;
 	process_count++;
     tprint("fase 2 inizializzata con successo\n");
-	//scheduler();
+	scheduler();
 }
 

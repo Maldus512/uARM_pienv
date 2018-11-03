@@ -13,12 +13,6 @@
 uint64_t millisecondsSinceStart  = 0;
 uint64_t timeLeftToNextInterrupt = 0;
 
-unsigned int setNextTimerInterrupt(unsigned int timer) { 
-    uint64_t tmp = timeLeftToNextInterrupt;
-    timeLeftToNextInterrupt = timer;
-    return (unsigned int)tmp;
-}
-
 
 uint32_t c_swi_handler(uint32_t code, uint32_t *registers) {
     state_t *state;
@@ -37,11 +31,13 @@ uint32_t c_swi_handler(uint32_t code, uint32_t *registers) {
             initArmTimer();
             tprint("arm timer enabled!\n");
             return 0;
+        case SYS_SETNEXTTIMER:
+            return setTimer((unsigned int)registers);
         case SYS_GETSPEL0:
             return GETSP_EL0();
         case SYS_LAUNCHSTATE:
             state = (state_t *)registers;
-            LDST(state);
+            LDST_EL0(state);
             return 0;
 
         default:
@@ -54,32 +50,32 @@ uint32_t c_swi_handler(uint32_t code, uint32_t *registers) {
     return 0;
 }
 
-void c_irq_handler(state_t *oldState) {
-    static uint8_t f_led = 0;
-    uint32_t       tmp;
-    static int     counter = 0;
-    state_t *      state;
-    //disable_irq();
+void c_irq_handler() {
+    static uint8_t  f_led = 0;
+    uint32_t        tmp;
+    static uint64_t lastBlink = 0;
+    state_t *       state;
+    uint64_t        timer;
+
+    timer = getMillisecondsSinceStart();
+
+    if (timer - lastBlink >= 1000) {
+        led(f_led);
+        f_led     = f_led == 0 ? 1 : 0;
+        lastBlink = timer;
+    }
+
     // check interrupt source
     tmp = *((volatile uint32_t *)CORE0_IRQ_SOURCE);
 
     if (tmp & 0x08) {
-        if (counter++ >= 1000) {
-            led(f_led);
-            counter = 0;
-            f_led   = f_led == 0 ? 1 : 0;
-        }
-
-        #ifdef APP
-                //TODO: call the appropriate handler
-                //state = (state_t*)INT_NEWAREA;
-                //enable_irq();
-        //        LDST(state);
-        #endif
-        //hexstring(readCounterCount());
-        //hexstring(readCounterValue());
-        setTimer(10);
+        disableCounter();
+#ifdef APP
+        // TODO: call the appropriate handler
+        state = (state_t *)INT_NEWAREA;
+        enable_irq();
+        LDST(state);
+#endif
     }
-    //enable_irq();
     return;
 }

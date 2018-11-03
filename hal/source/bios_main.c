@@ -19,8 +19,9 @@ void test() {
     tprint("printing stuff\n");
     uint32_t x = SYSCALL(SYS_GETCURRENTEL, 0,0,0);
     while (1) {
-        tprint("alive ");
-        hexstring(x);
+        tprint("alive : ");
+        hexstring(getTODHI());
+        hexstring(getTODLO());
         delay_us(1000*1000);
     }
 }
@@ -34,8 +35,6 @@ void initSystem() {
     initGpio();
     initUart0();
     initRand();
-    SYSCALL(SYS_INITARMTIMER, 0, 0, 0);
-    SYSCALL(SYS_ENABLEIRQ, 0, 0, 0);
     tprint("************************************\n");
     tprint("*        MaldOS running...         *\n");
     tprint("************************************\n");
@@ -67,13 +66,8 @@ void systemCheckup() {
     }
     tprint("\n");
 
-    clearGpio(LED_RUN);
-    led(0);
-    tprint("check if I return from an interrupt\n");
-    DOWFI();
-    setGpio(LED_RUN);
-    led(1);
-
+    SYSCALL(SYS_INITARMTIMER, 0, 0, 0);
+    SYSCALL(SYS_ENABLEIRQ, 0, 0, 0);
     tprint("System ready!\n");
 }
 
@@ -84,8 +78,12 @@ void bios_main() {
 
 #ifdef APP
     main();
-    setNextTimerInterrupt(1);
 #endif
+
+    /*while(1) {
+        delay_us(1000*1000);
+        hexstring(getMillisecondsSinceStart());
+    }*/
 
     // echo everything back
     while (1) {

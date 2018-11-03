@@ -1,5 +1,5 @@
 #include "libuarmv2.h"
-//#include "uARMconst.h"
+#include "uARMconst.h"
 
 .SECTION .init
 
@@ -37,6 +37,16 @@ _start:
     orr     x0, x0, #(1 << 1)   // SWIO hardwired on Pi3
     msr     hcr_el2, x0
     mrs x0, hcr_el2
+
+    mrs	x0, cnthctl_el2
+	orr	x0, x0, #0x3						/* Enable EL1 access to timers */
+	msr	cnthctl_el2, x0
+	msr	cntvoff_el2, xzr
+	
+	mrs	x0, cntkctl_el1
+	orr	x0, x0, #0x3						/* Enable EL0 access to timers */
+    msr cntkctl_el1, x0
+
     /* change execution level to EL1 */
     //mrs     x0, SPSel
     mov     x2, #0x3c5
@@ -170,13 +180,34 @@ irq_handler:
     stp   x14, x15, [sp, #-16]!
     stp   x16, x17, [sp, #-16]!
     stp   x18, x19, [sp, #-16]!
-    //stp   x21, x22, [sp, #-16]!
-    //stp   x23, x24, [sp, #-16]!
-    //stp   x25, x26, [sp, #-16]!
-    //stp   x27, x28, [sp, #-16]!
     stp   x29, x30, [sp, #-16]!
+
+    /* Save the old area uMPS way */
+    mov     x0, #INT_OLDAREA
+    mrs     x21, sp_el0  /* Stack pointer to be restored */
+    mrs     x20, elr_el1 /* return link register, aka old program counter */
+    str     w0, [x0]
+    str     w1, [x0, #4]!
+    str     w2, [x0, #4]!
+    str     w3, [x0, #4]!
+    str     w4, [x0, #4]!
+    str     w5, [x0, #4]!
+    str     w6, [x0, #4]!
+    str     w7, [x0, #4]!
+    str     w8, [x0, #4]!
+    str     w9, [x0, #4]!
+    str     w10, [x0, #4]!
+    str     w29, [x0, #4]! /* frame pointer */
+    str     w11, [x0, #4]! /* ip */
+    str     w21, [x0, #4]! /* stack pointer (not accessible) */
+    str     w30, [x0, #4]!  /* Link register */
+    str     w20, [x0, #4]!  /* program counter */
+    //TODO: missing status and stuff
+
     // call c handler.
     bl    c_irq_handler
+
+    /* Ideally the scheduler should manage returning */
     ldp   x29, x30, [sp], #16
     ldp   x18, x19, [sp], #16
     ldp   x16, x17, [sp], #16

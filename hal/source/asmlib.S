@@ -124,26 +124,28 @@ STST:
     str     w21, [x0, #4]! /* stack pointer (not accessible) */
     str     w30, [x0, #4]!  /* Link register */
     str     w20, [x0, #4]!
+    //TODO: missing status and stuff
     ret
 
 .globl LDST_EL0
 LDST_EL0:
-    ldr     w0, [x0]
-    ldr     w1, [x0, #4]!
-    ldr     w2, [x0, #4]!
-    ldr     w3, [x0, #4]!
-    ldr     w4, [x0, #4]!
-    ldr     w5, [x0, #4]!
-    ldr     w6, [x0, #4]!
-    ldr     w7, [x0, #4]!
-    ldr     w8, [x0, #4]!
-    ldr     w9, [x0, #4]!
-    ldr     w10, [x0, #4]!
-    ldr     w29, [x0, #4]! /* frame pointer */
-    ldr     w11, [x0, #4]!
-    ldr     w21, [x0, #4]! /* stack pointer (not accessible) */
-    ldr     w30, [x0, #4]!  /* Link register */
-    ldr     w20, [x0, #4]! /* program counter (to be loaded in the exception link register) */
+    mov     x22, x0
+    ldr     w0, [x22]
+    ldr     w1, [x22, #4]!
+    ldr     w2, [x22, #4]!
+    ldr     w3, [x22, #4]!
+    ldr     w4, [x22, #4]!
+    ldr     w5, [x22, #4]!
+    ldr     w6, [x22, #4]!
+    ldr     w7, [x22, #4]!
+    ldr     w8, [x22, #4]!
+    ldr     w9, [x22, #4]!
+    ldr     w10, [x22, #4]!
+    ldr     w29, [x22, #4]! /* frame pointer */
+    ldr     w11, [x22, #4]!
+    ldr     w21, [x22, #4]! /* stack pointer (not accessible) */
+    ldr     w30, [x22, #4]!  /* Link register */
+    ldr     w20, [x22, #4]! /* program counter (to be loaded in the exception link register) */
     msr     elr_el1, x20
     msr     sp_el0, x21
     /*change execution level to EL0? */

@@ -38,21 +38,29 @@ void writeTimerValue(uint32_t val) {
     return;
 }
 
-void setTimer(unsigned int timer) {
+unsigned int setTimer(unsigned int timer) {
     writeTimerValue((armTimerFrequency/1000)*timer);
+    enableCounter();
+    return 0;
 }
 
 void resetTimerCounter() {
     /* by setting the next value to the frequency I wait 1 second */
-    writeTimerValue(armTimerFrequency/1000);
+    writeTimerValue(armTimerFrequency);
+}
+
+uint64_t getMillisecondsSinceStart() {
+    uint64_t timerCount = readCounterCount();
+    armTimerFrequency = GETARMCLKFRQ();
+    return timerCount/(armTimerFrequency/1000);
 }
 
 void initArmTimer() {
     armTimerFrequency = GETARMCLKFRQ();
-    resetTimerCounter();
+    //resetTimerCounter();
     /* routing core0 counter to core0 irq */
     *(volatile uint32_t *)CORE0_TIMER_IRQCNTL = 0x08; 
-    enableCounter();
+    //enableCounter();
 }
 
 void initTimers() {
