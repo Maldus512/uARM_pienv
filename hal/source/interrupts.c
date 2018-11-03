@@ -46,7 +46,7 @@ uint32_t c_swi_handler(uint32_t code, uint32_t *registers) {
 
         default:
             uart0_puts("ciao\n");
-            hexstring(GETEL());
+            hexstring(code);
             hexstring(GETSAVEDSTATE());
             break;
     }
@@ -59,13 +59,11 @@ void c_irq_handler(state_t *oldState) {
     uint32_t       tmp;
     static int     counter = 0;
     state_t *      state;
-    disable_irq();
+    //disable_irq();
     // check interrupt source
     tmp = *((volatile uint32_t *)CORE0_IRQ_SOURCE);
 
     if (tmp & 0x08) {
-        millisecondsSinceStart++;
-        resetTimerCounter();
         if (counter++ >= 1000) {
             led(f_led);
             counter = 0;
@@ -73,17 +71,15 @@ void c_irq_handler(state_t *oldState) {
         }
 
         #ifdef APP
-        if (timeLeftToNextInterrupt > 0) {
-            timeLeftToNextInterrupt--;
-            if (timeLeftToNextInterrupt == 0) {
                 //TODO: call the appropriate handler
-                state = (state_t*)INT_NEWAREA;
-                enable_irq();
-                LDST(state);
-            }
-        }
+                //state = (state_t*)INT_NEWAREA;
+                //enable_irq();
+        //        LDST(state);
         #endif
+        //hexstring(readCounterCount());
+        //hexstring(readCounterValue());
+        setTimer(10);
     }
-    enable_irq();
+    //enable_irq();
     return;
 }

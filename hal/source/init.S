@@ -148,6 +148,7 @@ swi_handler:
 
 
 irq_handler:
+    msr   daifset, #2
     /* save register values on the stack */
     stp   x0,  x1,  [sp, #-16]!
     stp   x2,  x3,  [sp, #-16]!
@@ -159,7 +160,7 @@ irq_handler:
     stp   x14, x15, [sp, #-16]!
     stp   x16, x17, [sp, #-16]!
     stp   x18, x19, [sp, #-16]!
-    str   x30, [sp, #-16]!
+    stp   x29, x30, [sp, #-16]!
 
     /* Save also said values in the old area (uMPS way) */
     //mov   x0, #INT_OLDAREA
@@ -188,7 +189,7 @@ irq_handler:
     // call c handler.
     bl    c_irq_handler
     mov   x20, x0 
-    ldr   x30, [sp], #16
+    ldp   x29, x30, [sp], #16
     ldp   x18, x19, [sp], #16
     ldp   x16, x17, [sp], #16
     ldp   x14, x15, [sp], #16
@@ -200,4 +201,5 @@ irq_handler:
     ldp   x2,  x3,  [sp], #16
     ldp   x0,  x1,  [sp], #16
     mov   x0,  x20
+    msr   daifclr, #2
     eret

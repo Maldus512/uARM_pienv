@@ -87,7 +87,6 @@ void bios_main() {
     setNextTimerInterrupt(1);
 #endif
 
-
     // echo everything back
     while (1) {
         uart0_putc(uart0_getc());

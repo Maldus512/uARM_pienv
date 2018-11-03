@@ -23,7 +23,7 @@ void disableCounter(void) {
 
 uint64_t readCounterCount(void) {
     uint64_t val;
-    asm volatile("mrs %0, cntvct_el0" : "=r"(val));
+    asm volatile("mrs %0, cntpct_el0" : "=r"(val));
     return (val);
 }
 
@@ -39,12 +39,12 @@ void writeTimerValue(uint32_t val) {
 }
 
 void setTimer(unsigned int timer) {
-    writeTimerValue((armTimerFrequency)*timer);
+    writeTimerValue((armTimerFrequency/1000)*timer);
 }
 
 void resetTimerCounter() {
     /* by setting the next value to the frequency I wait 1 second */
-    writeTimerValue(armTimerFrequency);
+    writeTimerValue(armTimerFrequency/1000);
 }
 
 void initArmTimer() {

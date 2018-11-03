@@ -4,6 +4,12 @@ pagina 1863 ci sono i codici dei livelli di esecuzione (dannazione ci voleva tan
 http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.den0024a/ch09s01s01.html
 info sui registri general purpose
 
+https://static.docs.arm.com/ddi0487/da/DDI0487D_a_armv8_arm.pdf?_ga=2.13961854.830110654.1541174005-397883277.1541171787
+cerca "timer"
+
+TODO: Con un interrupt timer troppo veloce non funziona, cerca di capire come mai (forse devi studiare meglio il timer come periferica
+cerca anche di capire se su hw reale funziona(no, si comporta allo stesso modoL))
+
 
 A volte l'uart non funziona (uart0)
 se invece uso l'uart1 sono le system call a non funzionare... 
