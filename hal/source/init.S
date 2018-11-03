@@ -146,6 +146,16 @@ swi_handler:
     mov   x0,  x20
     eret
 
+quick_irq_handler:
+    msr   daifset, #2
+    /* save register values on the stack */
+    // call c handler.
+    str x0, [sp, #-16]!
+    mov x0, #62500
+    msr cntv_tval_el0, x0
+    ldr x0, [sp], #16
+    msr   daifclr, #2
+    eret
 
 irq_handler:
     msr   daifset, #2
@@ -160,35 +170,13 @@ irq_handler:
     stp   x14, x15, [sp, #-16]!
     stp   x16, x17, [sp, #-16]!
     stp   x18, x19, [sp, #-16]!
+    //stp   x21, x22, [sp, #-16]!
+    //stp   x23, x24, [sp, #-16]!
+    //stp   x25, x26, [sp, #-16]!
+    //stp   x27, x28, [sp, #-16]!
     stp   x29, x30, [sp, #-16]!
-
-    /* Save also said values in the old area (uMPS way) */
-    //mov   x0, #INT_OLDAREA
-    /* I didn't call the STST assembly function because
-     It would have corrupted the link register */
-    /*mov     x21, sp
-    adr     x20, .
-    //mrs     x21, sp_el0
-    str     w0, [x0]
-    str     w1, [x0, #4]!
-    str     w2, [x0, #4]!
-    str     w3, [x0, #4]!
-    str     w4, [x0, #4]!
-    str     w5, [x0, #4]!
-    str     w6, [x0, #4]!
-    str     w7, [x0, #4]!
-    str     w8, [x0, #4]!
-    str     w9, [x0, #4]!
-    str     w10, [x0, #4]!
-    str     w29, [x0, #4]! // frame pointer 
-    str     w11, [x0, #4]! // ip 
-    str     w21, [x0, #4]! // stack pointer (not accessible) 
-    str     w30, [x0, #4]!  // Link register 
-    str     w20, [x0, #4]!*/
-
     // call c handler.
     bl    c_irq_handler
-    mov   x20, x0 
     ldp   x29, x30, [sp], #16
     ldp   x18, x19, [sp], #16
     ldp   x16, x17, [sp], #16
@@ -200,6 +188,5 @@ irq_handler:
     ldp   x4,  x5,  [sp], #16
     ldp   x2,  x3,  [sp], #16
     ldp   x0,  x1,  [sp], #16
-    mov   x0,  x20
     msr   daifclr, #2
     eret
