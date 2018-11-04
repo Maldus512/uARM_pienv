@@ -97,7 +97,6 @@ struct ARMTIMER_REG {
 #define ARMTIMER ((struct ARMTIMER_REG *)ARMTIMER_BASE)
 
 #define CORE0_TIMER_IRQCNTL 0x40000040
-#define CORE0_IRQ_SOURCE 0x40000060
 
 void initTimers();
 void delay_us(uint32_t delay);

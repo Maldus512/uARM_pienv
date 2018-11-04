@@ -167,6 +167,8 @@ quick_irq_handler:
     msr   daifclr, #2
     eret
 
+/* Interrupts run at level EL1; they are enabled only at level EL0, so there are
+    no nested interrupts */
 irq_handler:
     msr   daifset, #2
     /* save register values on the stack */
@@ -219,5 +221,5 @@ irq_handler:
     ldp   x4,  x5,  [sp], #16
     ldp   x2,  x3,  [sp], #16
     ldp   x0,  x1,  [sp], #16
-    msr   daifclr, #2
+    //msr   daifclr, #2
     eret

@@ -20,6 +20,7 @@
 #include "uARMconst.h"
 #include "uARMtypes.h"
 #include "const.h"
+#include "interrupt.h"
 
 #include "asl.h"
 #include "pcb.h"
@@ -159,7 +160,7 @@ int p2test_init(){
 	int i, j;
 	state_t *statep;
 	//popolo le aree della ROM
-	init_area(INT_NEWAREA, (memaddr) test);
+	init_area(INT_NEWAREA, (memaddr) int_handler);
 	init_area(TLB_NEWAREA, (memaddr) test);
 	init_area(PGMTRAP_NEWAREA, (memaddr) test);
 	init_area(SYSBK_NEWAREA, (memaddr) test);

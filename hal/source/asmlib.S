@@ -63,7 +63,7 @@ enable_irq:
 .globl enable_irq_el0
 enable_irq_el0:
     mrs   x0, spsr_el1
-    and   x0, x0, #0xFFFFFFFFFFFFFF7F //cler irq bit
+    and   x0, x0, #0xFFFFFFFFFFFFFF7F //clear irq bit
     msr   spsr_el1, x0
     ret
 
@@ -149,6 +149,9 @@ LDST_EL0:
     msr     elr_el1, x20
     msr     sp_el0, x21
     /*change execution level to EL0? */
+    mov     x2, #0x340
+    /*
     mov     x2, #0x3c0
+    0x3c0 has the interrupt bit set, it has to be clear to enable ints*/
     msr     spsr_el1, x2
     eret

@@ -41,3 +41,8 @@ unsigned int getTODHI() {
 unsigned int setTIMER(unsigned int timer) {
     return SYSCALL(SYS_SETNEXTTIMER, timer, 0,0);
 }
+
+unsigned int getCAUSE() {
+    //TODO: actually implement it
+    return 0xFFFFFFFF;
+}

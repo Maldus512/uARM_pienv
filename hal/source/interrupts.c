@@ -56,6 +56,7 @@ void c_irq_handler() {
     static uint64_t lastBlink = 0;
     state_t *       state;
     uint64_t        timer;
+    char            c;
 
     timer = getMillisecondsSinceStart();
 
@@ -75,7 +76,42 @@ void c_irq_handler() {
         state = (state_t *)INT_NEWAREA;
         enable_irq();
         LDST(state);
+#else
+        setTimer(10);
 #endif
     }
+
+    if (tmp & (1 << 8)) {
+        // apparently not needed for real hw
+        //        if (IRQ_CONTROLLER->IRQ_basic_pending & (1 << 9)) {
+        if (IRQ_CONTROLLER->IRQ_pending_2 & (1 << 25)) {
+            if (UART0->MASKED_IRQ & (1 << 4)) {
+                c = (unsigned char)UART0->DATA;     // read for clear tx interrupt.
+                uart0_putc(c);
+            }
+            if (UART0->MASKED_IRQ & (1 << 5)) {
+                uart0_puts("tx?\n");
+            }
+            //         }
+        }
+    }
     return;
+}
+
+
+
+// TODO: it doesn't work on real hardware, only on qemu
+void startUart0Int() {
+    // enable UART RX interrupt.
+    UART0->IRQ_MASK = 1 << 4;
+    // enable UART TX interrupt.
+    //    UART0->IRQ_MASK |= 1 << 5;
+
+    // UART interrupt routing.
+    IRQ_CONTROLLER->Enable_IRQs_2 |= 1 << 25;
+
+    // IRQ routeing to CORE0.
+    *GPU_INTERRUPTS_ROUTING = 0x00;
+
+    // enable_irq();
 }

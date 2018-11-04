@@ -17,12 +17,16 @@ extern void main();
 
 void test() {
     tprint("printing stuff\n");
-    uint32_t x = SYSCALL(SYS_GETCURRENTEL, 0,0,0);
+    //uint32_t x = SYSCALL(SYS_GETCURRENTEL, 0, 0, 0);
     while (1) {
+        unsigned long x = 0;
         tprint("alive : ");
         hexstring(getTODHI());
         hexstring(getTODLO());
-        delay_us(1000*1000);
+        //delay_us(1000 * 1000);
+        while(x < 10000000) {
+            x++;
+        }
     }
 }
 
@@ -30,11 +34,12 @@ extern int __uMPS_stack;
 
 void initSystem() {
     /* Memory info expected by uMPS */
-    *((uint32_t*)BUS_REG_RAM_BASE) = (uint64_t)&__uMPS_stack;
-    *((uint32_t*) BUS_REG_RAM_SIZE) = 4096;
+    *((uint32_t *)BUS_REG_RAM_BASE) = (uint64_t)&__uMPS_stack;
+    *((uint32_t *)BUS_REG_RAM_SIZE) = 4096;
     initGpio();
     initUart0();
     initRand();
+    startUart0Int();
     tprint("************************************\n");
     tprint("*        MaldOS running...         *\n");
     tprint("************************************\n");
@@ -44,7 +49,7 @@ void systemCheckup() {
     uint32_t serial[2];
     int      i;
 
-    hexstring(*((uint32_t*)BUS_REG_RAM_BASE));
+    hexstring(*((uint32_t *)BUS_REG_RAM_BASE));
 
     tprint("Turning on LED RUN and blink...\n");
     setGpio(LED_RUN);
@@ -78,7 +83,10 @@ void bios_main() {
 
 #ifdef APP
     main();
+#else
+    test();
 #endif
+
 
     /*while(1) {
         delay_us(1000*1000);

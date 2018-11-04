@@ -68,6 +68,7 @@ debug: all
 
 # Rule to clean files.
 clean : 
+	-rm -rf *.elf
 	-rm -rf $(BUILD)*
 	-rm -f $(TARGET)
 	-rm -f $(LIST)

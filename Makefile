@@ -1,7 +1,7 @@
 hal := hal
 app := example
 
-targets := $(hal) $(app)
+targets :=  $(app) $(hal)
 
 
 .PHONY: all clean $(hal) $(app)
@@ -16,10 +16,10 @@ $(app):
 $(hal): $(app)
 	$(MAKE) --directory=$@ APP=app.elf
 
-run:
+run: $(targets)
 	$(MAKE) --directory=$(hal) run APP=app.elf
 
-debug:
+debug: $(targets)
 	$(MAKE) --directory=$(hal) debug APP=app.elf
 
 clean:

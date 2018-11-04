@@ -20,7 +20,7 @@ struct IRQ_CONTROLLER_REG {
 };
 
 #define GPU_INTERRUPTS_ROUTING ((volatile uint32_t *)(0x4000000C))
-#define CORE0_INTERRUPT_SOURCE ((volatile uint32_t *)(0x40000060))
+#define CORE0_IRQ_SOURCE ((volatile uint32_t *)(0x40000060))
 
 #define IRQ_CONTROLLER ((struct IRQ_CONTROLLER_REG*) INTERRUPT_CONTROLLER_BASE)
 
