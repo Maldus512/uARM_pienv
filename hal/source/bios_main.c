@@ -19,14 +19,10 @@ void test() {
     tprint("printing stuff\n");
     //uint32_t x = SYSCALL(SYS_GETCURRENTEL, 0, 0, 0);
     while (1) {
-        unsigned long x = 0;
         tprint("alive : ");
         hexstring(getTODHI());
         hexstring(getTODLO());
-        //delay_us(1000 * 1000);
-        while(x < 10000000) {
-            x++;
-        }
+        delay_us(1000 * 1000);
     }
 }
 

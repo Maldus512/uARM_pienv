@@ -43,6 +43,12 @@ SYSCALL:
     svc #BIOS_SRV_SYS
     ret
 
+.global INTERNALSYSCALL
+INTERNALSYSCALL:
+    //svc #BIOS_INT_SYS
+    svc #0x00ff
+    ret
+
 
 .global GETARMCLKFRQ
 GETARMCLKFRQ:

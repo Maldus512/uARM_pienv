@@ -30,6 +30,8 @@
 #define BIOS_SRV_LDST 3
 #define BIOS_SRV_WAIT 4
 
+#define BIOS_INT_SYS   10
+
 #define BPEXCEPTION_CODE 7 /* see uARMconst.h */
 #define SYSEXCEPTION_CODE 4
 

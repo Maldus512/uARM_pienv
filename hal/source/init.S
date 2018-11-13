@@ -1,5 +1,6 @@
 #include "libuarmv2.h"
 #include "uARMconst.h"
+#include "bios_const.h"
 
 .SECTION .init
 
@@ -123,7 +124,13 @@ syncronousException:
     mrs    x25, esr_el1                     // read the syndrome register
     lsr    x24, x25, #26      // exception class
     cmp    x24, #EC_SVC           // SVC in 64-bit state
+    //bne    unrecognized
+    //lsr    x24, x25, #5
+    //cmp    x24, #BIOS_SRV_SYS
     beq    swi_handler
+    //cmp    x24, #BIOS_INT_SYS
+    //beq    intswi_handler
+unrecognized:
     mov     x0, x24
     b      hang
 
@@ -156,16 +163,6 @@ swi_handler:
     mov   x0,  x20
     eret
 
-quick_irq_handler:
-    msr   daifset, #2
-    /* save register values on the stack */
-    // call c handler.
-    str x0, [sp, #-16]!
-    mov x0, #62500
-    msr cntv_tval_el0, x0
-    ldr x0, [sp], #16
-    msr   daifclr, #2
-    eret
 
 /* Interrupts run at level EL1; they are enabled only at level EL0, so there are
     no nested interrupts */
