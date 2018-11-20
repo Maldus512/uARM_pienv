@@ -22,8 +22,9 @@ SECTIONS
     } > RAM
     __rodata_end = .;
 
-
+    . = ALIGN(4096);
     __data_start = . ;
+    PROVIDE(_data = .);
     .data  : {
         *(.data .data.*)
     } > RAM
@@ -40,7 +41,7 @@ SECTIONS
     .stack : {
         . = ALIGN(16);  /* Stack must always be aligned to 8 byte boundary AAPCS64 call standard */
         __stack_start__ = .;
-        . = . + 512;    /* EL0 stack size */
+        . = . + 16384;    /* EL0 stack size */
         . = ALIGN(16);
         __EL0_stack = .;
         . = . + 16384;    /* EL1 stack size */
@@ -60,7 +61,8 @@ SECTIONS
     .heap : {
         . = ALIGN(4);
         __heap_start__ = .;	/* Label in case we want address of heap section start */
-            _end = .; PROVIDE (end = .); /* Any memory from here is free to use so this is end of code and start of heap */
+        _end = .; 
+        PROVIDE (end = .); /* Any memory from here is free to use so this is end of code and start of heap */
     } > RAM
 
 	/*/DISCARD/ : {

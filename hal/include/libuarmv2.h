@@ -13,6 +13,7 @@
 #define SYS_GETSPEL0            0x06
 #define SYS_LAUNCHSTATE            0x07
 #define SYS_SETNEXTTIMER            0x08
+#define SYS_INITMMU             0x09
 
 
 #endif

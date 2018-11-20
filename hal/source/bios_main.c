@@ -10,6 +10,7 @@
 #include "interrupts.h"
 #include "uARMtypes.h"
 #include "arch.h"
+#include "mmu.h"
 
 #ifdef APP
 extern void main();
@@ -45,7 +46,7 @@ void systemCheckup() {
     uint32_t serial[2];
     int      i;
 
-    hexstring(*((uint32_t *)BUS_REG_RAM_BASE));
+    hexstring(*((uint32_t *)SYSCALL(SYS_GETCURRENTEL,0,0,0)));
 
     tprint("Turning on LED RUN and blink...\n");
     setGpio(LED_RUN);
@@ -56,24 +57,19 @@ void systemCheckup() {
     hexstring(serial[0]);
     hexstring(serial[1]);
 
-    for (i = 0; i < 3; i++) {
-        delay_us(100 * 1000);
-        tprint("blink - ");
-        setGpio(LED_RUN);
-        led(0);
-        delay_us(100 * 1000);
-        clearGpio(LED_RUN);
-        led(1);
-    }
-    tprint("\n");
-
     SYSCALL(SYS_INITARMTIMER, 0, 0, 0);
     SYSCALL(SYS_ENABLEIRQ, 0, 0, 0);
+    SYSCALL(SYS_SETNEXTTIMER, 1000,0,0);
+
+    SYSCALL(SYS_INITMMU, 0,0,0);
+
     tprint("System ready!\n");
+
 }
 
 
 void bios_main() {
+    init_page_table();
     initSystem();
     systemCheckup();
 
@@ -82,12 +78,6 @@ void bios_main() {
 #else
     test();
 #endif
-
-
-    /*while(1) {
-        delay_us(1000*1000);
-        hexstring(getMillisecondsSinceStart());
-    }*/
 
     // echo everything back
     while (1) {

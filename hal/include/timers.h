@@ -105,6 +105,7 @@ void initArmTimer();
 uint64_t readCounterCount(void);
 uint32_t readCounterValue(void);
 void resetTimerCounter();
+void disableCounter(void);
 unsigned int setTimer(unsigned int timer);
 uint64_t getMillisecondsSinceStart();
 

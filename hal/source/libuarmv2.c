@@ -17,7 +17,7 @@ typedef struct _state64_t {
 void LDST(void *state) {
     int el = SYSCALL(SYS_GETCURRENTEL, 0,0,0);
     if (el == 0) {
-        SYSCALL(SYS_LAUNCHSTATE, state,0,0);
+        SYSCALL(SYS_LAUNCHSTATE, (long unsigned int)state,0,0);
     }
     else {
         LDST_EL0(state);

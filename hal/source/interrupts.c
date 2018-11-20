@@ -8,7 +8,7 @@
 #include "uARMtypes.h"
 #include "libuarm.h"
 #include "libuarmv2.h"
-
+#include "mmu.h"
 
 uint64_t millisecondsSinceStart  = 0;
 uint64_t timeLeftToNextInterrupt = 0;
@@ -32,12 +32,15 @@ uint32_t c_swi_handler(uint32_t code, uint32_t *registers) {
             tprint("arm timer enabled!\n");
             return 0;
         case SYS_SETNEXTTIMER:
-            return setTimer((unsigned int)registers);
+            return setTimer((long unsigned int)registers);
         case SYS_GETSPEL0:
             return GETSP_EL0();
         case SYS_LAUNCHSTATE:
             state = (state_t *)registers;
             LDST_EL0(state);
+            return 0;
+        case SYS_INITMMU:
+            initMMU();
             return 0;
 
         default:
@@ -54,7 +57,7 @@ void c_irq_handler() {
     static uint8_t  f_led = 0;
     uint32_t        tmp;
     static uint64_t lastBlink = 0;
-    state_t *       state;
+    __attribute__((unused)) state_t *       state;
     uint64_t        timer;
     char            c;
 
@@ -70,14 +73,15 @@ void c_irq_handler() {
     tmp = *((volatile uint32_t *)CORE0_IRQ_SOURCE);
 
     if (tmp & 0x08) {
-        disableCounter();
+        //disableCounter();
 #ifdef APP
         // TODO: call the appropriate handler
         state = (state_t *)INT_NEWAREA;
         enable_irq();
         LDST(state);
 #else
-        setTimer(10);
+        setTimer(1000);
+        uart0_puts("int\n");
 #endif
     }
 
