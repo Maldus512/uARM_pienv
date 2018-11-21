@@ -36,7 +36,7 @@ void initSystem() {
     initGpio();
     initUart0();
     initRand();
-    startUart0Int();
+    //startUart0Int();
     tprint("************************************\n");
     tprint("*        MaldOS running...         *\n");
     tprint("************************************\n");
@@ -59,9 +59,10 @@ void systemCheckup() {
 
     SYSCALL(SYS_INITARMTIMER, 0, 0, 0);
     SYSCALL(SYS_ENABLEIRQ, 0, 0, 0);
-    SYSCALL(SYS_SETNEXTTIMER, 1000,0,0);
+    //SYSCALL(SYS_SETNEXTTIMER, 1000,0,0);
 
     SYSCALL(SYS_INITMMU, 0,0,0);
+    //initMMU();
 
     tprint("System ready!\n");
 

@@ -40,7 +40,7 @@ HALT:
 
 .global SYSCALL
 SYSCALL:
-    svc #BIOS_SRV_SYS
+    svc #0//BIOS_SRV_SYS
     ret
 
 .global INTERNALSYSCALL
@@ -161,3 +161,15 @@ LDST_EL0:
     0x3c0 has the interrupt bit set, it has to be clear to enable ints*/
     msr     spsr_el1, x2
     eret
+
+
+
+.globl ENABLEMMU
+ENABLEMMU:
+    // finally, toggle some bits in system control register to enable page translation
+    isb
+    mrs x0, sctlr_el1
+    orr x0, x0, #1
+    msr sctlr_el1, x0
+    isb //permission fault, level 2 (esr_el1 = 0x8600000e)
+    ret

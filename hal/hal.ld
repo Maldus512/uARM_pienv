@@ -59,7 +59,7 @@ SECTIONS
 
 
     .heap : {
-        . = ALIGN(4);
+        . = ALIGN(4096);
         __heap_start__ = .;	/* Label in case we want address of heap section start */
         _end = .; 
         PROVIDE (end = .); /* Any memory from here is free to use so this is end of code and start of heap */

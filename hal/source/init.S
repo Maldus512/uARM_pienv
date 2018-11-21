@@ -94,10 +94,8 @@ hang:
 .global interrupt_vector
 interrupt_vector:
 /* Current EL with SP0 */
-    //vector syncronousException
-    //vector irq_handler
-    stub 0x00000000
-    stub 0x00000001
+    vector syncronousException
+    vector irq_handler
     stub 0x00000002
     stub 0x00000003
 
