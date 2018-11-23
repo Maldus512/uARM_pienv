@@ -16,10 +16,13 @@
 extern void main();
 #endif
 
+uint64_t ciao[256];
+
 void test() {
     tprint("printing stuff\n");
     //uint32_t x = SYSCALL(SYS_GETCURRENTEL, 0, 0, 0);
     while (1) {
+        ciao[24] = 512;
         tprint("alive : ");
         hexstring(getTODHI());
         hexstring(getTODLO());
@@ -36,7 +39,7 @@ void initSystem() {
     initGpio();
     initUart0();
     initRand();
-    //startUart0Int();
+    startUart0Int();
     tprint("************************************\n");
     tprint("*        MaldOS running...         *\n");
     tprint("************************************\n");
@@ -44,7 +47,6 @@ void initSystem() {
 
 void systemCheckup() {
     uint32_t serial[2];
-    int      i;
 
     hexstring(*((uint32_t *)SYSCALL(SYS_GETCURRENTEL,0,0,0)));
 
@@ -59,18 +61,13 @@ void systemCheckup() {
 
     SYSCALL(SYS_INITARMTIMER, 0, 0, 0);
     SYSCALL(SYS_ENABLEIRQ, 0, 0, 0);
-    //SYSCALL(SYS_SETNEXTTIMER, 1000,0,0);
-
-    SYSCALL(SYS_INITMMU, 0,0,0);
-    //initMMU();
+    SYSCALL(SYS_SETNEXTTIMER, 1000,0,0);
 
     tprint("System ready!\n");
-
 }
 
 
 void bios_main() {
-    init_page_table();
     initSystem();
     systemCheckup();
 

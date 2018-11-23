@@ -76,8 +76,9 @@ _start:
 .global hang
 hang:
     bl hexstring
+hang2:
     wfi
-    b hang
+    b hang2
 
 .macro	vector handler
     .balign 0x80

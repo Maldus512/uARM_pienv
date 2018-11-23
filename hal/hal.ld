@@ -60,6 +60,10 @@ SECTIONS
 
     .heap : {
         . = ALIGN(4096);
+        _page_table = .; 
+        PROVIDE (page_table = .); /* Any memory from here is free to use so this is end of code and start of heap */
+        . = . + 524288;
+        . = ALIGN(4096); /* Room for page table */
         __heap_start__ = .;	/* Label in case we want address of heap section start */
         _end = .; 
         PROVIDE (end = .); /* Any memory from here is free to use so this is end of code and start of heap */
