@@ -11,6 +11,7 @@
 #include "uARMtypes.h"
 #include "arch.h"
 #include "mmu.h"
+#include "sd.h"
 
 #ifdef APP
 extern void main();
@@ -65,7 +66,6 @@ void systemCheckup() {
 
     tprint("System ready!\n");
 }
-
 
 void bios_main() {
     initSystem();

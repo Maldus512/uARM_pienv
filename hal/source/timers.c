@@ -93,6 +93,10 @@ int is_timer_reached(uint8_t timer) {
     return (SYSTIMER->STATUS & (1 << timer));
 }
 
+void wait_msec(unsigned int n) {
+    delay_us(n*1000);
+}
+
 void delay_us(uint32_t delay) {
     /**
      * Wait N microsec (ARM CPU only)

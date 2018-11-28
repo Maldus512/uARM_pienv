@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include "hardwareprofile.h"
 #include "mmu.h"
+#include "uart.h"
 
 #define PAGESIZE    4096
 
