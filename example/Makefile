@@ -8,7 +8,7 @@ BUILD = build/
 SOURCE = source/
 # The directory in which header files are stored.
 INCLUDE = include/
-UARMINCLUDE = ../hal/include/ 
+HALINCLUDE = ../hal/include/ 
 # The name of the output file to generate.
 TARGET = app.elf
 
@@ -32,10 +32,10 @@ $(TARGET) : $(OBJECTS)
 	$(ARMGNU)-gcc -nostdlib -nostartfiles -Wl,-r -g $(OBJECTS) -o $(TARGET)
 
 $(BUILD)%.o: $(SOURCE)%.S
-	$(ARMGNU)-gcc $(CFLAGS) -c -I $(INCLUDE) -I $(UARMINCLUDE)  -g $< -o $@
+	$(ARMGNU)-gcc $(CFLAGS) -c -I $(INCLUDE) -I $(HALINCLUDE)  -g $< -o $@
 
 $(BUILD)%.o: $(SOURCE)%.c
-	$(ARMGNU)-gcc $(CFLAGS) -c -I $(INCLUDE) -I $(UARMINCLUDE)  -g $< -o $@
+	$(ARMGNU)-gcc $(CFLAGS) -c -I $(INCLUDE) -I $(HALINCLUDE)  -g $< -o $@
 
 # Rule to clean files.
 clean : 

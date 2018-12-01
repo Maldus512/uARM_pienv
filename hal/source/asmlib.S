@@ -1,4 +1,3 @@
-#include "bios_const.h"
 
 .globl PUT32
 PUT32:
@@ -18,37 +17,36 @@ GETEL:
 
 .globl GETSAVEDEL
 GETSAVEDEL:
+    mov x0, #0
     mrs x0, spsr_el1
-    and x0, x0, #7
+    and x0, x0, #0x7
     ret
 
-.globl GETSAVEDSTATE
-GETSAVEDSTATE:
+.globl GETSAVEDSTATUS
+GETSAVEDSTATUS:
     mrs x0,spsr_el1
+    ret
+
+.globl GETTTBR0
+GETTTBR0:
+    mrs x0, ttbr0_el1
     ret
 
 
 .global WAIT
 WAIT:
     wfi
-    //mov     pc, lr
     ret
 
 .global HALT
 HALT:
+    wfi
     b HALT
 
 .global SYSCALL
 SYSCALL:
     svc #0//BIOS_SRV_SYS
     ret
-
-.global INTERNALSYSCALL
-INTERNALSYSCALL:
-    //svc #BIOS_INT_SYS
-    svc #0x00ff
-    ret
-
 
 .global GETARMCLKFRQ
 GETARMCLKFRQ:
@@ -89,87 +87,134 @@ LDELR:
     msr     elr_el1, x0
     ret
 
-
 .globl PANIC
 PANIC:
     wfe
     b PANIC
 
 
-
-.globl DOWFI
-DOWFI:
-    wfi
-    //msr daifset,#2
-    ret
-
 .globl GETSP_EL0
 GETSP_EL0:
     mrs    x0, sp_el0
     ret
 
+.globl STST_EL0
+STST_EL0:
+    /* General purpose registers */
+    str     x0, [x0]
+    str     x1, [x0, #8]!
+    str     x2, [x0, #8]!
+    str     x3, [x0, #8]!
+    str     x4, [x0, #8]!
+    str     x5, [x0, #8]!
+    str     x6, [x0, #8]!
+    str     x7, [x0, #8]!
+    str     x8, [x0, #8]!
+    str     x9, [x0, #8]!
+    str     x10, [x0, #8]!
+    str     x11, [x0, #8]!
+    str     x12, [x0, #8]!
+    str     x13, [x0, #8]!
+    str     x14, [x0, #8]!
+    str     x15, [x0, #8]!
+    str     x16, [x0, #8]!
+    str     x17, [x0, #8]!
+    str     x18, [x0, #8]!
+    str     x19, [x0, #8]!
+    str     x20, [x0, #8]!
+    str     x21, [x0, #8]!
+    str     x22, [x0, #8]!
+    str     x23, [x0, #8]!
+    str     x24, [x0, #8]!
+    str     x25, [x0, #8]!
+    str     x26, [x0, #8]!
+    str     x27, [x0, #8]!
+    str     x28, [x0, #8]!
 
-.globl STST
-STST:
+    str     x29, [x0, #8]! /* Frame Pointer */
+    str     x30, [x0, #8]! /* Link Register */
+
     mov     x21, sp
-    adr     x20, .
-    //mrs     x21, sp_el0
-    str     w0, [x0]
-    str     w1, [x0, #4]!
-    str     w2, [x0, #4]!
-    str     w3, [x0, #4]!
-    str     w4, [x0, #4]!
-    str     w5, [x0, #4]!
-    str     w6, [x0, #4]!
-    str     w7, [x0, #4]!
-    str     w8, [x0, #4]!
-    str     w9, [x0, #4]!
-    str     w10, [x0, #4]!
-    str     w29, [x0, #4]! /* frame pointer */
-    str     w11, [x0, #4]! /* ip */
-    str     w21, [x0, #4]! /* stack pointer (not accessible) */
-    str     w30, [x0, #4]!  /* Link register */
-    str     w20, [x0, #4]!
-    //TODO: missing status and stuff
+    str     x21, [x0, #8]! /* Stack Pointer */
+
+    str     x30, [x0, #8]! /* Exception Link register */
+
+    mrs     x21, CurrentEL
+    cmp     x21, #0
+    bne     finish
+    ret
+
+finish:
+    mrs     x21, ttbr0_el1
+    str     x21, [x0, #8]! /* TTBR0 */
     ret
 
 .globl LDST_EL0
 LDST_EL0:
-    mov     x22, x0
-    ldr     w0, [x22]
-    ldr     w1, [x22, #4]!
-    ldr     w2, [x22, #4]!
-    ldr     w3, [x22, #4]!
-    ldr     w4, [x22, #4]!
-    ldr     w5, [x22, #4]!
-    ldr     w6, [x22, #4]!
-    ldr     w7, [x22, #4]!
-    ldr     w8, [x22, #4]!
-    ldr     w9, [x22, #4]!
-    ldr     w10, [x22, #4]!
-    ldr     w29, [x22, #4]! /* frame pointer */
-    ldr     w11, [x22, #4]!
-    ldr     w21, [x22, #4]! /* stack pointer (not accessible) */
-    ldr     w30, [x22, #4]!  /* Link register */
-    ldr     w20, [x22, #4]! /* program counter (to be loaded in the exception link register) */
-    msr     elr_el1, x20
-    msr     sp_el0, x21
-    /*change execution level to EL0? */
+    str     x0, [sp, #-8]
+    ldr     x2, [x0, #16]!
+    ldr     x3, [x0, #8]!
+    ldr     x4, [x0, #8]!
+    ldr     x5, [x0, #8]!
+    ldr     x6, [x0, #8]!
+    ldr     x7, [x0, #8]!
+    ldr     x8, [x0, #8]!
+    ldr     x9, [x0, #8]!
+    ldr     x10, [x0, #8]!
+    ldr     x11, [x0, #8]!
+    ldr     x12, [x0, #8]!
+    ldr     x13, [x0, #8]!
+    ldr     x14, [x0, #8]!
+    ldr     x15, [x0, #8]!
+    ldr     x16, [x0, #8]!
+    ldr     x17, [x0, #8]!
+    ldr     x18, [x0, #8]!
+    ldr     x19, [x0, #8]!
+    ldr     x20, [x0, #8]!
+    ldr     x21, [x0, #8]!
+    ldr     x22, [x0, #8]!
+    ldr     x23, [x0, #8]!
+    ldr     x24, [x0, #8]!
+    ldr     x25, [x0, #8]!
+    ldr     x26, [x0, #8]!
+    ldr     x27, [x0, #8]!
+    ldr     x28, [x0, #8]!
+
+    ldr     x29, [x0, #8]! /* frame pointer */
+    ldr     x30, [x0, #8]! /* Link Register */
+
+    ldr     x1, [x0, #8]!  /* Stack Pointer */
+    str     x1, [sp, #-16]
+    //mov     sp, x1
+    //msr     sp_el0, x1
+
+    ldr     x1, [x0, #8]!
+    msr     elr_el1, x1   /* Exception Link Register */
+
+    ldr     x1, [x0, #8]!
+    msr     ttbr0_el1, x1 
+
+    ldr     x1, [x0, #8]!
+    msr     spsr_el1, x1    /* Status Register */
+
+    ldr     x0, [sp, #-8]  /* Recover x0 and x1 */
+
+    and     x1, x1, #7
+    cmp     x1, #0
+    bne     el1_sp
+    ldr     x1, [sp, #-16]
+    msr     sp_el0, x1      /* Recover stack pointer */
+    b       end
+el1_sp:
+    ldr     x1, [sp, #-16]
+    mov     sp, x1          /* Recover stack pointer */
+
+    ldr     x1, [x0, #8]
+    ldr     x0, [x0]
+end:
+    /*change execution level to EL0? 
     mov     x2, #0x340
-    /*
+
     mov     x2, #0x3c0
     0x3c0 has the interrupt bit set, it has to be clear to enable ints*/
-    msr     spsr_el1, x2
     eret
-
-
-
-.globl ENABLEMMU
-ENABLEMMU:
-    // finally, toggle some bits in system control register to enable page translation
-    isb
-    mrs x0, sctlr_el1
-    orr x0, x0, #1
-    msr sctlr_el1, x0
-    isb //permission fault, level 2 (esr_el1 = 0x8600000e)
-    ret

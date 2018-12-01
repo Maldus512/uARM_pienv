@@ -1,5 +1,4 @@
-#include "libuarmv2.h"
-#include "uARMconst.h"
+#include "system.h"
 #include "bios_const.h"
 
 .SECTION .init
@@ -61,11 +60,11 @@ _start:
     MSR    VBAR_EL1, X1
 
     /*change execution level to EL0? */
-    mov     x2, #0x3c0
+    /*mov     x2, #0x3c0
     msr     spsr_el1, x2
     adr     x2, 3f
     msr     elr_el1, x2
-    eret
+    eret*/
 
     // jump to C code, should not return
 3:  
@@ -167,6 +166,49 @@ swi_handler:
     no nested interrupts */
 irq_handler:
     msr   daifset, #2
+    /* save state in oldarea */
+    stp   x27, x28, [sp, #-16]
+    mov   x28, #INTERRUPT_OLDAREA
+    stp   x0, x1, [x28]
+    stp   x2, x3, [x28, #16]!
+    stp   x4, x5, [x28, #16]!
+    stp   x6, x7, [x28, #16]!
+    stp   x8, x9, [x28, #16]!
+    stp   x10, x11, [x28, #16]!
+    stp   x12, x13, [x28, #16]!
+    stp   x14, x15, [x28, #16]!
+    stp   x16, x17, [x28, #16]!
+    stp   x18, x19, [x28, #16]!
+    stp   x20, x21, [x28, #16]!
+    stp   x22, x23, [x28, #16]!
+    stp   x24, x25, [x28, #16]!
+    stp   x26, x27, [x28, #16]!
+
+    ldp   x26, x27, [sp, #-16]
+    stp   x27, x29, [x28, #16]! // Save x28 properly
+
+    mrs   x27, spsr_el1
+    and   x27, x27, #7
+    cmp   x27, #0
+    bne   savesp_el1
+    mrs   x27, sp_el0
+    b     finish
+savesp_el1:
+    mov   x27, sp
+finish:
+    stp   x30, x27, [x28, #16]!
+    
+    mrs   x27, elr_el1
+    str   x27, [x28, #16]! /* Note: the 16 immediate value refers to the previously saved pair */
+
+    mrs   x27, ttbr0_el1
+    str   x27, [x28, #8]!
+
+    mrs   x27, spsr_el1
+    str   x27, [x28, #8]!
+
+    ldp   x27, x28, [sp, #-16]
+
     /* save register values on the stack */
     stp   x0,  x1,  [sp, #-16]!
     stp   x2,  x3,  [sp, #-16]!
@@ -179,29 +221,7 @@ irq_handler:
     stp   x16, x17, [sp, #-16]!
     stp   x18, x19, [sp, #-16]!
     stp   x29, x30, [sp, #-16]!
-
-    /* Save the old area uMPS way */
-    mov     x0, #INT_OLDAREA
-    mrs     x21, sp_el0  /* Stack pointer to be restored */
-    mrs     x20, elr_el1 /* return link register, aka old program counter */
-    str     w0, [x0]
-    str     w1, [x0, #4]!
-    str     w2, [x0, #4]!
-    str     w3, [x0, #4]!
-    str     w4, [x0, #4]!
-    str     w5, [x0, #4]!
-    str     w6, [x0, #4]!
-    str     w7, [x0, #4]!
-    str     w8, [x0, #4]!
-    str     w9, [x0, #4]!
-    str     w10, [x0, #4]!
-    str     w29, [x0, #4]! /* frame pointer */
-    str     w11, [x0, #4]! /* ip */
-    str     w21, [x0, #4]! /* stack pointer (not accessible) */
-    str     w30, [x0, #4]!  /* Link register */
-    str     w20, [x0, #4]!  /* program counter */
-    //TODO: missing status and stuff
-
+    
     // call c handler.
     bl    c_irq_handler
 

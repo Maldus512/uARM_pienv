@@ -2,7 +2,7 @@
 #include "interrupts.h"
 #include "asmlib.h"
 #include "libuarm.h"
-#include "libuarmv2.h"
+#include "system.h"
 
 
 uint32_t armTimerFrequency = 0;

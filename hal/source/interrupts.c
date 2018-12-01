@@ -1,35 +1,41 @@
+#include "system.h"
+#include "bios_const.h"
+#include "libuarm.h"
 #include "interrupts.h"
 #include "gpio.h"
 #include "mailbox.h"
 #include "timers.h"
 #include "uart.h"
-#include "bios_const.h"
 #include "asmlib.h"
-#include "uARMtypes.h"
-#include "libuarm.h"
-#include "libuarmv2.h"
 #include "mmu.h"
 
-uint64_t millisecondsSinceStart  = 0;
-uint64_t timeLeftToNextInterrupt = 0;
+uint64_t emulated_timer  = 0;
+uint64_t next_timer = 0;
 
+void setNextTimer(uint64_t milliseconds) {
+    next_timer = emulated_timer+milliseconds*10;
+}
 
 uint32_t c_swi_handler(uint32_t code, uint32_t *registers) {
     state_t *state;
     switch (code) {
         case SYS_GETCURRENTEL:
             return GETSAVEDEL();
+        case SYS_GETCURRENTSTATUS:
+            return GETSAVEDSTATUS();
+        case SYS_GETTTBR0:
+            return GETTTBR0();
         case SYS_GETARMCLKFRQ:
             return GETARMCLKFRQ();
         case SYS_GETARMCOUNTER:
             return GETARMCOUNTER();
         case SYS_ENABLEIRQ:
             enable_irq_el0();
-            tprint("interrupts enabled!\n");
+            uart0_puts("interrupts enabled!\n");
             return 0;
         case SYS_INITARMTIMER:
             initArmTimer();
-            tprint("arm timer enabled!\n");
+            uart0_puts("arm timer enabled!\n");
             return 0;
         case SYS_SETNEXTTIMER:
             return setTimer((long unsigned int)registers);
@@ -44,9 +50,9 @@ uint32_t c_swi_handler(uint32_t code, uint32_t *registers) {
             return 0;
 
         default:
-            uart0_puts("ciao\n");
+            uart0_puts("Unrecognized code\n");
             hexstring(code);
-            hexstring(GETSAVEDSTATE());
+            hexstring(GETSAVEDSTATUS());
             break;
     }
     // LDELR((uint64_t)test);
@@ -54,12 +60,15 @@ uint32_t c_swi_handler(uint32_t code, uint32_t *registers) {
 }
 
 void c_irq_handler() {
-    static uint8_t  f_led = 0;
-    uint32_t        tmp;
-    static uint64_t lastBlink = 0;
-    __attribute__((unused)) state_t *       state;
-    uint64_t        timer;
-    char            c;
+    static uint8_t                   f_led = 0;
+    uint32_t                         tmp;
+    static uint64_t                  lastBlink = 0;
+    __attribute__((unused)) state_t *state;
+    uint64_t                         timer, handler_present;
+    char                             c;
+    void (*interrupt_handler)();
+
+    handler_present = *((uint64_t *)INTERRUPT_HANDLER);
 
     timer = getMillisecondsSinceStart();
 
@@ -69,53 +78,32 @@ void c_irq_handler() {
         lastBlink = timer;
     }
 
-    // check interrupt source
-    tmp = *((volatile uint32_t *)CORE0_IRQ_SOURCE);
+    if (handler_present != 0) {
+        interrupt_handler = (void (*)(void *)) handler_present;
+        interrupt_handler();
+    } else {
+        // check interrupt source
+        tmp = *((volatile uint32_t *)CORE0_IRQ_SOURCE);
 
-    if (tmp & 0x08) {
-        //disableCounter();
-#ifdef APP
-        // TODO: call the appropriate handler
-        state = (state_t *)INT_NEWAREA;
-        enable_irq();
-        LDST(state);
-#else
-        setTimer(1000);
-        uart0_puts("int\n");
-#endif
-    }
+        if (tmp & 0x08) {
+            setTimer(1000);
+            uart0_puts("int\n");
+        }
 
-    if (tmp & (1 << 8)) {
-        // apparently not needed for real hw
-        //        if (IRQ_CONTROLLER->IRQ_basic_pending & (1 << 9)) {
-        if (IRQ_CONTROLLER->IRQ_pending_2 & (1 << 25)) {
-            if (UART0->MASKED_IRQ & (1 << 4)) {
-                c = (unsigned char)UART0->DATA;     // read for clear tx interrupt.
-                uart0_putc(c);
+        if (tmp & (1 << 8)) {
+            // apparently not needed for real hw
+            //        if (IRQ_CONTROLLER->IRQ_basic_pending & (1 << 9)) {
+            if (IRQ_CONTROLLER->IRQ_pending_2 & (1 << 25)) {
+                if (UART0->MASKED_IRQ & (1 << 4)) {
+                    c = (unsigned char)UART0->DATA;     // read for clear tx interrupt.
+                    uart0_putc(c);
+                }
+                if (UART0->MASKED_IRQ & (1 << 5)) {
+                    uart0_puts("tx?\n");
+                }
+                //         }
             }
-            if (UART0->MASKED_IRQ & (1 << 5)) {
-                uart0_puts("tx?\n");
-            }
-            //         }
         }
     }
     return;
-}
-
-
-
-// TODO: it doesn't work on real hardware, only on qemu
-void startUart0Int() {
-    // enable UART RX interrupt.
-    UART0->IRQ_MASK = 1 << 4;
-    // enable UART TX interrupt.
-    //    UART0->IRQ_MASK |= 1 << 5;
-
-    // UART interrupt routing.
-    IRQ_CONTROLLER->Enable_IRQs_2 |= 1 << 25;
-
-    // IRQ routeing to CORE0.
-    *GPU_INTERRUPTS_ROUTING = 0x00;
-
-    // enable_irq();
 }

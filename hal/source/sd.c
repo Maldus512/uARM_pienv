@@ -26,6 +26,7 @@
 #include "gpio.h"
 #include "uart.h"
 #include "sd.h"
+#include "timers.h"
 
 #define EMMC_ARG2           ((volatile unsigned int*)(MMIO_BASE+0x00300000))
 #define EMMC_BLKSIZECNT     ((volatile unsigned int*)(MMIO_BASE+0x00300004))

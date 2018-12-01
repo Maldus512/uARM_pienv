@@ -18,8 +18,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-//#include "arch.h"
-
 #ifndef BIOS_CONST_H
 #define BIOS_CONST_H
 
@@ -30,16 +28,21 @@
 #define BIOS_SRV_LDST 3
 #define BIOS_SRV_WAIT 4
 
-#define BIOS_INT_SYS   10
+#define BIOS_INT_SYS 10
 
 #define BPEXCEPTION_CODE 7 /* see uARMconst.h */
 #define SYSEXCEPTION_CODE 4
 
 #define PSR_OFFSET 64
-#define TIMER_INFO 0x2E4      /* see arch.h */
+#define TIMER_INFO 0x2E4 /* see arch.h */
 #define RAMSIZE_INFO 0x2D4
 #define RAMBASE_INFO 0x2D0
 #define TOD_HI_INFO 0x2DC
 #define TOD_LO_INFO 0x2E0
 
-#endif // BIOS_CONST_H
+#define INTERRUPT_OLDAREA     0x70000
+
+#define INTERRUPT_HANDLER 0x7FFF0
+#define SYNCHRONOUS_HANDLER 0x7FFF8
+
+#endif     // BIOS_CONST_H

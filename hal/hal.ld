@@ -41,18 +41,18 @@ SECTIONS
     .stack : {
         . = ALIGN(16);  /* Stack must always be aligned to 8 byte boundary AAPCS64 call standard */
         __stack_start__ = .;
-        . = . + 16384;    /* EL0 stack size */
+        . = . + 65536;    /* EL0 stack size */
         . = ALIGN(16);
         __EL0_stack = .;
+        PROVIDE(__EL0_stack = .);
         . = . + 16384;    /* EL1 stack size */
         . = ALIGN(16);
         __EL1_stack = .;
+        PROVIDE(__EL1_stack = .);
         . = . + 4096;  /* EL2 stack size (start-up) */
         . = ALIGN(16);
         __EL2_stack = .;
         . = . + 4096;
-        . = ALIGN(16);
-        PROVIDE(__uMPS_stack = .); 
         . = ALIGN(16);
         __stack_end__ = .;    
     } > RAM

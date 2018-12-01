@@ -21,6 +21,12 @@
 #ifndef UARM_LIBUARM_H
 #define UARM_LIBUARM_H
 
+#include <stdint.h>
+
+#define     TIMER_INT_LINE  0x0001
+#define     UART0_INT_LINE  0x0002
+#define     UART1_INT_LINE  0x0003
+
 /* prints a string *s 0-termianted on terminal 0 */
 void tprint(char *s);
 
@@ -74,4 +80,14 @@ void TLBR();
 void TLBP();
 void TLBCLR();
 
-#endif //UARM_LIBURAM_H
+typedef struct _state_t {
+    uint64_t general_purpose_registers[29];
+    uint64_t frame_pointer;
+    uint64_t link_register;
+    uint64_t stack_pointer;
+    uint64_t exception_link_register;
+    uint64_t TTBR0;
+    uint32_t status_register;
+} state_t;
+
+#endif     // UARM_LIBURAM_H

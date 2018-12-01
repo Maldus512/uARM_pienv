@@ -98,15 +98,16 @@ struct ARMTIMER_REG {
 
 #define CORE0_TIMER_IRQCNTL 0x40000040
 
-void initTimers();
-void delay_us(uint32_t delay);
-void rawDelay();
-void initArmTimer();
-uint64_t readCounterCount(void);
-uint32_t readCounterValue(void);
-void resetTimerCounter();
-void disableCounter(void);
+void         initTimers();
+void         delay_us(uint32_t delay);
+void         rawDelay();
+void         initArmTimer();
+uint64_t     readCounterCount(void);
+uint32_t     readCounterValue(void);
+void         resetTimerCounter();
+void         disableCounter(void);
 unsigned int setTimer(unsigned int timer);
-uint64_t getMillisecondsSinceStart();
+uint64_t     getMillisecondsSinceStart();
+void         wait_msec(unsigned int t);
 
 #endif
