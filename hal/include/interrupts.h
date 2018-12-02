@@ -4,7 +4,7 @@
 #include "hardwareprofile.h"
 
 
-#define INTERRUPT_CONTROLLER_BASE   ( IO_BASE + 0xB200 )
+#define INTERRUPT_CONTROLLER_BASE (IO_BASE + 0xB200)
 
 struct IRQ_CONTROLLER_REG {
     volatile uint32_t IRQ_basic_pending;
@@ -22,10 +22,10 @@ struct IRQ_CONTROLLER_REG {
 #define GPU_INTERRUPTS_ROUTING ((volatile uint32_t *)(0x4000000C))
 #define CORE0_IRQ_SOURCE ((volatile uint32_t *)(0x40000060))
 
-#define IRQ_CONTROLLER ((struct IRQ_CONTROLLER_REG*) INTERRUPT_CONTROLLER_BASE)
+#define IRQ_CONTROLLER ((struct IRQ_CONTROLLER_REG *)INTERRUPT_CONTROLLER_BASE)
 
-void enable_irq();
-void enable_irq_el0();
+void         enable_irq();
+void         enable_irq_el0();
 unsigned int setNextTimerInterrupt(unsigned int timer);
 
 #endif

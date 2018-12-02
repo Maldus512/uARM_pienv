@@ -45,7 +45,7 @@ HALT:
 
 .global SYSCALL
 SYSCALL:
-    svc #0//BIOS_SRV_SYS
+    svc #0
     ret
 
 .global GETARMCLKFRQ

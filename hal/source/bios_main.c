@@ -22,8 +22,8 @@ uint64_t ciao[256];
 extern int __uMPS_stack;
 
 void initSystem() {
-    *((uint64_t*)INTERRUPT_HANDLER) = 0;
-    *((uint64_t*)SYNCHRONOUS_HANDLER) = 0;
+    *((uint64_t *)INTERRUPT_HANDLER)   = 0;
+    *((uint64_t *)SYNCHRONOUS_HANDLER) = 0;
     initGpio();
     initUart0();
     initRand();
@@ -32,14 +32,13 @@ void initSystem() {
     uart0_puts("************************************\n");
 
     SYSCALL(SYS_INITARMTIMER, 0, 0, 0);
-    SYSCALL(SYS_ENABLEIRQ, 0, 0, 0);
-    SYSCALL(SYS_SETNEXTTIMER, 1000,0,0);
+    SYSCALL(SYS_SETNEXTTIMER, 1, 0, 0);
 }
 
 void systemCheckup() {
     uint32_t serial[2];
 
-    hexstring(*((uint32_t *)SYSCALL(SYS_GETCURRENTEL,0,0,0)));
+    hexstring(*((uint32_t *)SYSCALL(SYS_GETCURRENTEL, 0, 0, 0)));
 
     uart0_puts("Turning on LED RUN and blink...\n");
     setGpio(LED_RUN);

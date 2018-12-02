@@ -23,9 +23,9 @@
 
 #include <stdint.h>
 
-#define     TIMER_INT_LINE  0x0001
-#define     UART0_INT_LINE  0x0002
-#define     UART1_INT_LINE  0x0003
+#define TIMER_INT_LINE 0x0001
+#define UART0_INT_LINE 0x0002
+#define UART1_INT_LINE 0x0003
 
 /* prints a string *s 0-termianted on terminal 0 */
 void tprint(char *s);

@@ -39,7 +39,7 @@ void writeTimerValue(uint32_t val) {
 }
 
 unsigned int setTimer(unsigned int timer) {
-    writeTimerValue((armTimerFrequency/1000)*timer);
+    writeTimerValue((armTimerFrequency / 1000) * timer);
     enableCounter();
     return 0;
 }
@@ -51,16 +51,16 @@ void resetTimerCounter() {
 
 uint64_t getMillisecondsSinceStart() {
     uint64_t timerCount = readCounterCount();
-    armTimerFrequency = GETARMCLKFRQ();
-    return timerCount/(armTimerFrequency/1000);
+    armTimerFrequency   = GETARMCLKFRQ();
+    return timerCount / (armTimerFrequency / 1000);
 }
 
 void initArmTimer() {
     armTimerFrequency = GETARMCLKFRQ();
-    //resetTimerCounter();
+    // resetTimerCounter();
     /* routing core0 counter to core0 irq */
-    *(volatile uint32_t *)CORE0_TIMER_IRQCNTL = 0x08; 
-    //enableCounter();
+    *(volatile uint32_t *)CORE0_TIMER_IRQCNTL = 0x08;
+    // enableCounter();
 }
 
 void initTimers() {
@@ -93,9 +93,7 @@ int is_timer_reached(uint8_t timer) {
     return (SYSTIMER->STATUS & (1 << timer));
 }
 
-void wait_msec(unsigned int n) {
-    delay_us(n*1000);
-}
+void wait_msec(unsigned int n) { delay_us(n * 1000); }
 
 void delay_us(uint32_t delay) {
     /**
@@ -103,11 +101,11 @@ void delay_us(uint32_t delay) {
      */
     unsigned long f, t, r;
     // get the current counter frequency
-    f = SYSCALL(SYS_GETARMCLKFRQ, 0, 0, 0);
-    t = SYSCALL(SYS_GETARMCOUNTER, 0, 0, 0);
+    f = GETARMCLKFRQ();
+    t = GETARMCOUNTER();
     t += ((f / 1000) * delay) / 1000;
     do {
-        r = SYSCALL(SYS_GETARMCOUNTER, 0, 0, 0);
+        r = GETARMCOUNTER();
     } while (r < t);
 }
 
