@@ -1,7 +1,7 @@
 #ifndef __MAILBOX_H__
 #define __MAILBOX_H__
 
-#include "hardwareprofile.h"
+#include "arch.h"
 
 /* Mailbox 0 base address (Read by ARM) */
 #define MBOX0_BASE (IO_BASE + 0xB880)
@@ -57,6 +57,14 @@ struct msg_tag {
 };
 
 struct mailbox_msg {
+    volatile uint32_t msg_size;         // simply, sizeof(struct vc_msg)
+    volatile uint32_t request_code;     // holds various information like the success and number of bytes returned
+                                        // (refer to mailboxes wiki)
+    struct msg_tag    tag;              // the tag structure above to make
+    volatile uint32_t end_tag;          // an end identifier, should be set to NULL
+} __attribute__((aligned(16)));
+
+struct framebuffer_mailbox_msg {
     volatile uint32_t msg_size;         // simply, sizeof(struct vc_msg)
     volatile uint32_t request_code;     // holds various information like the success and number of bytes returned
                                         // (refer to mailboxes wiki)

@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "hardwareprofile.h"
+#include "arch.h"
 #include "mmu.h"
 #include "uart.h"
 

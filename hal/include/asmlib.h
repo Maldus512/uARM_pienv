@@ -1,7 +1,7 @@
 #ifndef __ASMLIB_H__
 #define __ASMLIB_H__
 
-#include "hardwareprofile.h"
+#include "arch.h"
 
 uint32_t GETEL();
 uint32_t GETSAVEDSTATUS();

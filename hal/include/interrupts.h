@@ -1,7 +1,8 @@
 #ifndef __INTERRUPTS_H__
 #define __INTERRUPTS_H__
 
-#include "hardwareprofile.h"
+#include <stdint.h>
+#include "arch.h"
 
 
 #define INTERRUPT_CONTROLLER_BASE (IO_BASE + 0xB200)

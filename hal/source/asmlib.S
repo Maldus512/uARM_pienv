@@ -35,6 +35,7 @@ GETTTBR0:
 
 .global WAIT
 WAIT:
+    dsb ish
     wfi
     ret
 

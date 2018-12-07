@@ -59,6 +59,10 @@ _start:
     LDR    X1, = interrupt_vector
     MSR    VBAR_EL1, X1
 
+    mrs    x1, sctlr_el1
+    and    w1, w1, #0xFFFEFFFF
+    //msr    sctlr_el1, x1
+
     /*change execution level to EL0? */
     /*mov     x2, #0x3c0
     msr     spsr_el1, x2

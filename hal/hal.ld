@@ -12,7 +12,7 @@ SECTIONS
     __text_start = .;
     .text : {
         KEEP(*(.init))
-        *(.text .text.*)
+        *(.text .text.* .gnu.linkonce.t*)
     }  > RAM
     __text_end = .;
 

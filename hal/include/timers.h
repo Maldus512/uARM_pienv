@@ -1,7 +1,8 @@
 #ifndef __TIMERS_H__
 #define __TIMERS_H__
 
-#include "hardwareprofile.h"
+#include <stdint.h>
+#include "arch.h"
 
 #define SYSTIMER_BASE (IO_BASE + 0x3000)
 

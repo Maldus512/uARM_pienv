@@ -1,4 +1,4 @@
-#include "hardwareprofile.h"
+#include "arch.h"
 #include "mailbox.h"
 
 volatile unsigned int __attribute__((aligned(16))) mbox[36];
@@ -90,17 +90,13 @@ void setUart0Baud() {
 int mbox_call(unsigned char ch) {
     unsigned int r = (((unsigned int)((unsigned long)&mbox) & ~0xF) | (ch & 0xF));
     /* wait until we can write to the mailbox */
-    do {
-        asm volatile("nop");
-    } while (MAILBOX0->status & MBOX_FULL);
+    wait_mailbox_write(MAILBOX0);
     /* write the address of our message to the mailbox with channel identifier */
     MAILBOX0->write = r;
     /* now wait for the response */
     while (1) {
         /* is there a response? */
-        do {
-            asm volatile("nop");
-        } while (MAILBOX0->status & MBOX_EMPTY);
+        wait_mailbox_read(MAILBOX0);
         /* is it a response to our message? */
         if (r == MAILBOX0->read)
             /* is it a valid successful response? */

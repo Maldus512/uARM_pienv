@@ -27,7 +27,8 @@ LINKER = hal.ld
 
 # The names of all object files that must be generated. Deduced from the 
 # assembly code files in source.
-OBJECTS := $(patsubst $(SOURCE)%.c,$(BUILD)%.o,$(wildcard $(SOURCE)*.c))
+OBJECTS := $(BUILD)font.o
+OBJECTS += $(patsubst $(SOURCE)%.c,$(BUILD)%.o,$(wildcard $(SOURCE)*.c))
 OBJECTS += $(patsubst $(SOURCE)%.S,$(BUILD)%.o,$(wildcard $(SOURCE)*.S))
 HEADERS := $(wildcard $(INCLUDE)*.h)
 
@@ -51,6 +52,9 @@ $(TARGET) : $(BUILD)output.elf
 $(BUILD)output.elf : $(OBJECTS) $(LINKER) $(APP)
 	$(ARMGNU)-ld -nostdlib -nostartfiles $(OBJECTS) $(APP) -Map $(MAP) -T $(LINKER) -o $(BUILD)output.elf
 
+$(BUILD)font.o: font.psf
+	$(ARMGNU)-ld -r -b binary -o $(BUILD)font.o font.psf
+
 $(BUILD)%.o: $(SOURCE)%.S
 	$(ARMGNU)-gcc $(CFLAGS) -c -I $(INCLUDE) -g $< -o $@
 
@@ -59,10 +63,10 @@ $(BUILD)%.o: $(SOURCE)%.c $(HEADERS)
 
 run: all
 # Terminate ographic with ctrl-A + X
-	cpulimit -l 50 qemu-system-aarch64 -M raspi3 -kernel $(TARGET) -nographic
+	qemu-system-aarch64 -M raspi3 -kernel $(TARGET) -nographic
 
 run2: all
-	qemu-system-aarch64 -M raspi3 -kernel $(TARGET) -serial null -serial stdio
+	cpulimit -l 50 qemu-system-aarch64 -M raspi3 -kernel $(TARGET)
 
 debug: all
 	qemu-system-aarch64 -M raspi3 -kernel $(TARGET) -serial stdio -s -S

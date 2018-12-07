@@ -1,7 +1,8 @@
 #ifndef __UART_H__
 #define __UART_H__
 
-#include "hardwareprofile.h"
+#include <stdint.h>
+#include "arch.h"
 
 #define MU_RX_BUFFER_SIZE 1024
 

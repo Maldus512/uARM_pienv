@@ -1,7 +1,8 @@
 #ifndef __GPIO_H__
 #define __GPIO_H__
 
-#include "hardwareprofile.h"
+#include <stdint.h>
+#include "arch.h"
 
 
 struct GPIOREG {

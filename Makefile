@@ -19,6 +19,9 @@ $(hal): $(app)
 run: $(targets)
 	$(MAKE) --directory=$(hal) run APP=app.elf
 
+run2: $(targets)
+	$(MAKE) --directory=$(hal) run2 APP=app.elf
+
 debug: $(targets)
 	$(MAKE) --directory=$(hal) debug APP=app.elf
 

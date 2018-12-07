@@ -1,16 +1,16 @@
-#include "hardwareprofile.h"
+#include "arch.h"
 #include "bios_const.h"
 #include "uart.h"
 #include "gpio.h"
 #include "mailbox.h"
 #include "asmlib.h"
-#include "rand.h"
 #include "timers.h"
 #include "libuarm.h"
 #include "interrupts.h"
 #include "mmu.h"
 #include "sd.h"
 #include "system.h"
+#include "emulated_devices.h"
 
 #ifdef APP
 extern void main();
@@ -22,14 +22,23 @@ uint64_t ciao[256];
 extern int __uMPS_stack;
 
 void initSystem() {
+    termreg_t *terminal;
+    int i = 0;
     *((uint64_t *)INTERRUPT_HANDLER)   = 0;
     *((uint64_t *)SYNCHRONOUS_HANDLER) = 0;
+
+    for (i = 0; i < MAX_TERMINALS; i++) {
+        terminal = (termreg_t*) DEV_REG_ADDR(i, 0);
+        terminal->transm_status = DEVICE_READY;
+        terminal->recv_status = DEVICE_READY;
+    }
+
     initGpio();
     initUart0();
-    initRand();
-    uart0_puts("************************************\n");
+   /* uart0_puts("************************************\n");
     uart0_puts("*        MaldOS running...         *\n");
     uart0_puts("************************************\n");
+    */
 
     SYSCALL(SYS_INITARMTIMER, 0, 0, 0);
     SYSCALL(SYS_SETNEXTTIMER, 1, 0, 0);
@@ -56,6 +65,8 @@ void systemCheckup() {
 void bios_main() {
     initSystem();
 
+    lfb_init();
+    lfb_print(10, 10, "MaldOS start");
 #ifdef APP
     main();
 #endif
