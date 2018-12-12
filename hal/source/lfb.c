@@ -25,6 +25,7 @@
 
 #include "uart.h"
 #include "mailbox.h"
+#include "lfb.h"
 
 /* PC Screen Font as used by Linux Console */
 typedef struct {
@@ -43,6 +44,37 @@ extern volatile unsigned char _binary_font_psf_start;
 unsigned int   width, height, pitch;
 unsigned char *lfb;
 
+void horizontal_line(int y) {
+    int offs = (y * pitch);
+    int i;
+    for (i = 0; i < width; i++) {
+        *((unsigned int *)(lfb + offs)) = 0xFFFFFF;
+        offs += 4;
+    }
+}
+
+void vertical_line(int x) {
+    int offs = x * 4;
+    int i;
+
+    for (i = 0; i < height; i++) {
+        *((unsigned int *)(lfb + offs)) = 0xFFFFFF;
+        offs += pitch;
+    }
+}
+
+void terminal_grid() {
+    horizontal_line(height / 2);
+    vertical_line(width / 2);
+}
+
+void screen_resolution(int *w, int *h, int *p) {
+    *w = width;
+    *h = height;
+    *p = pitch;
+}
+
+
 /**
  * Set screen resolution to 1024x768
  */
@@ -53,14 +85,14 @@ void lfb_init() {
     mbox[2] = 0x48003;     // set phy wh
     mbox[3] = 8;
     mbox[4] = 8;
-    mbox[5] = 1024;     // FrameBufferInfo.width
-    mbox[6] = 768;      // FrameBufferInfo.height
+    mbox[5] = REQUESTED_WIDTH;     // FrameBufferInfo.width
+    mbox[6] = REQUESTED_HEIGHT;      // FrameBufferInfo.height
 
     mbox[7]  = 0x48004;     // set virt wh
     mbox[8]  = 8;
     mbox[9]  = 8;
-    mbox[10] = 1024;     // FrameBufferInfo.virtual_width
-    mbox[11] = 768;      // FrameBufferInfo.virtual_height
+    mbox[10] = REQUESTED_WIDTH;     // FrameBufferInfo.virtual_width
+    mbox[11] = REQUESTED_HEIGHT;      // FrameBufferInfo.virtual_height
 
     mbox[12] = 0x48009;     // set virt offset
     mbox[13] = 8;
@@ -95,8 +127,9 @@ void lfb_init() {
         mbox[28] &= 0x3FFFFFFF;
         width  = mbox[5];
         height = mbox[6];
-        pitch  = mbox[33];
+        pitch  = mbox[33];     // 5120
         lfb    = (void *)((unsigned long)mbox[28]);
+        terminal_grid();
     } else {
         uart0_puts("Unable to set screen resolution to 1024x768x32\n");
     }

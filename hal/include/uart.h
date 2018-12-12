@@ -23,6 +23,8 @@
 #define MU_CNTL (*(volatile uint32_t *)(UART1_BASE + 0x60))     // extra control register
 #define MU_BAUD (*(volatile uint32_t *)(UART1_BASE + 0x68))     // BAUDRATE register
 
+#define uart_puts(s)    uart0_puts(s)
+#define uart_send(s)    uart0_putc(s)
 
 struct UART0REG {
     volatile uint32_t DATA;     // DR
@@ -54,6 +56,7 @@ void initUart0();
 void uart0_puts(char *s);
 void uart0_putc(char c);
 char uart0_getc();
+void uart_hex(unsigned int d);
 void hexstrings(unsigned int d);
 void hexstring(unsigned int d);
 void startUart0Int();

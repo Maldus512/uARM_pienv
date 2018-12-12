@@ -19,7 +19,10 @@
 #define TRANSMIT_CHAR          2
 #define RECEIVE_CHAR            2
 
+void lfb_init();
 void lfb_send(int x, int y, char c);
+void lfb_print(int x, int y, char *s);
+void terminal_send(int i, char c);
 
 typedef struct _terminal_device {
     uint32_t recv_status;

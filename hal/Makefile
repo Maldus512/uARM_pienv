@@ -63,13 +63,13 @@ $(BUILD)%.o: $(SOURCE)%.c $(HEADERS)
 
 run: all
 # Terminate ographic with ctrl-A + X
-	qemu-system-aarch64 -M raspi3 -kernel $(TARGET) -nographic
+	cpulimit -l 50 qemu-system-aarch64 -M raspi3 -kernel $(TARGET) -drive file=test.dd,if=sd,format=raw -nographic
 
 run2: all
-	cpulimit -l 50 qemu-system-aarch64 -M raspi3 -kernel $(TARGET)
+	cpulimit -l 50 qemu-system-aarch64 -M raspi3 -kernel $(TARGET) -drive file=test.dd,if=sd,format=raw -serial stdio
 
 debug: all
-	qemu-system-aarch64 -M raspi3 -kernel $(TARGET) -serial stdio -s -S
+	qemu-system-aarch64 -M raspi3 -kernel $(TARGET) -drive file=test.dd,if=sd,format=raw -serial stdio -s -S
 
 # Rule to clean files.
 clean : 

@@ -6,6 +6,7 @@
 #include "libuarm.h"
 #include "arch.h"
 #include "emulated_devices.h"
+#include "interrupts.h"
 
 #define INTERRUPT_HANDLER 0x7FFF0
 
@@ -44,11 +45,12 @@ void test1() {
     uart0_puts("livello 1: ");
     hexstring(level);
     while (1) {
-        contatore         = (contatore + 1) % 70;
+        contatore         = (contatore + 1) % 100;
         numeri[contatore] = contatore;
-        term_puts("test1 vivo\n");
+        uart0_puts("test1 vivo: ");
+        term_puts("test1 vivoaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
         hexstring(numeri[contatore]);
-        delay_us(1000 * 1000);
+        delay_us(1000* 1000);
     }
 }
 
@@ -62,6 +64,7 @@ void test2() {
         contatore         = (contatore + 1) % 70;
         numeri[contatore] = contatore;
         uart0_puts("test2 vivo: ");
+        term_puts("test2 vivo\n");
         hexstring(numeri[contatore]);
         WAIT();
         delay_us(1000 * 1000);
@@ -90,19 +93,6 @@ static uint32_t tx_status(termreg_t *tp);
 
 static termreg_t *term0_reg;
 
-void oldmain(void)
-{
-    term0_reg = (termreg_t *) DEV_REG_ADDR(IL_TERMINAL, 0);
-    uart0_puts("about to print\n");
-    term_puts("hello, world\n");
-
-    /* Go to sleep and power off the machine if anything wakes us up */
-    WAIT();
-    while (1) {
-        delay_us(1000*1000);
-        uart0_puts("finito!\n");
-    }
-}
 
 static void term_puts(const char *str)
 {
@@ -147,7 +137,7 @@ static uint32_t tx_status(termreg_t *tp)
 }
 
 int main() {
-    term0_reg = (termreg_t *) DEV_REG_ADDR(IL_TERMINAL, 0);
+    term0_reg = (termreg_t *) DEV_REG_ADDR(IL_TERMINAL, 3);
     uart0_puts("sono l'applicazione\n");
     hexstring(SYSCALL(SYS_GETCURRENTSTATUS, 0, 0, 0));
     *((uint64_t *)INTERRUPT_HANDLER) = (uint64_t *)&interrupt;

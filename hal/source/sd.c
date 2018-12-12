@@ -173,11 +173,11 @@ int sd_cmd(unsigned int code, unsigned int arg) {
         sd_err = SD_TIMEOUT;
         return 0;
     }
-    uart0_puts("EMMC: Sending command ");
+    /*uart0_puts("EMMC: Sending command ");
     hexstrings(code);
     uart0_puts(" arg ");
     hexstrings(arg);
-    uart0_puts("\n");
+    uart0_puts("\n");*/
     *EMMC_INTERRUPT = *EMMC_INTERRUPT;
     *EMMC_ARG1      = arg;
     *EMMC_CMDTM     = code;

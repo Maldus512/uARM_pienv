@@ -56,7 +56,8 @@ GETARMCLKFRQ:
 
 .global GETARMCOUNTER
 GETARMCOUNTER:
-    mrs x0, cntpct_el0
+    //mrs x0, cntpct_el0
+    mrs x0, cntvct_el0
     ret
 
 

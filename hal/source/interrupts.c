@@ -95,17 +95,18 @@ void c_irq_handler() {
 
     /* Check emulated devices */
     for (i = 0; i < MAX_TERMINALS; i++) {
-        terminal = (termreg_t *)DEV_REG_ADDR(i, 0);
+        terminal = (termreg_t *)DEV_REG_ADDR(IL_TERMINAL, i);
 
         switch (terminal->transm_command & 0xFF) {
-            case 10:
-                terminal->transm_command = 0;
-                terminal->recv_command = 0;
-                /* Reset command also removes interrupt */
-            case ACK:
-                terminal->transm_command = 0;
+            case RESET:
+                terminal->transm_command = RESET;
                 terminal->transm_status = DEVICE_READY;
-                terminal->recv_status = DEVICE_READY;
+                /* Reset command also removes interrupt */
+                interrupt_lines[0] &= ~(1 << i);
+                break;
+            case ACK:
+                terminal->transm_command = RESET;
+                terminal->transm_status = DEVICE_READY;
                 interrupt_lines[0] &= ~(1 << i);
                 break;
             case TRANSMIT_CHAR:

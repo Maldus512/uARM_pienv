@@ -7,8 +7,6 @@
 
 uint32_t armTimerFrequency = 0;
 
-
-
 void enableCounter(void) {
     uint32_t cntv_ctl;
     cntv_ctl = 1;
@@ -44,10 +42,6 @@ unsigned int setTimer(unsigned int timer) {
     return 0;
 }
 
-void resetTimerCounter() {
-    /* by setting the next value to the frequency I wait 1 second */
-    writeTimerValue(armTimerFrequency);
-}
 
 uint64_t getMillisecondsSinceStart() {
     uint64_t timerCount = readCounterCount();
@@ -57,7 +51,6 @@ uint64_t getMillisecondsSinceStart() {
 
 void initArmTimer() {
     armTimerFrequency = GETARMCLKFRQ();
-    // resetTimerCounter();
     /* routing core0 counter to core0 irq */
     *(volatile uint32_t *)CORE0_TIMER_IRQCNTL = 0x08;
     // enableCounter();
@@ -102,10 +95,11 @@ void delay_us(uint32_t delay) {
     unsigned long f, t, r;
     // get the current counter frequency
     f = GETARMCLKFRQ();
-    t = GETARMCOUNTER();
+    t = readCounterCount();
+    //TODO: Fix the delay overflow thing
     t += ((f / 1000) * delay) / 1000;
     do {
-        r = GETARMCOUNTER();
+        r = readCounterCount();
     } while (r < t);
 }
 

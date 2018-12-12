@@ -10,6 +10,7 @@
 #include "mmu.h"
 #include "sd.h"
 #include "system.h"
+#include "fat.h"
 #include "emulated_devices.h"
 
 #ifdef APP
@@ -64,9 +65,27 @@ void systemCheckup() {
 
 void bios_main() {
     initSystem();
+    unsigned int cluster;
 
     lfb_init();
     lfb_print(10, 10, "MaldOS start");
+    
+     if(sd_init()==SD_OK) {
+        // read the master boot record and find our partition
+        if(fat_getpartition()) {
+            // find out file in root directory entries
+            cluster=fat_getcluster("BROADCOM   ");
+            if(cluster==0)
+                cluster=fat_getcluster("KERNEL8 IMG");
+            if(cluster) {
+                // read into memory
+                uart_dump(fat_readfile(cluster));
+            }
+        } else {
+            uart_puts("FAT partition not found???\n");
+        }
+    }
+
 #ifdef APP
     main();
 #endif
