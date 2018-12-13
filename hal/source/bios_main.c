@@ -72,7 +72,7 @@ void bios_main() {
     lfb_init();
     lfb_print(10, 10, "MaldOS start");
     
-     if(sd_init()==SD_OK) {
+     /*if(sd_init()==SD_OK) {
         // read the master boot record and find our partition
         if(fat_getpartition()) {
             // find out file in root directory entries
@@ -89,7 +89,7 @@ void bios_main() {
         } else {
             uart_puts("FAT partition not found???\n");
         }
-    }
+    }*/
 
 #ifdef APP
     main();

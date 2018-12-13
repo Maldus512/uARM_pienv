@@ -66,7 +66,6 @@ void test2() {
         uart0_puts("test2 vivo: ");
         term_puts("test2 vivo\n");
         hexstring(numeri[contatore]);
-        WAIT();
         delay_us(1000 * 1000);
     }
 }

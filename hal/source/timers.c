@@ -37,7 +37,9 @@ void writeTimerValue(uint32_t val) {
 }
 
 unsigned int setTimer(unsigned int timer) {
-    writeTimerValue((armTimerFrequency / 10000) * timer);
+    uint64_t tmp1 = (uint64_t) GETARMCLKFRQ();
+    uint64_t value = (tmp1 * timer)/1000000;
+    writeTimerValue((uint32_t)value);
     enableCounter();
     return 0;
 }
@@ -47,6 +49,12 @@ uint64_t getMillisecondsSinceStart() {
     uint64_t timerCount = readCounterCount();
     armTimerFrequency   = GETARMCLKFRQ();
     return timerCount / (armTimerFrequency / 1000);
+}
+
+uint64_t getMicrosecondsSinceStart() {
+    uint64_t timerCount = readCounterCount();
+    armTimerFrequency   = GETARMCLKFRQ();
+    return (timerCount*1000*1000) / armTimerFrequency;
 }
 
 void initArmTimer() {

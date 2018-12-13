@@ -10,11 +10,15 @@
 #include "mmu.h"
 #include "emulated_terminals.h"
 
-uint64_t emulated_timer             = 0;
 uint64_t next_timer                 = 0;
 uint64_t f_emulated_timer_interrupt = 0;
 
-void setNextTimer(uint64_t milliseconds) { next_timer = emulated_timer + milliseconds * 10; }
+void setNextTimer(uint64_t microseconds) {
+    next_timer = getMicrosecondsSinceStart() + microseconds;
+    if (microseconds < 100) {
+        setTimer(microseconds);
+    }
+}
 
 uint32_t c_swi_handler(uint32_t code, uint32_t *registers) {
     state_t *state;
@@ -63,32 +67,21 @@ void c_irq_handler() {
     int             i;
     void (*interrupt_handler)();
     termreg_t *terminal;
-    uint8_t*   interrupt_lines = (uint8_t*)INTERRUPT_LINES;
+    uint8_t *  interrupt_lines = (uint8_t *)INTERRUPT_LINES;
 
     handler_present = *((uint64_t *)INTERRUPT_HANDLER);
 
-    timer = getMillisecondsSinceStart();
+    timer = getMicrosecondsSinceStart();
 
     /* Blink running led on real hardware */
-    if (timer - lastBlink >= 1000) {
+    if (timer / 1000 - lastBlink >= 1000) {
         led(f_led);
         f_led     = f_led == 0 ? 1 : 0;
-        lastBlink = timer;
+        lastBlink = timer / 1000;
     }
 
     tmp = *((volatile uint32_t *)CORE0_IRQ_SOURCE);
 
-    if (tmp & 0x08) {
-        emulated_timer++;
-        *(volatile uint32_t *)CORE0_TIMER_IRQCNTL = 0x00;
-        nop();
-        *(volatile uint32_t *)CORE0_TIMER_IRQCNTL = 0x08;
-        setTimer(1);
-
-        if (next_timer > 0 && emulated_timer >= next_timer) {
-            f_interrupt = 1;
-        }
-    }
     if (tmp & (1 << 8)) {
         f_interrupt = 1;
     }
@@ -100,26 +93,38 @@ void c_irq_handler() {
         switch (terminal->transm_command & 0xFF) {
             case RESET:
                 terminal->transm_command = RESET;
-                terminal->transm_status = DEVICE_READY;
+                terminal->transm_status  = DEVICE_READY;
                 /* Reset command also removes interrupt */
                 interrupt_lines[0] &= ~(1 << i);
                 break;
             case ACK:
                 terminal->transm_command = RESET;
-                terminal->transm_status = DEVICE_READY;
+                terminal->transm_status  = DEVICE_READY;
                 interrupt_lines[0] &= ~(1 << i);
                 break;
             case TRANSMIT_CHAR:
                 if ((terminal->transm_status & 0xFF) == DEVICE_READY) {
                     terminal->transm_status = DEVICE_BUSY;
+                    //TODO: there might be sync problems between processes due to this system
+                    // I need to check if it's meant to be like that or I should avoid them
                 } else if ((terminal->transm_status & 0xFF) == DEVICE_BUSY) {
                     terminal_send(i, terminal->transm_command >> 8);
                     terminal->transm_status = CHAR_TRANSMIT;
                     interrupt_lines[0] |= 1 << i;
-                    //f_interrupt = 1;
+                    // f_interrupt = 1;
                 }
                 break;
+        }
+    }
 
+    if (tmp & 0x08) {
+        if (next_timer > 0 && timer >= next_timer) {
+            f_interrupt = 1;
+            setTimer(100);
+        } else if (next_timer - timer < 100) {
+            setTimer(next_timer - timer);
+        } else if (next_timer - timer >= 100) {
+            setTimer(100);
         }
     }
 
