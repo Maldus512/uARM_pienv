@@ -60,8 +60,9 @@ _start:
     MSR    VBAR_EL1, X1
 
     mrs    x1, sctlr_el1
-    and    w1, w1, #0xFFFEFFFF
-    //msr    sctlr_el1, x1
+    /* Enable instruction cache */
+    orr    w1, w1, #0x1000
+    msr    sctlr_el1, x1
 
     /*change execution level to EL0? */
     /*mov     x2, #0x3c0

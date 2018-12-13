@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "emulated_devices.h"
+#include "emulated_terminals.h"
 #include "lfb.h"
 
 #define WIDTH (REQUESTED_WIDTH / 2)

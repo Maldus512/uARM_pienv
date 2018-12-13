@@ -8,7 +8,7 @@
 #include "uart.h"
 #include "asmlib.h"
 #include "mmu.h"
-#include "emulated_devices.h"
+#include "emulated_terminals.h"
 
 uint64_t emulated_timer             = 0;
 uint64_t next_timer                 = 0;

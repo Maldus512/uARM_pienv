@@ -191,7 +191,7 @@ void hexstring(unsigned int d) {
 void uart_dump(void *ptr) {
     unsigned long a, b, d;
     unsigned char c;
-    for (a = (unsigned long)ptr; a < (unsigned long)ptr + 512; a += 16) {
+    for (a = (unsigned long)ptr; a < (unsigned long)ptr + 1024; a += 16) {
         hexstrings(a);
         uart0_puts(": ");
         for (b = 0; b < 16; b++) {

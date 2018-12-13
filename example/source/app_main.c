@@ -5,7 +5,7 @@
 #include "uart.h"
 #include "libuarm.h"
 #include "arch.h"
-#include "emulated_devices.h"
+#include "emulated_terminals.h"
 #include "interrupts.h"
 
 #define INTERRUPT_HANDLER 0x7FFF0

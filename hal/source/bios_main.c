@@ -11,7 +11,7 @@
 #include "sd.h"
 #include "system.h"
 #include "fat.h"
-#include "emulated_devices.h"
+#include "emulated_terminals.h"
 
 #ifdef APP
 extern void main();
@@ -36,10 +36,10 @@ void initSystem() {
 
     initGpio();
     initUart0();
-   /* uart0_puts("************************************\n");
+    uart0_puts("************************************\n");
     uart0_puts("*        MaldOS running...         *\n");
     uart0_puts("************************************\n");
-    */
+    
 
     SYSCALL(SYS_INITARMTIMER, 0, 0, 0);
     SYSCALL(SYS_SETNEXTTIMER, 1, 0, 0);
@@ -66,6 +66,8 @@ void systemCheckup() {
 void bios_main() {
     initSystem();
     unsigned int cluster;
+    unsigned int read;
+    unsigned char buffer[4096];
 
     lfb_init();
     lfb_print(10, 10, "MaldOS start");
@@ -79,7 +81,10 @@ void bios_main() {
                 cluster=fat_getcluster("KERNEL8 IMG");
             if(cluster) {
                 // read into memory
-                uart_dump(fat_readfile(cluster));
+                read = fat_readfile(cluster, buffer);
+                uart0_putc('\n');
+                uart_dump(buffer);
+                uart_hex(read);
             }
         } else {
             uart_puts("FAT partition not found???\n");
