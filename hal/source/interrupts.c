@@ -9,12 +9,13 @@
 #include "asmlib.h"
 #include "mmu.h"
 #include "emulated_terminals.h"
+#include "emulated_tapes.h"
 
 uint64_t next_timer                 = 0;
 uint64_t f_emulated_timer_interrupt = 0;
 
-void setNextTimer(uint64_t microseconds) {
-    next_timer = getMicrosecondsSinceStart() + microseconds;
+void set_next_timer(uint64_t microseconds) {
+    next_timer = get_us() + microseconds;
     if (microseconds < 100) {
         setTimer(microseconds);
     }
@@ -66,12 +67,15 @@ void c_irq_handler() {
     uint64_t        timer, handler_present;
     int             i;
     void (*interrupt_handler)();
-    termreg_t *terminal;
-    uint8_t *  interrupt_lines = (uint8_t *)INTERRUPT_LINES;
+    termreg_t *         terminal;
+    tapereg_t *         tape;
+    uint8_t *           interrupt_lines             = (uint8_t *)INTERRUPT_LINES;
+    uint8_t             interrupt_mask              = *((uint8_t *)INTERRUPT_MASK);
+    static unsigned int old_tape_command[MAX_TAPES] = {0};
 
     handler_present = *((uint64_t *)INTERRUPT_HANDLER);
 
-    timer = getMicrosecondsSinceStart();
+    timer = get_us();
 
     /* Blink running led on real hardware */
     if (timer / 1000 - lastBlink >= 1000) {
@@ -83,7 +87,41 @@ void c_irq_handler() {
     tmp = *((volatile uint32_t *)CORE0_IRQ_SOURCE);
 
     if (tmp & (1 << 8)) {
+        // TODO: uart interrupt. to be managed
         f_interrupt = 1;
+    }
+
+    for (i = 0; i < MAX_TAPES; i++) {
+        tape = (tapereg_t *)DEV_REG_ADDR(IL_TAPE, i);
+
+        switch (tape->command) {
+            case RESET:
+                tape->status = DEVICE_READY;
+                break;
+            case ACK:
+                if (tape->command == old_tape_command[i])
+                    break;
+
+                old_tape_command[i] = ACK;
+                tape->status        = DEVICE_READY;
+                interrupt_lines[IL_TAPE] &= ~(1 << i);
+                break;
+            case READBLK:
+                if (tape->status == DEVICE_READY) {
+                    if (tape->command == old_tape_command[i])
+                        break;
+                    old_tape_command[i] = READBLK;
+                    tape->status        = DEVICE_BUSY;
+                } else if (tape->status == DEVICE_BUSY) {
+                    read_tape_block(i, (unsigned char *)(uint64_t)tape->data0);
+                    tape->status = DEVICE_READY;
+                    if (!(interrupt_mask & (1 << IL_TAPE))) {
+                        interrupt_lines[IL_TAPE] |= 1 << i;
+                        f_interrupt = 1;
+                    }
+                }
+                break;
+        }
     }
 
     /* Check emulated devices */
@@ -100,18 +138,20 @@ void c_irq_handler() {
             case ACK:
                 terminal->transm_command = RESET;
                 terminal->transm_status  = DEVICE_READY;
-                interrupt_lines[0] &= ~(1 << i);
+                interrupt_lines[IL_TERMINAL] &= ~(1 << i);
                 break;
             case TRANSMIT_CHAR:
                 if ((terminal->transm_status & 0xFF) == DEVICE_READY) {
                     terminal->transm_status = DEVICE_BUSY;
-                    //TODO: there might be sync problems between processes due to this system
+                    // TODO: there might be sync problems between processes due to this system
                     // I need to check if it's meant to be like that or I should avoid them
                 } else if ((terminal->transm_status & 0xFF) == DEVICE_BUSY) {
                     terminal_send(i, terminal->transm_command >> 8);
                     terminal->transm_status = CHAR_TRANSMIT;
-                    interrupt_lines[0] |= 1 << i;
-                    // f_interrupt = 1;
+                    if (!(interrupt_mask & (1 << IL_TERMINAL))) {
+                        interrupt_lines[IL_TERMINAL] |= 1 << i;
+                        f_interrupt = 1;
+                    }
                 }
                 break;
         }
@@ -119,7 +159,10 @@ void c_irq_handler() {
 
     if (tmp & 0x08) {
         if (next_timer > 0 && timer >= next_timer) {
-            f_interrupt = 1;
+            if (!(interrupt_mask & (1 << IL_TIMER))) {
+                interrupt_lines[IL_TIMER] = 1;
+                f_interrupt               = 1;
+            }
             setTimer(100);
         } else if (next_timer - timer < 100) {
             setTimer(next_timer - timer);

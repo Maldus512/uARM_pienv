@@ -221,11 +221,11 @@ int sd_readblock(unsigned int lba, unsigned char *buffer, unsigned int num) {
     int r, c = 0, d;
     if (num < 1)
         num = 1;
-    uart0_puts("sd_readblock lba ");
+    /*uart0_puts("sd_readblock lba ");
     hexstrings(lba);
     uart0_puts(" num ");
     hexstrings(num);
-    uart0_puts("\n");
+    uart0_puts("\n");*/
     if (sd_status(SR_DAT_INHIBIT)) {
         sd_err = SD_TIMEOUT;
         return 0;

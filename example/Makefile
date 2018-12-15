@@ -1,6 +1,6 @@
 ARMGNU ?= aarch64-elf
 
-CFLAGS := -Wall -pedantic -ffreestanding -nostdlib -nostartfiles
+CFLAGS := -Wall -pedantic -ffreestanding -nostdlib -nostartfiles -O0
 
 # The intermediate directory for compiled object files.
 BUILD = build/

@@ -1,5 +1,5 @@
-#ifndef __HARDWAREPROFILE_H__
-#define __HARDWAREPROFILE_H__
+#ifndef __ARCH_H__
+#define __ARCH_H__
 
 #include <stdint.h>
 
@@ -9,13 +9,24 @@
 #define IO_BASE 0x3F000000
 #define MMIO_BASE 0x3F000000
 
-#define IL_TERMINAL         0
+#define MAX_DEVICES         4
 
-#define INTERRUPT_LINES     0x60000
-#define DEV_REG_START       0x60050
+#define IL_TERMINAL         2
+#define IL_TAPE             1
+#define IL_TIMER            0
+
+#define DEVICE_INSTALLED    0x7A000
+#define INTERRUPT_LINES     0x7A010
+#define INTERRUPT_MASK      0x7A020
+#define DEV_REG_START       0x7A100
 
 #define LED_RUN 21
 
-void *DEV_REG_ADDR(int line, int dev);
+
+static inline void *DEV_REG_ADDR(int line, int dev) {
+    return (void *)(uint64_t)(DEV_REG_START+MAX_DEVICES*line*4*4 + 4*4*dev);
+}
+
+
 
 #endif

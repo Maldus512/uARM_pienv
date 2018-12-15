@@ -48,37 +48,8 @@ void STST(void *addr);
 /* call kernel system call handler */
 int SYSCALL(unsigned int sysNum, unsigned int arg1, unsigned int arg2, unsigned int arg3);
 
-/* rasie breakpoint exception */
-void BREAK(unsigned int arg0, unsigned int arg1, unsigned int arg2, unsigned int arg3);
-
-/* access special registers */
-unsigned int getSTATUS();
-unsigned int getCAUSE();
-unsigned int getTIMER();
-unsigned int getTODHI();
-unsigned int getTODLO();
-unsigned int getCONTROL();
-unsigned int getTLB_Index();
-unsigned int getTLB_Random();
-unsigned int getEntryHi();
-unsigned int getEntryLo();
-unsigned int getBadVAddr();
-
-/* set special registers value */
-unsigned int setSTATUS(unsigned int status);
-unsigned int setCAUSE(unsigned int cause);
-unsigned int setTIMER(unsigned int timer);
-unsigned int setCONTROL(unsigned int control);
-unsigned int setTLB_Index(unsigned int index);
-unsigned int setEntryHi(unsigned int hi);
-unsigned int setEntryLo(unsigned int lo);
-
-/* coprocessor TLB calls */
-void TLBWR();
-void TLBWI();
-void TLBR();
-void TLBP();
-void TLBCLR();
+unsigned long get_us();
+void         set_next_timer(uint64_t millis);
 
 typedef struct _state_t {
     uint64_t general_purpose_registers[29];

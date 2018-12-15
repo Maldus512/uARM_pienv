@@ -3,4 +3,5 @@
 *.o
 *.elf
 *.map
+*.dd
 build/*

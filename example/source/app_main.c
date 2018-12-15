@@ -1,14 +1,8 @@
 #include <stdint.h>
-#include "bios_const.h"
-#include "system.h"
-#include "timers.h"
-#include "uart.h"
-#include "libuarm.h"
 #include "arch.h"
-#include "emulated_terminals.h"
-#include "interrupts.h"
-
-#define INTERRUPT_HANDLER 0x7FFF0
+#include "bios_const.h"
+#include "libuarm.h"
+#include "types.h"
 
 #define ST_READY           1
 #define ST_BUSY            3
@@ -20,8 +14,64 @@
 #define CHAR_OFFSET        8
 #define TERM_STATUS_MASK   0xFF
 
-extern void uart0_puts(char *str);
+#define DEVICE_READY            1
+#define DEVICE_BUSY             3
+#define CHAR_TRANSMIT           5
+
+#define RESET                   0
+#define ACK                     1
+#define TRANSMIT_CHAR           2
+
+#define RESET   0
+#define ACK     1
+#define READBLK 3
+
+
+extern void hexstring(unsigned int);
 static void term_puts(const char *str);
+
+state_t  t1, t2;
+state_t *current = 0;
+
+extern volatile unsigned char __EL1_stack, __EL0_stack;
+
+extern void delay_us(unsigned int);
+
+static int term_putchar(char c);
+static uint32_t tx_status(termreg_t *tp);
+
+/*uint64_t get_us() {
+    uint64_t t = readCounterCount();
+    f   = GETARMCLKFRQ();
+    return (t*1000*1000) / f;
+}
+
+void delay_us(uint32_t delay) {
+    unsigned long f, t, r;
+    // get the current counter frequency
+    f = GETARMCLKFRQ();
+    t = readCounterCount();
+    //TODO: Fix the delay overflow thing
+    t += ((f / 1000) * delay) / 1000;
+    do {
+        r = readCounterCount();
+    } while (r < t);
+}*/
+
+void mydelay2(unsigned int us) {
+    //delay_us(us); return;
+    volatile unsigned long timestamp = get_us();
+    volatile unsigned long end = timestamp+us;
+    hexstring(end);
+    while((unsigned long)timestamp < (unsigned long)(end )) {
+        timestamp = get_us();
+        /*hexstrings(timestamp);
+        tprint(" - ");
+        hexstrings(start+us);
+        tprint("\n");*/
+        nop();
+    }
+}
 
 
 void copy_state(state_t *dest, state_t *src) {
@@ -40,57 +90,65 @@ void copy_state(state_t *dest, state_t *src) {
 
 void test1() {
     int numeri[100];
+    unsigned char buffer[512];
+
+    while(1) {
+        uart0_puts("ciao, un secondo alla volta ");
+        hexstrings(get_us());
+        mydelay2(1000*1000);
+    }
+    
+    tapereg_t *tape = DEV_REG_ADDR(IL_TAPE, 0);
     int contatore = 0;
-    int level     = SYSCALL(SYS_GETCURRENTEL, 0, 0, 0);
-    uart0_puts("livello 1: ");
-    hexstring(level);
+    tprint("partenza 1\n");
+    tape->data0 = (unsigned int)(unsigned long) buffer;
+    tape->command = READBLK;
+    WAIT();
+    while(tape->status == DEVICE_BUSY);
+
+    tprint("letto nastro: ");
+    buffer[32] = '\0';
+    tprint((char*)buffer);
+    tprint("\n");
     while (1) {
         contatore         = (contatore + 1) % 100;
         numeri[contatore] = contatore;
-        uart0_puts("test1 vivo: ");
+        tprint("test1 vivo: ");
         term_puts("test1 vivoaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
         hexstring(numeri[contatore]);
-        delay_us(1000* 1000);
+        mydelay2(1000* 1000);
     }
 }
 
 void test2() {
     int numeri[100];
     int contatore = 0;
-    int level     = SYSCALL(SYS_GETCURRENTEL, 0, 0, 0);
-    uart0_puts("livello 2: ");
-    hexstring(level);
+    unsigned long timer;
+    tprint("partenza 2\n");
     while (1) {
+        timer = get_us();
         contatore         = (contatore + 1) % 70;
         numeri[contatore] = contatore;
-        uart0_puts("test2 vivo: ");
+        tprint("test2 vivo: ");
         term_puts("test2 vivo\n");
-        hexstring(numeri[contatore]);
-        delay_us(1000 * 1000);
+        hexstring(timer);
+        mydelay2(1000 * 1000);
     }
 }
-state_t  t1, t2;
-state_t *current = 0;
-
-extern volatile unsigned char __EL1_stack, __EL0_stack;
 
 void interrupt() {
     state_t *oldarea = (state_t *)INTERRUPT_OLDAREA;
-    copy_state(current, oldarea);
-    setNextTimer(1000);
 
-    if (current == &t1) {
+    copy_state(current, oldarea);
+    set_next_timer(1000*10);
+
+    /*if (current == &t1) {
         current = &t2;
     } else {
         current = &t1;
-    }
+    }*/
     LDST(current);
 }
-
-static int term_putchar(char c);
-static uint32_t tx_status(termreg_t *tp);
-
-static termreg_t *term0_reg;
 
 
 static void term_puts(const char *str)
@@ -104,6 +162,7 @@ static void term_puts(const char *str)
 static int term_putchar(char c) 
 {
     uint32_t stat;
+    termreg_t *term0_reg = (termreg_t *) DEV_REG_ADDR(IL_TERMINAL, 3);
 
     stat = tx_status(term0_reg);
     if (stat != ST_READY && stat != ST_TRANSMITTED) {
@@ -111,16 +170,12 @@ static int term_putchar(char c)
     }
 
     term0_reg->transm_command = ((c << CHAR_OFFSET) | CMD_TRANSMIT);
-
-    //while ((stat = tx_status(term0_reg)) == ST_READY) ;
     WAIT();
 
     while ((stat = tx_status(term0_reg)) == ST_BUSY)
         ;
 
     term0_reg->transm_command = CMD_ACK;
-
-    //while(term0_reg->transm_command == CMD_ACK) ;
     WAIT();
 
     if (stat != ST_TRANSMITTED) {
@@ -136,10 +191,9 @@ static uint32_t tx_status(termreg_t *tp)
 }
 
 int main() {
-    term0_reg = (termreg_t *) DEV_REG_ADDR(IL_TERMINAL, 3);
-    uart0_puts("sono l'applicazione\n");
-    hexstring(SYSCALL(SYS_GETCURRENTSTATUS, 0, 0, 0));
-    *((uint64_t *)INTERRUPT_HANDLER) = (uint64_t *)&interrupt;
+    *((uint8_t*)INTERRUPT_MASK) &= ~(1<<IL_TIMER);
+    tprint("sono l'applicazione\n");
+    //*((uint64_t *)INTERRUPT_HANDLER) = (uint64_t)&interrupt;
 
     STST(&t1);
     STST(&t2);
@@ -149,13 +203,10 @@ int main() {
     t1.stack_pointer           = (uint64_t)&__EL0_stack - 0x2000;
     t2.stack_pointer           = (uint64_t)&__EL0_stack - 0x4000;
     t1.status_register         = 0x340;
-    t2.status_register         = 0x340;
+    t2.status_register         = 0x3C0;
     current                    = &t1;
-    setNextTimer(1000);
+    //set_next_timer(1000);
     LDST(current);
-
-    while (1) {
-    }
 
     return 0;
 }

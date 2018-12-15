@@ -12,6 +12,7 @@
 #include "system.h"
 #include "fat.h"
 #include "emulated_terminals.h"
+#include "emulated_tapes.h"
 
 #ifdef APP
 extern void main();
@@ -23,73 +24,49 @@ uint64_t ciao[256];
 extern int __uMPS_stack;
 
 void initSystem() {
-    termreg_t *terminal;
-    int i = 0;
     *((uint64_t *)INTERRUPT_HANDLER)   = 0;
     *((uint64_t *)SYNCHRONOUS_HANDLER) = 0;
-
-    for (i = 0; i < MAX_TERMINALS; i++) {
-        terminal = (termreg_t*) DEV_REG_ADDR(i, 0);
-        terminal->transm_status = DEVICE_READY;
-        terminal->recv_status = DEVICE_READY;
-    }
+    *((uint8_t *)INTERRUPT_MASK) = 0xFF;
 
     initGpio();
     initUart0();
+    lfb_init();
+    if (sd_init() == SD_OK) {
+        fat_getpartition();
+        init_emulated_tapes();
+    }
+    init_emulated_terminals();
+    uart0_puts("\n");
     uart0_puts("************************************\n");
     uart0_puts("*        MaldOS running...         *\n");
     uart0_puts("************************************\n");
-    
+    uart0_puts("\n");
+
+    lfb_print(1, 1, "*******************************");
+    lfb_print(1, 2, "*      MaldOS running...      *");
+    lfb_print(1, 3, "*******************************");
 
     SYSCALL(SYS_INITARMTIMER, 0, 0, 0);
     SYSCALL(SYS_SETNEXTTIMER, 1, 0, 0);
 }
-
-void systemCheckup() {
-    uint32_t serial[2];
-
-    hexstring(*((uint32_t *)SYSCALL(SYS_GETCURRENTEL, 0, 0, 0)));
-
-    uart0_puts("Turning on LED RUN and blink...\n");
-    setGpio(LED_RUN);
-    led(1);
-
-    serialNumber(serial);
-    uart0_puts("My serial number is:\n");
-    hexstring(serial[0]);
-    hexstring(serial[1]);
-
-
-    uart0_puts("System ready!\n");
+void mydelay(unsigned int us) {
+    //delay_us(us); return;
+    volatile unsigned long timestamp = get_us();
+    volatile unsigned long end = timestamp+us;
+    while((unsigned long)timestamp < (unsigned long)(end )) {
+        timestamp = get_us();
+        /*hexstrings(timestamp);
+        tprint(" - ");
+        hexstrings(start+us);
+        tprint("\n");*/
+        nop();
+    }
 }
+
 
 void bios_main() {
     initSystem();
-    unsigned int cluster;
-    unsigned int read;
-    unsigned char buffer[4096];
 
-    lfb_init();
-    lfb_print(10, 10, "MaldOS start");
-    
-     /*if(sd_init()==SD_OK) {
-        // read the master boot record and find our partition
-        if(fat_getpartition()) {
-            // find out file in root directory entries
-            cluster=fat_getcluster("BROADCOM   ");
-            if(cluster==0)
-                cluster=fat_getcluster("KERNEL8 IMG");
-            if(cluster) {
-                // read into memory
-                read = fat_readfile(cluster, buffer);
-                uart0_putc('\n');
-                uart_dump(buffer);
-                uart_hex(read);
-            }
-        } else {
-            uart_puts("FAT partition not found???\n");
-        }
-    }*/
 
 #ifdef APP
     main();

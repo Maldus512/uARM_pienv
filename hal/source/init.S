@@ -175,9 +175,10 @@ swi_handler:
     no nested interrupts */
 irq_handler:
     msr   daifset, #2
+    /*
     ldr     x1, =__EL1_stack
     mov     sp, x1
-    /* save state in oldarea */
+    // save state in oldarea
     stp   x27, x28, [sp, #-16]
     mov   x28, #INTERRUPT_OLDAREA
     stp   x0, x1, [x28]
@@ -210,7 +211,7 @@ finish:
     stp   x30, x27, [x28, #16]!
     
     mrs   x27, elr_el1
-    str   x27, [x28, #16]! /* Note: the 16 immediate value refers to the previously saved pair */
+    str   x27, [x28, #16]! // Note: the 16 immediate value refers to the previously saved pair
 
     mrs   x27, ttbr0_el1
     str   x27, [x28, #8]!
@@ -219,7 +220,7 @@ finish:
     str   x27, [x28, #8]!
 
     ldp   x27, x28, [sp, #-16]
-
+*/
     /* save register values on the stack */
     stp   x0,  x1,  [sp, #-16]!
     stp   x2,  x3,  [sp, #-16]!

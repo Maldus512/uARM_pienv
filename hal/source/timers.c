@@ -51,7 +51,7 @@ uint64_t getMillisecondsSinceStart() {
     return timerCount / (armTimerFrequency / 1000);
 }
 
-uint64_t getMicrosecondsSinceStart() {
+uint64_t get_us() {
     uint64_t timerCount = readCounterCount();
     armTimerFrequency   = GETARMCLKFRQ();
     return (timerCount*1000*1000) / armTimerFrequency;
@@ -100,15 +100,19 @@ void delay_us(uint32_t delay) {
     /**
      * Wait N microsec (ARM CPU only)
      */
-    unsigned long f, t, r;
+    unsigned int f, t, r;
     // get the current counter frequency
     f = GETARMCLKFRQ();
     t = readCounterCount();
+    //hexstring(t);
     //TODO: Fix the delay overflow thing
     t += ((f / 1000) * delay) / 1000;
     do {
         r = readCounterCount();
     } while (r < t);
+ /*   hexstrings(r);
+    tprint(" + ");
+    hexstring(t);*/
 }
 
 void rawDelay() {

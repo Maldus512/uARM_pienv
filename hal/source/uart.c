@@ -141,6 +141,10 @@ char uart0_getc() {
     return r == '\r' ? '\n' : r;
 }
 
+void tprint(char *s) {
+    uart0_puts(s);
+}
+
 void uart0_puts(char *s) {
     while (*s) {
         /* convert newline to carrige return + newline */

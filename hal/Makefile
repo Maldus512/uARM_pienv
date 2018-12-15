@@ -1,7 +1,7 @@
 ARMGNU ?= aarch64-elf
 
 #CFLAGS := -Wall -pedantic -ffreestanding -nostdlib -nostartfiles
-CFLAGS := -Wall -ffreestanding -nostdlib -nostartfiles
+CFLAGS := -Wall -ffreestanding -nostdlib -nostartfiles -O0
 ifdef APP
 	CFLAGS += -DAPP
 endif

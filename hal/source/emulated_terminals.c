@@ -1,13 +1,26 @@
 #include <stdint.h>
+#include "arch.h"
 #include "emulated_terminals.h"
 #include "lfb.h"
 
 #define WIDTH (REQUESTED_WIDTH / 2)
 #define HEIGHT (REQUESTED_HEIGHT / 2)
 
-volatile termreg_t terminals[MAX_TERMINALS];
-
 static int terminal_coordinates[MAX_TERMINALS][2];
+
+
+void init_emulated_terminals() {
+    int i;
+    termreg_t *terminal;
+
+    for (i = 0; i < MAX_TERMINALS; i++) {
+        terminal = (termreg_t*) DEV_REG_ADDR(IL_TERMINAL,i);
+        terminal->recv_status = DEVICE_READY;
+        terminal->transm_status = DEVICE_READY;
+        terminal->recv_command = RESET;
+        terminal->transm_command = RESET;
+    }
+}
 
 const int terminal_starting_coordinates[MAX_TERMINALS][2] = {
     {0, 0},
@@ -46,5 +59,3 @@ void terminal_send(int num, char c) {
     terminal_coordinates[num][0] = x - terminal_starting_coordinates[num][0];
     terminal_coordinates[num][1] = y - terminal_starting_coordinates[num][1];
 }
-
-void *DEV_REG_ADDR(int line, int dev) { return (void *)&terminals[dev]; }

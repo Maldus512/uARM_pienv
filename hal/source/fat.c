@@ -75,8 +75,8 @@ typedef struct {
 unsigned char bios_partition_block[512];
 unsigned char root_dir[512*4];
 
-//TODO: very big File Allocation Table; check how it grows with bigger partitions
-unsigned int FAT32[0x80000];
+/* The maximum partition size it can handle is 100MB */
+unsigned int FAT32[0x100000];
 
 static inline unsigned int get_lba_address(unsigned int cluster) {
     bpb_t *bpb = (bpb_t *)bios_partition_block;
@@ -112,7 +112,7 @@ int fat_getpartition(void) {
         // (over a double word, or 4 bytes)
         partitionlba = mbr[0x1C6] + (mbr[0x1C7] << 8) + (mbr[0x1C8] << 16) + (mbr[0x1C9] << 24);
         // read the boot record
-        if (!sd_readblock(partitionlba, bpb, 1)) {
+        if (!sd_readblock(partitionlba, (unsigned char*) bpb, 1)) {
             uart_puts("ERROR: Unable to read boot record\n");
             return 0;
         }
@@ -171,7 +171,9 @@ unsigned int fat_getcluster(char *fn) {
                 return ((unsigned int)dir->ch) << 16 | dir->cl;
             }
         }
-        uart_puts("ERROR: file not found\n");
+        uart_puts("ERROR: file not found: ");
+        uart0_puts(fn);
+        uart0_puts("\n");
     } else {
         uart_puts("ERROR: Unable to load root directory\n");
     }
@@ -183,14 +185,14 @@ unsigned char readfile[512];
 /**
  * Read a file into memory
  */
-int fat_readfile(unsigned int cluster, unsigned char *data) {
+int fat_readfile(unsigned int cluster, unsigned char *data, unsigned int num) {
     // BIOS Parameter Block
     bpb_t *bpb = (bpb_t *)bios_partition_block;
     // File allocation tables. We choose between FAT16 and FAT32 dynamically
     unsigned int *  fat32 = (unsigned int *)FAT32;//(&_end);
     unsigned short *fat16 = (unsigned short *)fat32;
     // Data pointers
-    unsigned int   data_sec, s;
+    unsigned int   data_sec, s, counter;
     int            read = 0;
     // find the LBA of the first data sector
     data_sec = ((bpb->spf16 ? bpb->spf16 : bpb->spf32) * bpb->nf) + bpb->rsc;
@@ -220,14 +222,16 @@ int fat_readfile(unsigned int cluster, unsigned char *data) {
     //s = sd_readblock(partitionlba + bpb->rsc, (unsigned char *)fat32, (bpb->spf16 ? bpb->spf16 : bpb->spf32) );
     // end of FAT in memory
     // iterate on cluster chain
+    counter = 0;
     while (cluster > 1 && cluster < 0xFFF8) {
-        // load all sectors in a cluster
-        read += sd_readblock((cluster - 2) * bpb->spc + data_sec, data, bpb->spc);
-        // move pointer, sector per cluster * bytes per sector
-        //ptr += bpb->spc * (bpb->bps0 + (bpb->bps1 << 8));
-        data += read;
-        // get the next cluster in chain
-        cluster = bpb->spf16 > 0 ? fat16[cluster] : fat32[cluster];
+        if (counter == num) {
+            // load all sectors in a cluster
+            read += sd_readblock((cluster - 2) * bpb->spc + data_sec, data, bpb->spc);
+        } else {
+            // get the next cluster in chain
+            cluster = bpb->spf16 > 0 ? fat16[cluster] : fat32[cluster];
+        }
+        counter++;
     }
     return read;
 }
