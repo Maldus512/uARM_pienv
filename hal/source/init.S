@@ -59,10 +59,10 @@ _start:
     LDR    X1, = interrupt_vector
     MSR    VBAR_EL1, X1
 
-    mrs    x1, sctlr_el1
+    //mrs    x1, sctlr_el1
     /* Enable instruction cache */
-    orr    w1, w1, #0x1000
-    msr    sctlr_el1, x1
+    //orr    w1, w1, #0x1000
+    //msr    sctlr_el1, x1
 
     /*change execution level to EL0? */
     /*mov     x2, #0x3c0
@@ -175,9 +175,9 @@ swi_handler:
     no nested interrupts */
 irq_handler:
     msr   daifset, #2
-    /*
-    ldr     x1, =__EL1_stack
-    mov     sp, x1
+    
+    ldr     x10, =__EL1_stack
+    mov     sp, x10
     // save state in oldarea
     stp   x27, x28, [sp, #-16]
     mov   x28, #INTERRUPT_OLDAREA
@@ -220,7 +220,7 @@ finish:
     str   x27, [x28, #8]!
 
     ldp   x27, x28, [sp, #-16]
-*/
+
     /* save register values on the stack */
     stp   x0,  x1,  [sp, #-16]!
     stp   x2,  x3,  [sp, #-16]!

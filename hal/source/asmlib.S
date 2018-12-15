@@ -9,6 +9,21 @@ GET32:
     ldr w0,[x0]
     ret
 
+.globl WAIT1S
+WAIT1S:
+    mov x11, #10000
+waitloop:
+    cmp x11, #0
+    beq endloop
+    sub x11, x11, #1
+    dsb ish
+    wfi
+    b waitloop
+endloop:
+    ret
+
+
+
 
 .globl GETEL
 GETEL:

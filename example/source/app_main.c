@@ -4,26 +4,26 @@
 #include "libuarm.h"
 #include "types.h"
 
-#define ST_READY           1
-#define ST_BUSY            3
-#define ST_TRANSMITTED     5
+#define ST_READY 1
+#define ST_BUSY 3
+#define ST_TRANSMITTED 5
 
-#define CMD_ACK            1
-#define CMD_TRANSMIT       2
+#define CMD_ACK 1
+#define CMD_TRANSMIT 2
 
-#define CHAR_OFFSET        8
-#define TERM_STATUS_MASK   0xFF
+#define CHAR_OFFSET 8
+#define TERM_STATUS_MASK 0xFF
 
-#define DEVICE_READY            1
-#define DEVICE_BUSY             3
-#define CHAR_TRANSMIT           5
+#define DEVICE_READY 1
+#define DEVICE_BUSY 3
+#define CHAR_TRANSMIT 5
 
-#define RESET                   0
-#define ACK                     1
-#define TRANSMIT_CHAR           2
+#define RESET 0
+#define ACK 1
+#define TRANSMIT_CHAR 2
 
-#define RESET   0
-#define ACK     1
+#define RESET 0
+#define ACK 1
 #define READBLK 3
 
 
@@ -37,7 +37,7 @@ extern volatile unsigned char __EL1_stack, __EL0_stack;
 
 extern void delay_us(unsigned int);
 
-static int term_putchar(char c);
+static int      term_putchar(char c);
 static uint32_t tx_status(termreg_t *tp);
 
 /*uint64_t get_us() {
@@ -59,18 +59,22 @@ void delay_us(uint32_t delay) {
 }*/
 
 void mydelay2(unsigned int us) {
-    //delay_us(us); return;
+        WAIT1S();
+        return;
     volatile unsigned long timestamp = get_us();
-    volatile unsigned long end = timestamp+us;
-    hexstring(end);
-    while((unsigned long)timestamp < (unsigned long)(end )) {
-        timestamp = get_us();
-        /*hexstrings(timestamp);
-        tprint(" - ");
-        hexstrings(start+us);
-        tprint("\n");*/
-        nop();
+    volatile unsigned long end       = timestamp + us;
+    unsigned long counter = 0;
+
+    //while ((unsigned long)timestamp < (unsigned long)(end)) {
+    while (counter*100 < us){
+        WAIT();
+        counter++;
+        //timestamp = get_us();
     }
+    /*if (timestamp < end) {
+        tprint("qualcosa e' andato storto\n");
+        nop();
+    }*/
 }
 
 
@@ -89,26 +93,27 @@ void copy_state(state_t *dest, state_t *src) {
 }
 
 void test1() {
-    int numeri[100];
+    int           numeri[100];
     unsigned char buffer[512];
 
-    while(1) {
+    /*while (1) {
         uart0_puts("ciao, un secondo alla volta ");
-        hexstrings(get_us());
-        mydelay2(1000*1000);
-    }
-    
-    tapereg_t *tape = DEV_REG_ADDR(IL_TAPE, 0);
-    int contatore = 0;
+        hexstring(get_us());
+        mydelay2(1000 * 1000);
+    }*/
+
+    tapereg_t *tape      = DEV_REG_ADDR(IL_TAPE, 0);
+    int        contatore = 0;
     tprint("partenza 1\n");
-    tape->data0 = (unsigned int)(unsigned long) buffer;
+    tape->data0   = (unsigned int)(unsigned long)buffer;
     tape->command = READBLK;
     WAIT();
-    while(tape->status == DEVICE_BUSY);
+    while (tape->status == DEVICE_BUSY)
+        ;
 
     tprint("letto nastro: ");
     buffer[32] = '\0';
-    tprint((char*)buffer);
+    tprint((char *)buffer);
     tprint("\n");
     while (1) {
         contatore         = (contatore + 1) % 100;
@@ -116,17 +121,17 @@ void test1() {
         tprint("test1 vivo: ");
         term_puts("test1 vivoaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
         hexstring(numeri[contatore]);
-        mydelay2(1000* 1000);
+        mydelay2(1000 * 1000);
     }
 }
 
 void test2() {
-    int numeri[100];
-    int contatore = 0;
+    int           numeri[100];
+    int           contatore = 0;
     unsigned long timer;
     tprint("partenza 2\n");
     while (1) {
-        timer = get_us();
+        timer             = get_us();
         contatore         = (contatore + 1) % 70;
         numeri[contatore] = contatore;
         tprint("test2 vivo: ");
@@ -142,27 +147,25 @@ void interrupt() {
     copy_state(current, oldarea);
     set_next_timer(1000*10);
 
-    /*if (current == &t1) {
+    if (current == &t1) {
         current = &t2;
     } else {
         current = &t1;
-    }*/
+    }
     LDST(current);
 }
 
 
-static void term_puts(const char *str)
-{
+static void term_puts(const char *str) {
     while (*str)
         if (term_putchar(*str++) == -1) {
             return;
         }
 }
 
-static int term_putchar(char c) 
-{
-    uint32_t stat;
-    termreg_t *term0_reg = (termreg_t *) DEV_REG_ADDR(IL_TERMINAL, 3);
+static int term_putchar(char c) {
+    uint32_t   stat;
+    termreg_t *term0_reg = (termreg_t *)DEV_REG_ADDR(IL_TERMINAL, 3);
 
     stat = tx_status(term0_reg);
     if (stat != ST_READY && stat != ST_TRANSMITTED) {
@@ -180,20 +183,16 @@ static int term_putchar(char c)
 
     if (stat != ST_TRANSMITTED) {
         return -1;
-    }
-    else
-        return 0; 
+    } else
+        return 0;
 }
 
-static uint32_t tx_status(termreg_t *tp)
-{
-    return ((tp->transm_status) & TERM_STATUS_MASK);
-}
+static uint32_t tx_status(termreg_t *tp) { return ((tp->transm_status) & TERM_STATUS_MASK); }
 
 int main() {
-    *((uint8_t*)INTERRUPT_MASK) &= ~(1<<IL_TIMER);
+    *((uint8_t *)INTERRUPT_MASK) &= ~(1 << IL_TIMER);
     tprint("sono l'applicazione\n");
-    //*((uint64_t *)INTERRUPT_HANDLER) = (uint64_t)&interrupt;
+    *((uint64_t *)INTERRUPT_HANDLER) = (uint64_t)&interrupt;
 
     STST(&t1);
     STST(&t2);
@@ -203,9 +202,9 @@ int main() {
     t1.stack_pointer           = (uint64_t)&__EL0_stack - 0x2000;
     t2.stack_pointer           = (uint64_t)&__EL0_stack - 0x4000;
     t1.status_register         = 0x340;
-    t2.status_register         = 0x3C0;
+    t2.status_register         = 0x340;
     current                    = &t1;
-    //set_next_timer(1000);
+    set_next_timer(1000);
     LDST(current);
 
     return 0;
