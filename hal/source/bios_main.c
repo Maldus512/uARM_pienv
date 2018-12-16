@@ -18,10 +18,6 @@
 extern void main();
 #endif
 
-uint64_t ciao[256];
-
-
-extern int __uMPS_stack;
 
 void initSystem() {
     *((uint64_t *)INTERRUPT_HANDLER)   = 0;
@@ -49,20 +45,6 @@ void initSystem() {
     SYSCALL(SYS_INITARMTIMER, 0, 0, 0);
     SYSCALL(SYS_SETNEXTTIMER, 1, 0, 0);
 }
-void mydelay(unsigned int us) {
-    //delay_us(us); return;
-    volatile unsigned long timestamp = get_us();
-    volatile unsigned long end = timestamp+us;
-    while((unsigned long)timestamp < (unsigned long)(end )) {
-        timestamp = get_us();
-        /*hexstrings(timestamp);
-        tprint(" - ");
-        hexstrings(start+us);
-        tprint("\n");*/
-        nop();
-    }
-}
-
 
 void bios_main() {
     initSystem();

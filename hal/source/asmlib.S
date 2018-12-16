@@ -11,11 +11,11 @@ GET32:
 
 .globl WAIT1S
 WAIT1S:
-    mov x11, #10000
+    mov x0, #1000
 waitloop:
-    cmp x11, #0
+    cmp x0, #0
     beq endloop
-    sub x11, x11, #1
+    sub x0, x0, #1
     dsb ish
     wfi
     b waitloop
@@ -214,7 +214,7 @@ LDST_EL0:
     ldr     x1, [x0, #8]!
     msr     spsr_el1, x1    /* Status Register */
 
-    ldr     x0, [sp, #-8]  /* Recover x0 and x1 */
+    ldr     x0, [sp, #-8]  /* Recover x0 and x1 */ //TODO: FIXME: ATTENZIONE: qui non sembra recuperare corretamente x0
 
     and     x1, x1, #7
     cmp     x1, #0
@@ -226,12 +226,12 @@ el1_sp:
     ldr     x1, [sp, #-16]
     mov     sp, x1          /* Recover stack pointer */
 
-    ldr     x1, [x0, #8]
-    ldr     x0, [x0]
 end:
     /*change execution level to EL0? 
     mov     x2, #0x340
 
     mov     x2, #0x3c0
     0x3c0 has the interrupt bit set, it has to be clear to enable ints*/
+    ldr     x1, [x0, #8]
+    ldr     x0, [x0]
     eret

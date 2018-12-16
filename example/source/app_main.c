@@ -40,41 +40,13 @@ extern void delay_us(unsigned int);
 static int      term_putchar(char c);
 static uint32_t tx_status(termreg_t *tp);
 
-/*uint64_t get_us() {
-    uint64_t t = readCounterCount();
-    f   = GETARMCLKFRQ();
-    return (t*1000*1000) / f;
-}
-
-void delay_us(uint32_t delay) {
-    unsigned long f, t, r;
-    // get the current counter frequency
-    f = GETARMCLKFRQ();
-    t = readCounterCount();
-    //TODO: Fix the delay overflow thing
-    t += ((f / 1000) * delay) / 1000;
-    do {
-        r = readCounterCount();
-    } while (r < t);
-}*/
-
 void mydelay2(unsigned int us) {
-        WAIT1S();
-        return;
     volatile unsigned long timestamp = get_us();
     volatile unsigned long end       = timestamp + us;
-    unsigned long counter = 0;
 
-    //while ((unsigned long)timestamp < (unsigned long)(end)) {
-    while (counter*100 < us){
-        WAIT();
-        counter++;
-        //timestamp = get_us();
+    while ((unsigned long)timestamp < (unsigned long)(end)) {
+        timestamp = get_us();
     }
-    /*if (timestamp < end) {
-        tprint("qualcosa e' andato storto\n");
-        nop();
-    }*/
 }
 
 
@@ -95,12 +67,6 @@ void copy_state(state_t *dest, state_t *src) {
 void test1() {
     int           numeri[100];
     unsigned char buffer[512];
-
-    /*while (1) {
-        uart0_puts("ciao, un secondo alla volta ");
-        hexstring(get_us());
-        mydelay2(1000 * 1000);
-    }*/
 
     tapereg_t *tape      = DEV_REG_ADDR(IL_TAPE, 0);
     int        contatore = 0;
