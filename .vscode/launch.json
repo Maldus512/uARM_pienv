@@ -8,7 +8,7 @@
             "name": "(gdb) Attach Example",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/hal/build/output.elf",
+            "program": "${workspaceFolder}/hal/output.elf",
             "cwd": "${workspaceFolder}/hal/",
             "MIMode": "gdb",
             "miDebuggerPath": "/usr/bin/aarch64-elf-gdb",
@@ -31,7 +31,7 @@
               "traceResponse": true
             },
             "launchCompleteCommand": "None",
-            "preLaunchTask": "debug-qemu"
+            //"preLaunchTask": "debug-qemu"
           }
     ]
 }

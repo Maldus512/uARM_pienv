@@ -1,0 +1,19 @@
+#ifndef __BIOS_CONST_H__
+#define __BIOS_CONST_H__
+
+#define BIOS_SRV_SYS 8
+#define BIOS_SRV_BP 9
+#define BIOS_SRV_HALT 1
+#define BIOS_SRV_PANIC 2
+#define BIOS_SRV_LDST 3
+#define BIOS_SRV_WAIT 4
+
+#define BIOS_INT_SYS 10
+
+#define INTERRUPT_OLDAREA 0x70000
+#define SYNCHRONOUS_OLDAREA 0x71000
+
+#define INTERRUPT_HANDLER 0x7FFF0
+#define SYNCHRONOUS_HANDLER 0x7FFF8
+
+#endif

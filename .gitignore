@@ -4,4 +4,6 @@
 *.elf
 *.map
 *.dd
+test.dd
+.sconsign.dblite
 build/*

@@ -7,7 +7,7 @@ BUILD = build/
 # The directory in which source files are stored.
 SOURCE = source/
 # The directory in which header files are stored.
-INCLUDE = include/
+INCLUDE = ../include/app/
 HALINCLUDE = ../hal/include/ 
 # The name of the output file to generate.
 TARGET = app.elf
