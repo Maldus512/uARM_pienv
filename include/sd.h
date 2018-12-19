@@ -46,5 +46,10 @@
 #define SD_TIMEOUT -1
 #define SD_ERROR -2
 
+typedef enum {
+    SD_READBLOCK = 0,
+    SD_WRITEBLOCK
+} readwrite_t;
+
 int sd_init();
 int sd_readblock(unsigned int lba, unsigned char *buffer, unsigned int num);

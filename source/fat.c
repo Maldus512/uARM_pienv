@@ -92,7 +92,7 @@ int fat_getpartition(void) {
     unsigned char mbr[512];
     bpb_t *       bpb = (bpb_t *)bios_partition_block;
     // read the partitioning table
-    if (sd_readblock(0, mbr, 1)) {
+    if (sd_transferblock(0, mbr, 1, SD_READBLOCK)) {
         // check magic
         if (mbr[510] != 0x55 || mbr[511] != 0xAA) {
             uart_puts("ERROR: Bad magic in MBR\n");
@@ -110,7 +110,7 @@ int fat_getpartition(void) {
         // (over a double word, or 4 bytes)
         partitionlba = mbr[0x1C6] + (mbr[0x1C7] << 8) + (mbr[0x1C8] << 16) + (mbr[0x1C9] << 24);
         // read the boot record
-        if (!sd_readblock(partitionlba, (unsigned char*) bpb, 1)) {
+        if (!sd_transferblock(partitionlba, (unsigned char*) bpb, 1, SD_READBLOCK)) {
             uart_puts("ERROR: Unable to read boot record\n");
             return 0;
         }
@@ -132,7 +132,7 @@ int fat_getpartition(void) {
         root_directory_sector += (bpb->rc - 2) * bpb->spc;
     }
 
-    sd_readblock(partitionlba + bpb->rsc, (unsigned char *)FAT32, (bpb->spf16 ? bpb->spf16 : bpb->spf32) );
+    sd_transferblock(partitionlba + bpb->rsc, (unsigned char *)FAT32, (bpb->spf16 ? bpb->spf16 : bpb->spf32), SD_READBLOCK);
 
     return 1;
 }
@@ -148,7 +148,7 @@ unsigned int fat_getcluster(char *fn) {
     // This is only for FAT16
     s = (bpb->nr0 + (bpb->nr1 << 8)) * sizeof(fatdir_t);
     // load the root directory
-    if (sd_readblock(root_directory_sector, (unsigned char *)dir, s / 512 + 1)) {
+    if (sd_transferblock(root_directory_sector, (unsigned char *)dir, s / 512 + 1, SD_READBLOCK)) {
         // iterate on each entry and check if it's the one we're looking for
         for (; dir->name[0] != 0; dir++) {
             // is it a valid entry?
@@ -179,7 +179,7 @@ unsigned char readfile[512];
 /**
  * Read a file into memory
  */
-int fat_readfile(unsigned int cluster, unsigned char *data, unsigned int num) {
+int fat_transferfile(unsigned int cluster, unsigned char *data, unsigned int num, readwrite_t readwrite) {
     // BIOS Parameter Block
     bpb_t *bpb = (bpb_t *)bios_partition_block;
     // File allocation tables. We choose between FAT16 and FAT32 dynamically
@@ -211,16 +211,13 @@ int fat_readfile(unsigned int cluster, unsigned char *data, unsigned int num) {
     uart_puts("\nFAT First data sector: ");
     uart_hex(data_sec);
     uart_puts("\n");
-    // load FAT table
-    // TODO: does this do anything? Yes, it loads the FAT. I don't see a difference because I'm always reading 1 cluster files
-    //s = sd_readblock(partitionlba + bpb->rsc, (unsigned char *)fat32, (bpb->spf16 ? bpb->spf16 : bpb->spf32) );
     // end of FAT in memory
     // iterate on cluster chain
     counter = 0;
     while (cluster > 1 && cluster < 0xFFF8) {
         if (counter == num) {
             // load all sectors in a cluster
-            read += sd_readblock((cluster - 2) * bpb->spc + data_sec, data, bpb->spc);
+            read += sd_transferblock((cluster - 2) * bpb->spc + data_sec, data, bpb->spc, readwrite);
         } else {
             // get the next cluster in chain
             cluster = bpb->spf16 > 0 ? fat16[cluster] : fat32[cluster];

@@ -1,5 +1,6 @@
 #include "uart.h"
 #include "emulated_tapes.h"
+#include "sd.h"
 #include "fat.h"
 
 unsigned int tape_clusters[MAX_TAPES];
@@ -31,7 +32,13 @@ void init_emulated_tapes() {
 unsigned int read_tape_block(int tape, unsigned char *buffer) {
     if (tape_clusters[tape] == 0)
         return 0;
-    return fat_readfile(tape_clusters[tape], buffer, tape_block_index[tape]);
+    return fat_transferfile(tape_clusters[tape], buffer, tape_block_index[tape], SD_READBLOCK);
+}
+
+unsigned int write_tape_block(int tape, unsigned char *buffer) {
+    if (tape_clusters[tape] == 0)
+        return 0;
+    return fat_transferfile(tape_clusters[tape], buffer, tape_block_index[tape], SD_WRITEBLOCK);
 }
 
 void tape_next_block(int tape) { tape_block_index[tape]++; }

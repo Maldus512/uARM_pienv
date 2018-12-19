@@ -14,6 +14,7 @@
 #define SKIPBLK 2
 #define READBLK 3
 #define BACKBLK 4
+#define WRITEBLK 5
 
 #define DEVICE_NOT_INSTALLED    0
 #define DEVICE_READY            1

@@ -61,6 +61,10 @@
 #define CMD_STOP_TRANS 0x0C030000
 #define CMD_READ_SINGLE 0x11220010
 #define CMD_READ_MULTI 0x12220032
+
+#define CMD_WRITE_SINGLE 0x18220000
+#define CMD_WRITE_MULTI 0x19020022
+
 #define CMD_SET_BLOCKCNT 0x17020000
 #define CMD_APP_CMD 0x37000000
 #define CMD_SET_BUS_WIDTH (0x06020000 | CMD_NEED_APP)
@@ -77,6 +81,7 @@
 #define INT_DATA_TIMEOUT 0x00100000
 #define INT_CMD_TIMEOUT 0x00010000
 #define INT_READ_RDY 0x00000020
+#define INT_WRITE_RDY 0x00000010
 #define INT_CMD_DONE 0x00000001
 
 #define INT_ERROR_MASK 0x017E8000
@@ -213,19 +218,13 @@ int sd_cmd(unsigned int code, unsigned int arg) {
     return 0;
 }
 
-/**
- * read a block from sd card and return the number of bytes read
- * returns 0 on error.
- */
-int sd_readblock(unsigned int lba, unsigned char *buffer, unsigned int num) {
-    int r, c = 0, d;
+int sd_transferblock(unsigned int lba, unsigned char *buffer, unsigned int num, readwrite_t readwrite) {
+    int          r, c = 0, d;
+    unsigned int cmd_single = readwrite == SD_READBLOCK ? CMD_READ_SINGLE : CMD_WRITE_SINGLE;
+    unsigned int cmd_multi  = readwrite == SD_READBLOCK ? CMD_READ_MULTI : CMD_WRITE_MULTI;
+    unsigned int mask       = readwrite == SD_READBLOCK ? INT_READ_RDY : INT_WRITE_RDY;
     if (num < 1)
         num = 1;
-    /*uart0_puts("sd_readblock lba ");
-    hexstrings(lba);
-    uart0_puts(" num ");
-    hexstrings(num);
-    uart0_puts("\n");*/
     if (sd_status(SR_DAT_INHIBIT)) {
         sd_err = SD_TIMEOUT;
         return 0;
@@ -238,7 +237,7 @@ int sd_readblock(unsigned int lba, unsigned char *buffer, unsigned int num) {
                 return 0;
         }
         *EMMC_BLKSIZECNT = (num << 16) | 512;
-        sd_cmd(num == 1 ? CMD_READ_SINGLE : CMD_READ_MULTI, lba);
+        sd_cmd(num == 1 ? cmd_single : cmd_multi, lba);
         if (sd_err)
             return 0;
     } else {
@@ -246,17 +245,21 @@ int sd_readblock(unsigned int lba, unsigned char *buffer, unsigned int num) {
     }
     while (c < num) {
         if (!(sd_scr[0] & SCR_SUPP_CCS)) {
-            sd_cmd(CMD_READ_SINGLE, (lba + c) * 512);
+            sd_cmd(cmd_single, (lba + c) * 512);
             if (sd_err)
                 return 0;
         }
-        if ((r = sd_int(INT_READ_RDY))) {
+        if ((r = sd_int(mask))) {
             uart0_puts("\rERROR: Timeout waiting for ready to read\n");
             sd_err = r;
             return 0;
         }
-        for (d = 0; d < 128; d++)
-            buf[d] = *EMMC_DATA;
+        for (d = 0; d < 128; d++) {
+            if (readwrite == SD_READBLOCK)
+                buf[d] = *EMMC_DATA;
+            else
+                *EMMC_DATA = buf[d];
+        }
         c++;
         buf += 128;
     }

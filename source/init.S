@@ -131,7 +131,8 @@ syncronousException:
     beq    swi_handler
 unrecognized:
     mov    x0, x24
-    b      hang
+    and    x1, x25, #0x1FFFFFF
+    b      c_abort_handler
 
 swi_handler:
     str   x1,  [sp, #-16]!

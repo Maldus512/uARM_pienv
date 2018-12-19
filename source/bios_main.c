@@ -43,6 +43,7 @@ void initSystem() {
 
 int __attribute__((weak)) main() {
     // echo everything back
+    uart0_puts("Echoing everything\n");
     while (1) {
         uart0_putc(uart0_getc());
     }

@@ -49,9 +49,9 @@ def which(cmd, mode=os.F_OK | os.X_OK, path=None):
 def PhonyTargets(env=None, **kw):
     if not env: env = DefaultEnvironment()
     for target, action in kw.items():
-        t = env.Alias(target, [], action)
+        t = env.Alias(target, ["boot/{}".format(KERNEL)], action)
         env.AlwaysBuild(t)
-        Depends(t,KERNEL)
+        #Depends(t,KERNEL)
 
 
 AddOption(
@@ -95,6 +95,8 @@ if not TOOLCHAIN:
     print("Cross compiler not found")
     Exit(1)
 
+FLAGS = ['-Wall', '-ffreestanding', '-nostdlib', '-nostartfiles', '-O0', '-g'],
+
 env_options = {
     "CC":
     "{}gcc".format(TOOLCHAIN),
@@ -105,8 +107,10 @@ env_options = {
         'DISPLAY': os.environ['DISPLAY']
     },
     "CPPPATH": ['include', 'include/app'],
+    "ASFLAGS":
+    FLAGS,
     "CCFLAGS":
-    ['-Wall', '-ffreestanding', '-nostdlib', '-nostartfiles', '-O0', '-g'],
+    FLAGS,
     "LINKFLAGS": [
         '-nostdlib', '-nostartfiles', '-T{}'.format(LDSCRIPT),
         '-o{}/{}'.format(BUILD, ELF)

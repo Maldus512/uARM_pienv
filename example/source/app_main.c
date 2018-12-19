@@ -25,13 +25,14 @@
 #define RESET 0
 #define ACK 1
 #define READBLK 3
+#define WRITEBLK 5
 
 
 extern void hexstring(unsigned int);
 static void term_puts(const char *str);
 
 state_t  t1, t2;
-state_t *current = 0;
+state_t *current;
 
 extern volatile unsigned char __EL1_stack, __EL0_stack;
 
@@ -78,9 +79,18 @@ void test1() {
         ;
 
     tprint("letto nastro: ");
-    buffer[32] = '\0';
     tprint((char *)buffer);
     tprint("\n");
+
+    buffer[0] = 'M';
+
+    tape->command = WRITEBLK;
+    WAIT();
+    while (tape->status == DEVICE_BUSY)
+        ;
+
+    tprint("scritto nastro\n");
+
     while (1) {
         contatore         = (contatore + 1) % 100;
         numeri[contatore] = contatore;
@@ -111,12 +121,14 @@ void interrupt() {
     state_t *oldarea = (state_t *)INTERRUPT_OLDAREA;
 
     copy_state(current, oldarea);
-    set_next_timer(1000*10);
+    set_next_timer(1000 * 10);
 
     if (current == &t1) {
         current = &t2;
-    } else {
+    } else if (current == &t2) {
         current = &t1;
+    } else {
+        return;
     }
     LDST(current);
 }
@@ -163,6 +175,8 @@ int main() {
     STST(&t1);
     STST(&t2);
 
+    hexstring(&t1);
+
     t1.exception_link_register = (uint64_t)test1;
     t2.exception_link_register = (uint64_t)test2;
     t1.stack_pointer           = (uint64_t)&__EL0_stack - 0x2000;
@@ -171,6 +185,8 @@ int main() {
     t2.status_register         = 0x340;
     current                    = &t1;
     set_next_timer(1000);
+
+    tprint("about to launch the first process\n");
     LDST(current);
 
     return 0;

@@ -46,10 +46,6 @@ uint32_t c_swi_handler(uint32_t code, uint32_t *registers) {
             state = (state_t *)registers;
             LDST_EL0(state);
             return 0;
-        case SYS_INITMMU:
-            initMMU();
-            return 0;
-
         default:
             uart0_puts("Unrecognized code: ");
             hexstring(code);
@@ -121,6 +117,20 @@ void c_irq_handler() {
                     }
                 }
                 break;
+            case WRITEBLK:
+                if (tape->status == DEVICE_READY) {
+                    if (tape->command == old_tape_command[i])
+                        break;
+                    old_tape_command[i] = WRITEBLK;
+                    tape->status        = DEVICE_BUSY;
+                } else if (tape->status == DEVICE_BUSY) {
+                    write_tape_block(i, (unsigned char *)(uint64_t)tape->data0);
+                    tape->status = DEVICE_READY;
+                    if (!(interrupt_mask & (1 << IL_TAPE))) {
+                        interrupt_lines[IL_TAPE] |= 1 << i;
+                        f_interrupt = 1;
+                    }
+                }
         }
     }
 
@@ -192,4 +202,32 @@ void c_irq_handler() {
             }
         }
     }*/
+}
+
+
+void c_abort_handler(uint64_t exception_code, uint64_t iss) {
+    switch (exception_code) {
+        case 0x24:     // Data abort (MMU)
+            uart0_puts("Data abort (lower exception level) caused by ");
+            if (iss & 0b1000000)
+                uart0_puts("write\n");
+            else
+                uart0_puts("read\n");
+            break;
+        case 0x25:     // Data abort (MMU)
+            uart0_puts("Data abort (same exception level) caused by ");
+            if (iss & 0b1000000)
+                uart0_puts("write\n");
+            else
+                uart0_puts("read\n");
+            break;
+        default:
+            break;
+    }
+
+    hexstring(exception_code);
+    hexstring(iss);
+    while (1) {
+        HALT();
+    }
 }
