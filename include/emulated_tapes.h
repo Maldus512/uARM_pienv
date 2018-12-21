@@ -32,6 +32,7 @@
 extern volatile tapereg_t tape_devices[MAX_TAPES];
 
 unsigned int read_tape_block(int tape, unsigned char *buffer);
+unsigned int write_tape_block(int tape, unsigned char *buffer);
 void init_emulated_tapes();
 
 #endif

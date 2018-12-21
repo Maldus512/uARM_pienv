@@ -22,7 +22,8 @@
  * DEALINGS IN THE SOFTWARE.
  *
  */
+#include "sd.h"
 
-int fat_getpartition(void);
+int          fat_getpartition(void);
 unsigned int fat_getcluster(char *fn);
-unsigned int fat_readfile(unsigned int cluster, unsigned char *buffer, unsigned int num);
+unsigned int fat_transferfile(unsigned int cluster, unsigned char *buffer, unsigned int num, readwrite_t readwrite);

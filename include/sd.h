@@ -23,6 +23,9 @@
  *
  */
 
+#ifndef __SD_H__
+#define __SD_H__
+
 #define GPFSEL0 ((volatile unsigned int *)(MMIO_BASE + 0x00200000))
 #define GPFSEL1 ((volatile unsigned int *)(MMIO_BASE + 0x00200004))
 #define GPFSEL2 ((volatile unsigned int *)(MMIO_BASE + 0x00200008))
@@ -46,10 +49,9 @@
 #define SD_TIMEOUT -1
 #define SD_ERROR -2
 
-typedef enum {
-    SD_READBLOCK = 0,
-    SD_WRITEBLOCK
-} readwrite_t;
+typedef enum { SD_READBLOCK = 0, SD_WRITEBLOCK } readwrite_t;
 
 int sd_init();
-int sd_readblock(unsigned int lba, unsigned char *buffer, unsigned int num);
+int sd_transferblock(unsigned int lba, unsigned char *buffer, unsigned int num, readwrite_t readwrite);
+
+#endif

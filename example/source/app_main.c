@@ -33,15 +33,15 @@ static void term_puts(const char *str);
 
 state_t  t1, t2;
 state_t *current;
+int      semaforo = 0;
 
-extern volatile unsigned char __EL1_stack, __EL0_stack;
-
-extern void delay_us(unsigned int);
+extern volatile unsigned char __EL0_stack;
 
 static int      term_putchar(char c);
 static uint32_t tx_status(termreg_t *tp);
+tapereg_t *tape;
 
-void mydelay2(unsigned int us) {
+void delay(unsigned int us) {
     volatile unsigned long timestamp = get_us();
     volatile unsigned long end       = timestamp + us;
 
@@ -69,13 +69,11 @@ void test1() {
     int           numeri[100];
     unsigned char buffer[512];
 
-    tapereg_t *tape      = DEV_REG_ADDR(IL_TAPE, 0);
     int        contatore = 0;
     tprint("partenza 1\n");
     tape->data0   = (unsigned int)(unsigned long)buffer;
     tape->command = READBLK;
-    WAIT();
-    while (tape->status == DEVICE_BUSY)
+    while (semaforo == 0)
         ;
 
     tprint("letto nastro: ");
@@ -84,9 +82,9 @@ void test1() {
 
     buffer[0] = 'M';
 
+    semaforo = 0;
     tape->command = WRITEBLK;
-    WAIT();
-    while (tape->status == DEVICE_BUSY)
+    while (semaforo == 0)
         ;
 
     tprint("scritto nastro\n");
@@ -97,39 +95,44 @@ void test1() {
         tprint("test1 vivo: ");
         term_puts("test1 vivoaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
         hexstring(numeri[contatore]);
-        mydelay2(1000 * 1000);
+        delay(1000 * 1000);
     }
 }
 
 void test2() {
-    int           numeri[100];
-    int           contatore = 0;
     unsigned long timer;
     tprint("partenza 2\n");
     while (1) {
-        timer             = get_us();
-        contatore         = (contatore + 1) % 70;
-        numeri[contatore] = contatore;
+        timer = get_us();
         tprint("test2 vivo: ");
         term_puts("test2 vivo\n");
         hexstring(timer);
-        mydelay2(1000 * 1000);
+        delay(1000 * 1000);
     }
 }
 
 void interrupt() {
-    state_t *oldarea = (state_t *)INTERRUPT_OLDAREA;
+    state_t *oldarea         = (state_t *)INTERRUPT_OLDAREA;
+    uint8_t *interrupt_lines = (uint8_t *)INTERRUPT_LINES;
 
     copy_state(current, oldarea);
-    set_next_timer(1000 * 10);
 
-    if (current == &t1) {
-        current = &t2;
-    } else if (current == &t2) {
-        current = &t1;
-    } else {
-        return;
+    if (interrupt_lines[IL_TIMER]) {
+        /* This also clears pending interrupts */
+        set_next_timer(1000 * 10);
+
+        if (current == &t1) {
+            current = &t2;
+        } else if (current == &t2) {
+            current = &t1;
+        }
     }
+
+    if (interrupt_lines[IL_TAPE]) {
+        semaforo = 1;
+        tape->command = ACK;
+    }
+
     LDST(current);
 }
 
@@ -168,14 +171,13 @@ static int term_putchar(char c) {
 static uint32_t tx_status(termreg_t *tp) { return ((tp->transm_status) & TERM_STATUS_MASK); }
 
 int main() {
-    *((uint8_t *)INTERRUPT_MASK) &= ~(1 << IL_TIMER);
+    tape      = DEV_REG_ADDR(IL_TAPE, 0);
+    *((uint8_t *)INTERRUPT_MASK) &= ~((1 << IL_TIMER) | (1 << IL_TAPE));
     tprint("sono l'applicazione\n");
     *((uint64_t *)INTERRUPT_HANDLER) = (uint64_t)&interrupt;
 
     STST(&t1);
     STST(&t2);
-
-    hexstring(&t1);
 
     t1.exception_link_register = (uint64_t)test1;
     t2.exception_link_register = (uint64_t)test2;

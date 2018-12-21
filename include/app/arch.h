@@ -11,6 +11,7 @@
 
 #define MAX_DEVICES         4
 
+#define IL_LINES            3
 #define IL_TERMINAL         2
 #define IL_TAPE             1
 #define IL_TIMER            0

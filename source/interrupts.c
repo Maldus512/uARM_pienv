@@ -15,7 +15,9 @@ uint64_t next_timer                 = 0;
 uint64_t f_emulated_timer_interrupt = 0;
 
 void set_next_timer(uint64_t microseconds) {
-    next_timer = get_us() + microseconds;
+    uint8_t *interrupt_lines  = (uint8_t *)INTERRUPT_LINES;
+    next_timer                = get_us() + microseconds;
+    interrupt_lines[IL_TIMER] = 0;
     if (microseconds < 100) {
         setTimer(microseconds);
     }
@@ -84,7 +86,6 @@ void c_irq_handler() {
 
     if (tmp & (1 << 8)) {
         // TODO: uart interrupt. to be managed
-        f_interrupt = 1;
     }
 
     for (i = 0; i < MAX_TAPES; i++) {
@@ -113,7 +114,6 @@ void c_irq_handler() {
                     tape->status = DEVICE_READY;
                     if (!(interrupt_mask & (1 << IL_TAPE))) {
                         interrupt_lines[IL_TAPE] |= 1 << i;
-                        f_interrupt = 1;
                     }
                 }
                 break;
@@ -128,7 +128,6 @@ void c_irq_handler() {
                     tape->status = DEVICE_READY;
                     if (!(interrupt_mask & (1 << IL_TAPE))) {
                         interrupt_lines[IL_TAPE] |= 1 << i;
-                        f_interrupt = 1;
                     }
                 }
         }
@@ -160,7 +159,6 @@ void c_irq_handler() {
                     terminal->transm_status = CHAR_TRANSMIT;
                     if (!(interrupt_mask & (1 << IL_TERMINAL))) {
                         interrupt_lines[IL_TERMINAL] |= 1 << i;
-                        f_interrupt = 1;
                     }
                 }
                 break;
@@ -171,13 +169,21 @@ void c_irq_handler() {
         if (next_timer > 0 && timer >= next_timer) {
             if (!(interrupt_mask & (1 << IL_TIMER))) {
                 interrupt_lines[IL_TIMER] = 1;
-                f_interrupt               = 1;
             }
             setTimer(100);
         } else if (next_timer - timer < 100) {
             setTimer(next_timer - timer);
         } else if (next_timer - timer >= 100) {
             setTimer(100);
+        }
+    }
+
+    for (i = 0; i < IL_LINES; i++) {
+        if (interrupt_lines[i]) {
+            f_interrupt = 1;
+            /* Until there are interrupt lines pending fire interrupts immediately */
+            setTimer(0);
+            break;
         }
     }
 
