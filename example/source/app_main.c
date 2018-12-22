@@ -105,7 +105,7 @@ void test2() {
     while (1) {
         timer = get_us();
         tprint("test2 vivo: ");
-        term_puts("test2 vivo\n");
+        //term_puts("test2 vivo\n");
         hexstring(timer);
         delay(1000 * 1000);
     }
@@ -171,6 +171,8 @@ static int term_putchar(char c) {
 static uint32_t tx_status(termreg_t *tp) { return ((tp->transm_status) & TERM_STATUS_MASK); }
 
 int main() {
+    void (*fun_ptr)(void); 
+
     tape      = DEV_REG_ADDR(IL_TAPE, 0);
     *((uint8_t *)INTERRUPT_MASK) &= ~((1 << IL_TIMER) | (1 << IL_TAPE));
     tprint("sono l'applicazione\n");
@@ -189,7 +191,10 @@ int main() {
     set_next_timer(1000);
 
     tprint("about to launch the first process\n");
-    LDST(current);
+    //LDST(current);
+    fun_ptr = 0x400000;
+    fun_ptr();
+    test2();
 
     return 0;
 }

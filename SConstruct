@@ -68,7 +68,7 @@ KERNEL = 'kernel8.img'
 APP = GetOption('app')
 TOOLCHAIN = None
 BUILD = "build"
-FLAGS = ['-Wall', '-ffreestanding', '-nostdlib', '-nostartfiles', '-O0', '-g'],
+FLAGS = ['-Wall', '-ffreestanding', '-nostdlib', '-nostartfiles', '-O0', '-g', '-march=armv8.1-a', '-mtune=cortex-a53'],
 
 VariantDir(BUILD, "source", duplicate=0)
 
