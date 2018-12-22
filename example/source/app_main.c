@@ -27,8 +27,6 @@
 #define READBLK 3
 #define WRITEBLK 5
 
-
-extern void hexstring(unsigned int);
 static void term_puts(const char *str);
 
 state_t  t1, t2;
@@ -37,8 +35,6 @@ int      semaforo = 0;
 
 extern volatile unsigned char __EL0_stack;
 
-static int      term_putchar(char c);
-static uint32_t tx_status(termreg_t *tp);
 tapereg_t *tape;
 
 void delay(unsigned int us) {
@@ -65,48 +61,108 @@ void copy_state(state_t *dest, state_t *src) {
     dest->status_register         = src->status_register;
 }
 
+static uint32_t tx_status(termreg_t *tp) { return ((tp->transm_status) & TERM_STATUS_MASK); }
+
+static int term_putchar(char c) {
+    uint32_t   stat;
+    termreg_t *term0_reg = (termreg_t *)DEV_REG_ADDR(IL_TERMINAL, 3);
+
+    stat = tx_status(term0_reg);
+    if (stat != ST_READY && stat != ST_TRANSMITTED)
+        return -1;
+
+    term0_reg->transm_command = ((c << CHAR_OFFSET) | CMD_TRANSMIT);
+    WAIT();
+
+    while ((stat = tx_status(term0_reg)) == ST_BUSY)
+        ;
+
+    term0_reg->transm_command = CMD_ACK;
+    WAIT();
+
+    if (stat != ST_TRANSMITTED)
+        return -1;
+    else
+        return 0;
+}
+
+static void term_puts(const char *str) {
+    while (*str)
+        if (term_putchar(*str++) == -1)
+            return;
+}
+
+static void uart0_putc(char c) {
+    unsigned int *DATA = (unsigned int *)0x3F201000;
+    unsigned int *FLAG = (unsigned int *)(0x3F201000 + 24);
+    while (*FLAG & 0x20)
+        ;
+    *DATA = c;
+}
+
+static void print(char *s) {
+    while (*s) {
+        /* convert newline to carrige return + newline */
+        if (*s == '\n')
+            uart0_putc('\r');
+        uart0_putc(*s++);
+    }
+}
+
+static void uart_hex(unsigned int d) {
+    unsigned int n;
+    int          c;
+    for (c = 28; c >= 0; c -= 4) {
+        n = (d >> c) & 0xF;
+        n += n > 9 ? 0x37 : 0x30;
+        uart0_putc(n);
+    }
+}
+
 void test1() {
     int           numeri[100];
     unsigned char buffer[512];
 
-    int        contatore = 0;
-    tprint("partenza 1\n");
+    int contatore = 0;
+    print("partenza 1\n");
     tape->data0   = (unsigned int)(unsigned long)buffer;
     tape->command = READBLK;
     while (semaforo == 0)
         ;
 
-    tprint("letto nastro: ");
-    tprint((char *)buffer);
-    tprint("\n");
+    print("letto nastro: ");
+    print((char *)buffer);
+    print("\n");
 
     buffer[0] = 'M';
 
-    semaforo = 0;
+    semaforo      = 0;
     tape->command = WRITEBLK;
     while (semaforo == 0)
         ;
 
-    tprint("scritto nastro\n");
+    print("scritto nastro\n");
 
     while (1) {
         contatore         = (contatore + 1) % 100;
         numeri[contatore] = contatore;
-        tprint("test1 vivo: ");
-        term_puts("test1 vivoaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
-        hexstring(numeri[contatore]);
-        delay(1000 * 1000);
+        print("test1 vivo: ");
+        term_puts("test1 vivo");
+        uart_hex(numeri[contatore]);
+        print("\n");
+        delay(600 * 1000);
     }
 }
 
 void test2() {
     unsigned long timer;
-    tprint("partenza 2\n");
+    print("partenza 2\n");
     while (1) {
         timer = get_us();
-        tprint("test2 vivo: ");
-        //term_puts("test2 vivo\n");
-        hexstring(timer);
+        print("test2 vivo: ");
+        term_puts("test2 vivo\n");
+        uart_hex(timer);
+        print("\n");
         delay(1000 * 1000);
     }
 }
@@ -129,72 +185,37 @@ void interrupt() {
     }
 
     if (interrupt_lines[IL_TAPE]) {
-        semaforo = 1;
+        semaforo      = 1;
         tape->command = ACK;
     }
 
     LDST(current);
 }
 
-
-static void term_puts(const char *str) {
-    while (*str)
-        if (term_putchar(*str++) == -1) {
-            return;
-        }
-}
-
-static int term_putchar(char c) {
-    uint32_t   stat;
-    termreg_t *term0_reg = (termreg_t *)DEV_REG_ADDR(IL_TERMINAL, 3);
-
-    stat = tx_status(term0_reg);
-    if (stat != ST_READY && stat != ST_TRANSMITTED) {
-        return -1;
-    }
-
-    term0_reg->transm_command = ((c << CHAR_OFFSET) | CMD_TRANSMIT);
-    WAIT();
-
-    while ((stat = tx_status(term0_reg)) == ST_BUSY)
-        ;
-
-    term0_reg->transm_command = CMD_ACK;
-    WAIT();
-
-    if (stat != ST_TRANSMITTED) {
-        return -1;
-    } else
-        return 0;
-}
-
-static uint32_t tx_status(termreg_t *tp) { return ((tp->transm_status) & TERM_STATUS_MASK); }
-
 int main() {
-    void (*fun_ptr)(void); 
-
-    tape      = DEV_REG_ADDR(IL_TAPE, 0);
+    tape = DEV_REG_ADDR(IL_TAPE, 0);
     *((uint8_t *)INTERRUPT_MASK) &= ~((1 << IL_TIMER) | (1 << IL_TAPE));
-    tprint("sono l'applicazione\n");
     *((uint64_t *)INTERRUPT_HANDLER) = (uint64_t)&interrupt;
+
+    print("sono l'applicazione\n");
 
     STST(&t1);
     STST(&t2);
 
     t1.exception_link_register = (uint64_t)test1;
     t2.exception_link_register = (uint64_t)test2;
-    t1.stack_pointer           = (uint64_t)&__EL0_stack - 0x2000;
-    t2.stack_pointer           = (uint64_t)&__EL0_stack - 0x4000;
+    t1.stack_pointer           = (uint64_t)0x1000000 + 0x2000;
+    t2.stack_pointer           = (uint64_t)0x1000000 + 0x4000;
     t1.status_register         = 0x340;
     t2.status_register         = 0x340;
     current                    = &t1;
     set_next_timer(1000);
 
-    tprint("about to launch the first process\n");
-    //LDST(current);
+    print("about to launch the first process\n");
+    LDST(current);
+    /*void (*fun_ptr)(void);
     fun_ptr = 0x400000;
     fun_ptr();
-    test2();
-
+    test2();*/
     return 0;
 }

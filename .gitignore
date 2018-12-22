@@ -3,8 +3,8 @@
 *.o
 *.elf
 *.map
-*.dd
-test.dd
 .sconsign.dblite
+test.dd
+*.pyc
 build/*
 tmp

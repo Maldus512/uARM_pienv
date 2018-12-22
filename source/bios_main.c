@@ -51,8 +51,8 @@ int __attribute__((weak)) main() {
 
 void bios_main() {
     initSystem();
-    init_page_table();
-    mmu_init();
+    //init_page_table();
+    //mmu_init();
 
     main();
 }
