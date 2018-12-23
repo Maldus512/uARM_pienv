@@ -21,7 +21,7 @@ The objective of this project is twofold:
 
 - A Raspberry Pi 3
 - A micro SD card
-- `qemu-system-aarch64`
+- `qemu-system-aarch64 >= 2.12` (previous versions do not cover Raspberry Pi 3)
 - `aarch64-linux-gnu-gdb` or `aarch64-elf-gdb`
 
 ## Facilities Provided

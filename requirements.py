@@ -50,7 +50,7 @@ def check_requirements():
             break
 
     if not TOOLCHAIN:
-        print()
+        print("")
         print(
             "ERROR: Cross compiler toolchain not found: possible alternatives are:"
         )
@@ -63,7 +63,7 @@ def check_requirements():
             break
 
     if not DEBUGGER:
-        print()
+        print("")
         print(
             "WARNING: no debugger (aarch64 gdb) found: possible alternatives are:")
         for toolchain in POSSIBLE_TOOLCHAINS:
@@ -72,7 +72,7 @@ def check_requirements():
     if which("qemu-system-aarch64") is not None:
         QEMU = "qemu-system-aarch64"
     else:
-        print()
+        print("")
         print(
             "WARNING: no emulator (qemu for aarch64) found: possible alternatives are:"
         )

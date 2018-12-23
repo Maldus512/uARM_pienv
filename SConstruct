@@ -24,6 +24,16 @@ AddOption(
     metavar='FILE',
     help='Application to be compiled on HAL')
 
+AddOption(
+    '--toolchain-path',
+    dest='toolchain',
+    type='string',
+    nargs=1,
+    action='store',
+    help='Alternative toolchain path')
+
+
+
 ELF = 'output.elf'
 LDSCRIPT = 'hal.ld'
 KERNEL = 'kernel8.img'
@@ -49,6 +59,7 @@ Type:\t'scons' or 'scons hal' to build the Hardware Abstraction Layer,
      \t'scons -c' to clean the corresponding target
 
 The '--app' option must be provided to link an executable to be run as main program over the HAL.
+The '--toolchain-path' option can provide an alternative (cross) compiler to build the kernel
 """,
     append=False)
 
@@ -57,6 +68,10 @@ SetOption('num_jobs', num_cpu)
 print("Running with -j {}".format(GetOption('num_jobs')))
 
 TOOLCHAIN, DEBUGGER, QEMU = check_requirements()
+
+alt_toolchain = GetOption('toolchain')
+if alt_toolchain != None:
+    TOOLCHAIN = alt_toolchain
 
 if TOOLCHAIN == None:
     Exit(1)
@@ -104,6 +119,7 @@ env.Alias("all", [boot, "example/app.elf"])
 env.Alias("hal", boot)
 
 if 'example' in COMMAND_LINE_TARGETS or 'all' in COMMAND_LINE_TARGETS:
+    Export('alt_toolchain')
     SConscript("example/SConstruct")
 
 if 'debug' in COMMAND_LINE_TARGETS:

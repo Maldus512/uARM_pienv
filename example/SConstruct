@@ -63,12 +63,16 @@ for toolchain in POSSIBLE_TOOLCHAINS:
         TOOLCHAIN = toolchain
         break
 
-if not TOOLCHAIN:
-    print()
+alt_toolchain = None
+Import('*')
+if alt_toolchain != None:
+    TOOLCHAIN=alt_toolchain
+
+if TOOLCHAIN == None:
+    print("")
     print("Cross compiler toolchain not found: possible alternatives are:")
     for toolchain in POSSIBLE_TOOLCHAINS:
         print("\t{}gcc".format(toolchain))
-    print("Use the ")
     Exit(1)
 
 env_options = {
@@ -80,7 +84,9 @@ env_options = {
     "CPPPATH": ['include', '../include/app'],
     "CCFLAGS":
     FLAGS,
-    "LINKFLAGS": ["-Wl,-r", "-nostdlib", "-nostartfiles"],
+    'LINK' : "{}ld".format(TOOLCHAIN),
+    "LINKFLAGS": ["-r"],
+    #"LINKFLAGS": ["-Wl,-r", "-nostdlib", "-nostartfiles"],
 }
 
 sources = Glob("{}/*.c".format(BUILD))
