@@ -115,6 +115,12 @@ GETSP_EL0:
     mrs    x0, sp_el0
     ret
 
+.globl GETCOREID
+GETCOREID:
+    mrs     x0, mpidr_el1
+    and     x0, x0, #0x3
+    ret
+
 .globl STST_EL0
 STST_EL0:
     /* General purpose registers */

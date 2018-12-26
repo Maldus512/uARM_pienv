@@ -14,10 +14,11 @@
 #include "emulated_terminals.h"
 #include "emulated_tapes.h"
 
+
 void initSystem() {
     *((uint64_t *)INTERRUPT_HANDLER)   = 0;
     *((uint64_t *)SYNCHRONOUS_HANDLER) = 0;
-    *((uint8_t *)INTERRUPT_MASK) = 0xFF;
+    *((uint8_t *)INTERRUPT_MASK)       = 0xFF;
 
     initGpio();
     initUart0();
@@ -37,22 +38,40 @@ void initSystem() {
     lfb_print(1, 2, "*      MaldOS running...      *");
     lfb_print(1, 3, "*******************************");
 
-    SYSCALL(SYS_INITARMTIMER, 0, 0, 0);
-    SYSCALL(SYS_SETNEXTTIMER, 1, 0, 0);
+    initArmTimer();
+    setTimer(1);
+}
+
+
+void function1() {
+    uart0_puts("ciao");
+    while(1) {
+        uart0_puts("ciao\n");
+        delay_us(1000*1000);
+    }
+}
+
+void idle() {
+    state_t state;
+    state.exception_link_register = (uint64_t)function1;
+    state.stack_pointer           = (uint64_t)0x1000000 + 0x2000;
+    state.status_register         = 0x345;
+    LDST_EL0(&state);
 }
 
 int __attribute__((weak)) main() {
-    // echo everything back
     uart0_puts("Echoing everything\n");
+    // echo everything back
+    CoreExecute(1, idle);
     while (1) {
         uart0_putc(uart0_getc());
     }
 }
 
+
 void bios_main() {
     initSystem();
-    //init_page_table();
-    //mmu_init();
-
+    // init_page_table();
+    // mmu_init();
     main();
 }

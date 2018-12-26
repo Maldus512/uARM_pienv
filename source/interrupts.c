@@ -70,6 +70,7 @@ void c_irq_handler() {
     uint8_t *           interrupt_lines             = (uint8_t *)INTERRUPT_LINES;
     uint8_t             interrupt_mask              = *((uint8_t *)INTERRUPT_MASK);
     static unsigned int old_tape_command[MAX_TAPES] = {0};
+    unsigned int core_id;
 
     handler_present = *((uint64_t *)INTERRUPT_HANDLER);
 
@@ -82,7 +83,18 @@ void c_irq_handler() {
         lastBlink = timer / 1000;
     }
 
-    tmp = *((volatile uint32_t *)CORE0_IRQ_SOURCE);
+    core_id = GETCOREID();
+    if (core_id == 0) {
+        tmp = *((volatile uint32_t *)CORE0_IRQ_SOURCE);
+    } else if (core_id == 1) {
+        tmp = *((volatile uint32_t *)CORE1_IRQ_SOURCE);
+        if (tmp & 0x08)
+            setTimer(1000*1000);
+        return;
+    }
+    else {
+        return;
+    }
 
     if (tmp & (1 << 8)) {
         // TODO: uart interrupt. to be managed

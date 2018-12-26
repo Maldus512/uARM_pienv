@@ -11,6 +11,7 @@ SECTIONS
     . = 0x80000;
     __text_start = .;
     .text : {
+        KEEP(*(.text.startup))
         KEEP(*(.init))
         *(.text .text.* .gnu.linkonce.t*)
     }  > RAM
@@ -44,29 +45,23 @@ SECTIONS
         . = . + 512;    /* EL0 stack size */
         . = ALIGN(16);
         __EL0_stack = .;
-        PROVIDE(__EL0_stack = .);
-        . = . + 16384;    /* EL1 stack size */
+        . = . + 16384;    /* EL0 stack size */
         . = ALIGN(16);
         __EL1_stack_core0 = .;
-        PROVIDE(__EL1_stack_core0 = .);
         . = . + 16384;    /* EL1 stack size */
         . = ALIGN(16);
         __EL1_stack_core1 = .;
-        PROVIDE(__EL1_stack_core1 = .);
         . = . + 16384;    /* EL1 stack size */
         . = ALIGN(16);
         __EL1_stack_core2 = .;
-        PROVIDE(__EL1_stack_core2 = .);
         . = . + 16384;    /* EL1 stack size */
         . = ALIGN(16);
         __EL1_stack_core3 = .;
-        PROVIDE(__EL1_stack_core3 = .);
         __EL1_stack = .;
-        PROVIDE(__EL1_stack = .);
-        . = . + 4096;  /* EL2 stack size (start-up) */
+        . = . + 16384;  /* EL2 stack size (start-up) */
         . = ALIGN(16);
         __EL2_stack = .;
-        . = . + 4096;
+        . = . + 512;  /* EL2 stack size (start-up) */
         . = ALIGN(16);
         __stack_end__ = .;    
     } > RAM

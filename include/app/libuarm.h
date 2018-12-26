@@ -45,6 +45,10 @@ void LDST(void *addr);
 /* stores current processor state at address *addr */
 void STST(void *addr);
 
+unsigned int GETCOREID();
+
+int CoreExecute(unsigned int core, void *task);
+
 /* call kernel system call handler */
 int SYSCALL(unsigned int sysNum, unsigned int arg1, unsigned int arg2, unsigned int arg3);
 

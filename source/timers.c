@@ -61,6 +61,7 @@ void initArmTimer() {
     armTimerFrequency = GETARMCLKFRQ();
     /* routing core0 counter to core0 irq */
     *(volatile uint32_t *)CORE0_TIMER_IRQCNTL = 0x08;
+    *(volatile uint32_t *)CORE1_TIMER_IRQCNTL = 0x08;
     // enableCounter();
 }
 
@@ -97,22 +98,12 @@ int is_timer_reached(uint8_t timer) {
 void wait_msec(unsigned int n) { delay_us(n * 1000); }
 
 void delay_us(uint32_t delay) {
-    /**
-     * Wait N microsec (ARM CPU only)
-     */
-    unsigned int f, t, r;
-    // get the current counter frequency
-    f = GETARMCLKFRQ();
-    t = readCounterCount();
-    //hexstring(t);
-    //TODO: Fix the delay overflow thing
-    t += ((f / 1000) * delay) / 1000;
-    do {
-        r = readCounterCount();
-    } while (r < t);
- /*   hexstrings(r);
-    tprint(" + ");
-    hexstring(t);*/
+    volatile unsigned long timestamp = get_us();
+    volatile unsigned long end       = timestamp + delay;
+
+    while ((unsigned long)timestamp < (unsigned long)(end)) {
+        timestamp = get_us();
+    }
 }
 
 void rawDelay() {
