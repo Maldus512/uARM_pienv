@@ -76,15 +76,18 @@ if alt_toolchain != None:
 if TOOLCHAIN == None:
     Exit(1)
 
+externalEnvironment = {}
+if 'PATH' in os.environ.keys():
+    externalEnvironment['PATH'] = os.environ['PATH']
+if 'DISPLAY' in os.environ.keys():
+    externalEnvironment['DISPLAY'] = os.environ['DISPLAY']
+
 env_options = {
     "CC":
     "{}gcc".format(TOOLCHAIN),
     "LINK":
     "{}ld".format(TOOLCHAIN),
-    "ENV": {
-        'PATH': os.environ['PATH'],
-        'DISPLAY': os.environ['DISPLAY']
-    },
+    "ENV": externalEnvironment,
     "CPPPATH": ['include', 'include/app'],
     "ASFLAGS":
     FLAGS,
