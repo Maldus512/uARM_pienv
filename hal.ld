@@ -41,12 +41,26 @@ SECTIONS
     .stack : {
         . = ALIGN(16);  /* Stack must always be aligned to 8 byte boundary AAPCS64 call standard */
         __stack_start__ = .;
-        . = . + 65536;    /* EL0 stack size */
+        . = . + 512;    /* EL0 stack size */
         . = ALIGN(16);
         __EL0_stack = .;
         PROVIDE(__EL0_stack = .);
         . = . + 16384;    /* EL1 stack size */
         . = ALIGN(16);
+        __EL1_stack_core0 = .;
+        PROVIDE(__EL1_stack_core0 = .);
+        . = . + 16384;    /* EL1 stack size */
+        . = ALIGN(16);
+        __EL1_stack_core1 = .;
+        PROVIDE(__EL1_stack_core1 = .);
+        . = . + 16384;    /* EL1 stack size */
+        . = ALIGN(16);
+        __EL1_stack_core2 = .;
+        PROVIDE(__EL1_stack_core2 = .);
+        . = . + 16384;    /* EL1 stack size */
+        . = ALIGN(16);
+        __EL1_stack_core3 = .;
+        PROVIDE(__EL1_stack_core3 = .);
         __EL1_stack = .;
         PROVIDE(__EL1_stack = .);
         . = . + 4096;  /* EL2 stack size (start-up) */

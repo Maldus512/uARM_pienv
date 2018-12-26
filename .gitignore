@@ -3,6 +3,7 @@
 *.o
 *.elf
 *.map
+*.swp
 .sconsign.dblite
 test.dd
 *.pyc

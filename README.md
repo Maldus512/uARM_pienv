@@ -15,7 +15,7 @@ The objective of this project is twofold:
 
 - python (required by scons)
 - scons
-- An appropriate toolchain to build aarch64 code (aarch64-linux-gnu or aarch64-elf)
+- An appropriate toolchain to build aarch64 code (aarch64-linux-gnu or aarch64-elf; arm64 systems can use gcc)
 
 #### Optional
 
