@@ -18,6 +18,10 @@ void set_next_timer(uint64_t microseconds) {
     uint8_t *interrupt_lines  = (uint8_t *)INTERRUPT_LINES;
     next_timer                = get_us() + microseconds;
     interrupt_lines[IL_TIMER] = 0;
+    /*uart0_puts("current time: ");
+    hexstring(get_us());
+    uart0_puts("next timer: ");
+    hexstring(next_timer);*/
     if (microseconds < 100) {
         setTimer(microseconds);
     }
@@ -70,7 +74,7 @@ void c_irq_handler() {
     uint8_t *           interrupt_lines             = (uint8_t *)INTERRUPT_LINES;
     uint8_t             interrupt_mask              = *((uint8_t *)INTERRUPT_MASK);
     static unsigned int old_tape_command[MAX_TAPES] = {0};
-    unsigned int core_id;
+    unsigned int        core_id;
 
     handler_present = *((uint64_t *)INTERRUPT_HANDLER);
 
@@ -89,12 +93,12 @@ void c_irq_handler() {
     } else if (core_id == 1) {
         tmp = *((volatile uint32_t *)CORE1_IRQ_SOURCE);
         if (tmp & 0x08)
-            setTimer(1000*1000);
+            setTimer(1000 * 1000);
+        return;
+    } else {
         return;
     }
-    else {
-        return;
-    }
+    // hexstring(tmp);
 
     if (tmp & (1 << 8)) {
         // TODO: uart interrupt. to be managed
@@ -108,12 +112,10 @@ void c_irq_handler() {
                 tape->status = DEVICE_READY;
                 break;
             case ACK:
-                if (tape->command == old_tape_command[i])
-                    break;
-
                 old_tape_command[i] = ACK;
                 tape->status        = DEVICE_READY;
-                interrupt_lines[IL_TAPE] &= ~(1 << i);
+                interrupt_lines[IL_TAPE] = 0;//&= ~(1 << i);
+                tape->command = RESET;
                 break;
             case READBLK:
                 if (tape->status == DEVICE_READY) {
@@ -154,12 +156,12 @@ void c_irq_handler() {
                 terminal->transm_command = RESET;
                 terminal->transm_status  = DEVICE_READY;
                 /* Reset command also removes interrupt */
-                interrupt_lines[0] &= ~(1 << i);
+                interrupt_lines[IL_TERMINAL] &= ~(1 << i);
                 break;
             case ACK:
                 terminal->transm_command = RESET;
                 terminal->transm_status  = DEVICE_READY;
-                interrupt_lines[IL_TERMINAL] &= ~(1 << i);
+                interrupt_lines[IL_TERMINAL] = 0;//&= ~(1 << i);
                 break;
             case TRANSMIT_CHAR:
                 if ((terminal->transm_status & 0xFF) == DEVICE_READY) {
@@ -191,7 +193,7 @@ void c_irq_handler() {
     }
 
     for (i = 0; i < IL_LINES; i++) {
-        if (interrupt_lines[i]) {
+        if (interrupt_lines[i] && !(interrupt_mask &(1<<i))) {
             f_interrupt = 1;
             /* Until there are interrupt lines pending fire interrupts immediately */
             setTimer(0);

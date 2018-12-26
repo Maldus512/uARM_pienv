@@ -13,7 +13,7 @@ _start:
     ldr     x1, =CoresReady
     mov     x0, #1
     str     w0, [x1]
-    
+
 multicore_start:
 
     mrs	x0, cnthctl_el2
@@ -70,13 +70,6 @@ set_stacks:
     orr     x0, x0, #(1 << 1)   // SWIO hardwired on Pi3
     msr     hcr_el2, x0
     mrs     x0, hcr_el2
-
-    /*  Initialize SCTLR_EL1 for all Cores */
-	mov	x0, #0x0800
-	movk	x0, #0x30d0, lsl #16
-	orr    x0, x0, #(0x1 << 2)            // The C bit on (data cache). 
-	orr    x0, x0, #(0x1 << 12)           // The I bit on (instruction cache)
-    msr sctlr_el1, x0
 
     /* change execution level to EL1 */
     mov     x2, #0x3C5
@@ -246,7 +239,29 @@ swi_handler:
 irq_handler:
     msr   daifset, #2
     
-    ldr     x10, =__EL1_stack
+    mrs     x10, mpidr_el1
+    and     x10, x10, #0x3
+    cmp     x10, #0
+    beq     set_irq_stack_core0
+    cmp     x10, #1
+    beq     set_irq_stack_core1
+    cmp     x10, #2
+    beq     set_irq_stack_core2
+    cmp     x10, #3
+    beq     set_irq_stack_core3
+
+set_irq_stack_core0:
+    ldr     x10, =__EL1_stack_core0
+    b       set_chosen_stack
+set_irq_stack_core1:
+    ldr     x10, =__EL1_stack_core1
+    b       set_chosen_stack
+set_irq_stack_core2:
+    ldr     x10, =__EL1_stack_core2
+    b       set_chosen_stack
+set_irq_stack_core3:
+    ldr     x10, =__EL1_stack_core3
+set_chosen_stack:
     mov     sp, x10
     // save state in oldarea
     stp   x27, x28, [sp, #-16]

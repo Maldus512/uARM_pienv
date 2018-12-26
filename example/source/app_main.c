@@ -175,7 +175,7 @@ void interrupt() {
 
     if (interrupt_lines[IL_TIMER]) {
         /* This also clears pending interrupts */
-        set_next_timer(1000 * 10);
+        set_next_timer(10 * 1000);
 
         if (current == &t1) {
             current = &t2;
@@ -194,7 +194,7 @@ void interrupt() {
 
 int main() {
     tape = DEV_REG_ADDR(IL_TAPE, 0);
-    *((uint8_t *)INTERRUPT_MASK) &= ~((1 << IL_TIMER) | (1 << IL_TAPE));
+    *((uint8_t *)INTERRUPT_MASK) = 0xFC;//&= ~((1 << IL_TIMER) | (1 << IL_TAPE));
     *((uint64_t *)INTERRUPT_HANDLER) = (uint64_t)&interrupt;
 
     print("sono l'applicazione\n");
