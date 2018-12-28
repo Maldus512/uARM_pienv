@@ -143,15 +143,17 @@ int sd_status(unsigned int mask) {
  */
 int sd_int(unsigned int mask) {
     unsigned int r, m = mask | INT_ERROR_MASK;
-    int          cnt = 1000000;
+    int          cnt = 10000;
     while (!(*EMMC_INTERRUPT & m) && cnt--)
         wait_msec(1);
     r = *EMMC_INTERRUPT;
     if (cnt <= 0 || (r & INT_CMD_TIMEOUT) || (r & INT_DATA_TIMEOUT)) {
+        uart0_puts("sd command timeout\n");
         *EMMC_INTERRUPT = r;
         return SD_TIMEOUT;
     } else if (r & INT_ERROR_MASK) {
         *EMMC_INTERRUPT = r;
+        uart0_puts("sd command error\n");
         return SD_ERROR;
     }
     *EMMC_INTERRUPT = mask;
@@ -233,21 +235,27 @@ int sd_transferblock(unsigned int lba, unsigned char *buffer, unsigned int num, 
     if (sd_scr[0] & SCR_SUPP_CCS) {
         if (num > 1 && (sd_scr[0] & SCR_SUPP_SET_BLKCNT)) {
             sd_cmd(CMD_SET_BLOCKCNT, num);
-            if (sd_err)
+            if (sd_err) {
+                uart0_puts("unable to set block count\n");
                 return 0;
+            }
         }
         *EMMC_BLKSIZECNT = (num << 16) | 512;
         sd_cmd(num == 1 ? cmd_single : cmd_multi, lba);
-        if (sd_err)
+        if (sd_err) {
+            uart0_puts("unable to start operation\n");
             return 0;
+        }
     } else {
         *EMMC_BLKSIZECNT = (1 << 16) | 512;
     }
     while (c < num) {
         if (!(sd_scr[0] & SCR_SUPP_CCS)) {
             sd_cmd(cmd_single, (lba + c) * 512);
-            if (sd_err)
+            if (sd_err) {
+                uart0_puts("unable to carry on operation\n");
                 return 0;
+            }
         }
         if ((r = sd_int(mask))) {
             uart0_puts("\rERROR: Timeout waiting for ready to read\n");

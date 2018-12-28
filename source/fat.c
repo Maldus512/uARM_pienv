@@ -187,7 +187,7 @@ int fat_transferfile(unsigned int cluster, unsigned char *data, unsigned int num
     unsigned short *fat16 = (unsigned short *)fat32;
     // Data pointers
     unsigned int   data_sec, s, counter;
-    int            read = 0;
+    int            read = 0, tmp;
     // find the LBA of the first data sector
     data_sec = ((bpb->spf16 ? bpb->spf16 : bpb->spf32) * bpb->nf) + bpb->rsc;
     s        = (bpb->nr0 + (bpb->nr1 << 8)) * sizeof(fatdir_t);
@@ -217,7 +217,13 @@ int fat_transferfile(unsigned int cluster, unsigned char *data, unsigned int num
     while (cluster > 1 && cluster < 0xFFF8) {
         if (counter == num) {
             // load all sectors in a cluster
-            read += sd_transferblock((cluster - 2) * bpb->spc + data_sec, data, bpb->spc, readwrite);
+            tmp = sd_transferblock((cluster - 2) * bpb->spc + data_sec, data, bpb->spc, readwrite);
+            if (tmp == 0) {
+                uart0_puts("empty transfer block!\n");
+                return -1;
+                //continue;
+            }
+            read += tmp;
         } else {
             // get the next cluster in chain
             cluster = bpb->spf16 > 0 ? fat16[cluster] : fat32[cluster];
