@@ -134,7 +134,7 @@ void test1() {
     print((char *)buffer);
     print("\n");
 
-    buffer[0] = 'M';
+    buffer[0] = buffer[0] == 'M' ? 'P' : 'M';
 
     semaforo      = 0;
     tape->command = WRITEBLK;
