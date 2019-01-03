@@ -16,10 +16,10 @@
 #define IL_TAPE             1
 #define IL_TIMER            0
 
-#define DEVICE_INSTALLED    0x2000000
-#define INTERRUPT_LINES     0x2000020
-#define INTERRUPT_MASK      0x2000040
-#define DEV_REG_START       0x2000100
+#define DEVICE_INSTALLED    0x7F000
+#define INTERRUPT_LINES     0x7F020
+#define INTERRUPT_MASK      0x7F040
+#define DEV_REG_START       0x7F100
 
 #define LED_RUN 21
 

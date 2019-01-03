@@ -24,6 +24,7 @@ void lfb_init();
 void lfb_send(int x, int y, char c);
 void lfb_print(int x, int y, char *s);
 void terminal_send(int i, char c);
+void manage_emulated_terminal(int i);
 void init_emulated_terminals();
 extern volatile termreg_t terminals[MAX_TERMINALS];
 

@@ -69,12 +69,9 @@ void c_irq_handler() {
     uint64_t        timer, handler_present;
     int             i;
     void (*interrupt_handler)();
-    termreg_t *         terminal;
-    tapereg_t *         tape;
-    uint8_t *           interrupt_lines             = (uint8_t *)INTERRUPT_LINES;
-    uint8_t             interrupt_mask              = *((uint8_t *)INTERRUPT_MASK);
-    static unsigned int old_tape_command[MAX_TAPES] = {0};
-    unsigned int        core_id;
+    uint8_t *    interrupt_lines = (uint8_t *)INTERRUPT_LINES;
+    uint8_t      interrupt_mask  = *((uint8_t *)INTERRUPT_MASK);
+    unsigned int core_id;
 
     handler_present = *((uint64_t *)INTERRUPT_HANDLER);
 
@@ -98,85 +95,29 @@ void c_irq_handler() {
     } else {
         return;
     }
-    // hexstring(tmp);
 
     if (tmp & (1 << 8)) {
         // TODO: uart interrupt. to be managed
+        // apparently not needed for real hw
+        //        if (IRQ_CONTROLLER->IRQ_basic_pending & (1 << 9)) {
+        /*if (IRQ_CONTROLLER->IRQ_pending_2 & (1 << 25)) {
+            if (UART0->MASKED_IRQ & (1 << 4)) {
+                c = (unsigned char)UART0->DATA;     // read for clear tx interrupt.
+                uart0_putc(c);
+            }
+            if (UART0->MASKED_IRQ & (1 << 5)) {
+                uart0_puts("tx?\n");
+            }
+        }*/
     }
 
     for (i = 0; i < MAX_TAPES; i++) {
-        tape = (tapereg_t *)DEV_REG_ADDR(IL_TAPE, i);
-
-        switch (tape->command) {
-            case RESET:
-                tape->status = DEVICE_READY;
-                break;
-            case ACK:
-                old_tape_command[i] = ACK;
-                tape->status        = DEVICE_READY;
-                interrupt_lines[IL_TAPE] = 0;//&= ~(1 << i);
-                tape->command = RESET;
-                break;
-            case READBLK:
-                if (tape->status == DEVICE_READY) {
-                    if (tape->command == old_tape_command[i])
-                        break;
-                    old_tape_command[i] = READBLK;
-                    tape->status        = DEVICE_BUSY;
-                } else if (tape->status == DEVICE_BUSY) {
-                    read_tape_block(i, (unsigned char *)(uint64_t)tape->data0);
-                    tape->status = DEVICE_READY;
-                    if (!(interrupt_mask & (1 << IL_TAPE))) {
-                        interrupt_lines[IL_TAPE] |= 1 << i;
-                    }
-                }
-                break;
-            case WRITEBLK:
-                if (tape->status == DEVICE_READY) {
-                    if (tape->command == old_tape_command[i])
-                        break;
-                    old_tape_command[i] = WRITEBLK;
-                    tape->status        = DEVICE_BUSY;
-                } else if (tape->status == DEVICE_BUSY) {
-                    write_tape_block(i, (unsigned char *)(uint64_t)tape->data0);
-                    tape->status = DEVICE_READY;
-                    if (!(interrupt_mask & (1 << IL_TAPE))) {
-                        interrupt_lines[IL_TAPE] |= 1 << i;
-                    }
-                }
-        }
+        manage_emulated_tape(i);
     }
 
     /* Check emulated devices */
     for (i = 0; i < MAX_TERMINALS; i++) {
-        terminal = (termreg_t *)DEV_REG_ADDR(IL_TERMINAL, i);
-
-        switch (terminal->transm_command & 0xFF) {
-            case RESET:
-                terminal->transm_command = RESET;
-                terminal->transm_status  = DEVICE_READY;
-                /* Reset command also removes interrupt */
-                interrupt_lines[IL_TERMINAL] &= ~(1 << i);
-                break;
-            case ACK:
-                terminal->transm_command = RESET;
-                terminal->transm_status  = DEVICE_READY;
-                interrupt_lines[IL_TERMINAL] = 0;//&= ~(1 << i);
-                break;
-            case TRANSMIT_CHAR:
-                if ((terminal->transm_status & 0xFF) == DEVICE_READY) {
-                    terminal->transm_status = DEVICE_BUSY;
-                    // TODO: there might be sync problems between processes due to this system
-                    // I need to check if it's meant to be like that or I should avoid them
-                } else if ((terminal->transm_status & 0xFF) == DEVICE_BUSY) {
-                    terminal_send(i, terminal->transm_command >> 8);
-                    terminal->transm_status = CHAR_TRANSMIT;
-                    if (!(interrupt_mask & (1 << IL_TERMINAL))) {
-                        interrupt_lines[IL_TERMINAL] |= 1 << i;
-                    }
-                }
-                break;
-        }
+        manage_emulated_terminal(i);
     }
 
     if (tmp & 0x08) {
@@ -193,7 +134,7 @@ void c_irq_handler() {
     }
 
     for (i = 0; i < IL_LINES; i++) {
-        if (interrupt_lines[i] && !(interrupt_mask &(1<<i))) {
+        if (interrupt_lines[i] && !(interrupt_mask & (1 << i))) {
             f_interrupt = 1;
             /* Until there are interrupt lines pending fire interrupts immediately */
             setTimer(0);
@@ -205,23 +146,6 @@ void c_irq_handler() {
         interrupt_handler = (void (*)(void *))handler_present;
         interrupt_handler();
     }
-
-    /*else {
-        if (tmp & (1 << 8)) {
-            // apparently not needed for real hw
-            //        if (IRQ_CONTROLLER->IRQ_basic_pending & (1 << 9)) {
-            if (IRQ_CONTROLLER->IRQ_pending_2 & (1 << 25)) {
-                if (UART0->MASKED_IRQ & (1 << 4)) {
-                    c = (unsigned char)UART0->DATA;     // read for clear tx interrupt.
-                    uart0_putc(c);
-                }
-                if (UART0->MASKED_IRQ & (1 << 5)) {
-                    uart0_puts("tx?\n");
-                }
-                //         }
-            }
-        }
-    }*/
 }
 
 
