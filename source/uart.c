@@ -224,7 +224,7 @@ void uart_dump(void *ptr) {
 
 void startUart0Int() {
     // enable UART RX interrupt.
-    UART0->IRQ_MASK = 1 << 4;
+    //UART0->IRQ_MASK = 1 << 4;
     // enable UART TX interrupt.
     //    UART0->IRQ_MASK |= 1 << 5;
 

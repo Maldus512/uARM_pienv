@@ -16,9 +16,15 @@
 
 
 void initSystem() {
+    int i = 0;
     *((uint64_t *)INTERRUPT_HANDLER)   = 0;
     *((uint64_t *)SYNCHRONOUS_HANDLER) = 0;
     *((uint8_t *)INTERRUPT_MASK)       = 0xFF;
+    uint8_t *interrupt_lines = (uint8_t *)INTERRUPT_LINES;
+
+    for (i = 0; i < IL_LINES; i++) {
+        interrupt_lines[i] = 0;
+    }
 
     initGpio();
     initUart0();
