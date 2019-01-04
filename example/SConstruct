@@ -42,6 +42,7 @@ def which(cmd, mode=os.F_OK | os.X_OK, path=None):
 
 POSSIBLE_TOOLCHAINS = ["aarch64-elf-", "aarch64-linux-gnu-"]
 ELF = 'app.elf'
+BIN = 'app.bin'
 TOOLCHAIN = None
 BUILD = "build"
 FLAGS = ['-Wall', '-ffreestanding', '-nostdlib', '-nostartfiles', '-O0', '-g', '-march=armv8-a', '-mtune=cortex-a53'],

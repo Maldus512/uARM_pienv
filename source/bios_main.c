@@ -22,12 +22,15 @@ void initSystem() {
 
     initGpio();
     initUart0();
+    startUart0Int();
     lfb_init();
     if (sd_init() == SD_OK) {
         fat_getpartition();
         init_emulated_tapes();
     }
     init_emulated_terminals();
+    uart0_puts("CPU-GPU memory split: ");
+    hexstring(getMemorySplit());
     uart0_puts("\n");
     uart0_puts("************************************\n");
     uart0_puts("*        MaldOS running...         *\n");
@@ -64,7 +67,7 @@ void idle() {
     state.stack_pointer           = (uint64_t)0x1000000 + 0x2000;
     state.status_register         = 0x340;
     setTimer(1000*1000);
-    LDST_EL0(&state);
+    LDST(&state);
 }
 
 void idle2() {
@@ -73,7 +76,7 @@ void idle2() {
     state.stack_pointer           = (uint64_t)0x1000000 + 0x4000;
     state.status_register         = 0x340;
     setTimer(500*1000);
-    LDST_EL0(&state);
+    LDST(&state);
 }
 
 

@@ -121,8 +121,12 @@ GETCOREID:
     and     x0, x0, #0x3
     ret
 
-.globl STST_EL0
-STST_EL0:
+.globl BRANCHTO
+BRANCHTO:
+    br x0
+
+.globl STST
+STST:
     /* General purpose registers */
     str     x0, [x0]
     str     x1, [x0, #8]!
@@ -172,8 +176,8 @@ finish:
     str     x21, [x0, #8]! /* TTBR0 */
     ret
 
-.globl LDST_EL0
-LDST_EL0:
+.globl LDST
+LDST:
     str     x0, [sp, #-8]
     ldr     x2, [x0, #16]!
     ldr     x3, [x0, #8]!

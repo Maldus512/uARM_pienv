@@ -28,36 +28,15 @@ void set_next_timer(uint64_t microseconds) {
 }
 
 uint32_t c_swi_handler(uint32_t code, uint32_t *registers) {
-    state_t *state;
-    switch (code) {
-        case SYS_GETCURRENTEL:
-            return GETSAVEDEL();
-        case SYS_GETCURRENTSTATUS:
-            return GETSAVEDSTATUS();
-        case SYS_GETTTBR0:
-            return GETTTBR0();
-        case SYS_ENABLEIRQ:
-            enable_irq_el0();
-            uart0_puts("interrupts enabled!\n");
-            return 0;
-        case SYS_INITARMTIMER:
-            initArmTimer();
-            uart0_puts("arm timer enabled!\n");
-            return 0;
-        case SYS_SETNEXTTIMER:
-            return setTimer((long unsigned int)registers);
-        case SYS_GETSPEL0:
-            return GETSP_EL0();
-        case SYS_LAUNCHSTATE:
-            state = (state_t *)registers;
-            LDST_EL0(state);
-            return 0;
-        default:
-            uart0_puts("Unrecognized code: ");
-            hexstring(code);
-            hexstring(GETSAVEDSTATUS());
-            break;
+    uint64_t handler_present;
+    void (*synchronous_handler)(unsigned int, unsigned int, unsigned int, unsigned int);
+    handler_present = *((uint64_t *)SYNCHRONOUS_HANDLER);
+
+    if (handler_present != 0) {
+        synchronous_handler = (void (*)(unsigned int, unsigned int, unsigned int, unsigned int))handler_present;
+        synchronous_handler(code, registers[0], registers[1], registers[2]);
     }
+    
     return 0;
 }
 
@@ -100,15 +79,14 @@ void c_irq_handler() {
         // TODO: uart interrupt. to be managed
         // apparently not needed for real hw
         //        if (IRQ_CONTROLLER->IRQ_basic_pending & (1 << 9)) {
-        /*if (IRQ_CONTROLLER->IRQ_pending_2 & (1 << 25)) {
+        if (IRQ_CONTROLLER->IRQ_pending_2 & (1 << 25)) {
             if (UART0->MASKED_IRQ & (1 << 4)) {
-                c = (unsigned char)UART0->DATA;     // read for clear tx interrupt.
-                uart0_putc(c);
+                f_interrupt = 1;
             }
             if (UART0->MASKED_IRQ & (1 << 5)) {
-                uart0_puts("tx?\n");
+                f_interrupt = 1;
             }
-        }*/
+        }
     }
 
     for (i = 0; i < MAX_TAPES; i++) {

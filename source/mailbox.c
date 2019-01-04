@@ -87,6 +87,23 @@ void setUart0Baud() {
     readMailbox0(MBOX_TAG_PROPERTY);
 }
 
+unsigned int getMemorySplit() {
+    struct mailbox_msg local;
+    local.msg_size        = sizeof(struct mailbox_msg);
+    local.request_code    = MBOX_REQUEST;
+    local.tag.tag_id      = MBOX_TAG_MEMSPLIT;
+    local.tag.buffer_size = 0x8;
+    local.tag.data_size   = 0x0;
+    local.tag.dev_id      = 0;
+    local.tag.val         = 0;
+    local.end_tag         = MBOX_TAG_LAST;
+
+    writeMailbox0((uint32_t *)&local, MBOX_TAG_PROPERTY);
+    readMailbox0(MBOX_TAG_PROPERTY);
+
+    return local.tag.val;
+}
+
 int mbox_call(unsigned char ch) {
     unsigned int r = (((unsigned int)((unsigned long)&mbox) & ~0xF) | (ch & 0xF));
     /* wait until we can write to the mailbox */

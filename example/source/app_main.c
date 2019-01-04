@@ -157,6 +157,7 @@ void test1() {
 void test2() {
     unsigned long timer;
     print("partenza 2\n");
+    SYSCALL(5, 0,0,0);
     while (1) {
         timer = get_us();
         print("test2 vivo: ");
@@ -165,6 +166,10 @@ void test2() {
         print("\n");
         delay(1000 * 1000);
     }
+}
+
+void synchronous(unsigned int code, unsigned int x0, unsigned int x1, unsigned int x2) {
+    print("system call!\n");
 }
 
 void interrupt() {
@@ -193,9 +198,10 @@ void interrupt() {
 }
 
 int main() {
-    tape = DEV_REG_ADDR(IL_TAPE, 0);
-    *((uint8_t *)INTERRUPT_MASK) = 0xFC;//&= ~((1 << IL_TIMER) | (1 << IL_TAPE));
+    tape                             = DEV_REG_ADDR(IL_TAPE, 0);
+    *((uint8_t *)INTERRUPT_MASK)     = 0xFC;     //&= ~((1 << IL_TIMER) | (1 << IL_TAPE));
     *((uint64_t *)INTERRUPT_HANDLER) = (uint64_t)&interrupt;
+    *((uint64_t *)SYNCHRONOUS_HANDLER) = (uint64_t)&synchronous;
 
     print("sono l'applicazione\n");
 
@@ -213,9 +219,5 @@ int main() {
 
     print("about to launch the first process\n");
     LDST(current);
-    /*void (*fun_ptr)(void);
-    fun_ptr = 0x400000;
-    fun_ptr();
-    test2();*/
     return 0;
 }

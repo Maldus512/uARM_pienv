@@ -29,6 +29,7 @@
 
 /* tags */
 #define MBOX_TAG_GETSERIAL 0x10004
+#define MBOX_TAG_MEMSPLIT 0x10005
 #define MBOX_TAG_SETCLKRATE 0x38002
 #define MBOX_TAG_LAST 0
 #define MBOX_TAG_PROPERTY 8
@@ -79,6 +80,7 @@ void led(uint32_t onoff);
 void serialNumber(uint32_t serial[2]);
 void setUart0Baud();
 
+unsigned int getMemorySplit();
 int mbox_call(unsigned char ch);
 
 extern volatile unsigned int mbox[36];
