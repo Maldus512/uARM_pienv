@@ -197,6 +197,76 @@ unrecognized:
     b      c_abort_handler
 
 swi_handler:
+    msr   daifset, #2
+
+    mrs     x10, mpidr_el1
+    and     x10, x10, #0x3
+    cmp     x10, #0
+    beq     set_swi_stack_core0
+    cmp     x10, #1
+    beq     set_swi_stack_core1
+    cmp     x10, #2
+    beq     set_swi_stack_core2
+    cmp     x10, #3
+    beq     set_swi_stack_core3
+
+set_swi_stack_core0:
+    ldr     x10, =__EL1_stack_core0
+    b       set_chosen_swi_stack
+set_swi_stack_core1:
+    ldr     x10, =__EL1_stack_core1
+    b       set_chosen_swi_stack
+set_swi_stack_core2:
+    ldr     x10, =__EL1_stack_core2
+    b       set_chosen_swi_stack
+set_swi_stack_core3:
+    ldr     x10, =__EL1_stack_core3
+set_chosen_swi_stack:
+    mov     sp, x10
+    // save state in oldarea
+    stp   x27, x28, [sp, #-16]
+    mov   x28, #INTERRUPT_OLDAREA
+    orr   x28, x28, #SYNCHRONOUS_OFFSET
+    stp   x0, x1, [x28]
+    stp   x2, x3, [x28, #16]!
+    stp   x4, x5, [x28, #16]!
+    stp   x6, x7, [x28, #16]!
+    stp   x8, x9, [x28, #16]!
+    stp   x10, x11, [x28, #16]!
+    stp   x12, x13, [x28, #16]!
+    stp   x14, x15, [x28, #16]!
+    stp   x16, x17, [x28, #16]!
+    stp   x18, x19, [x28, #16]!
+    stp   x20, x21, [x28, #16]!
+    stp   x22, x23, [x28, #16]!
+    stp   x24, x25, [x28, #16]!
+    stp   x26, x27, [x28, #16]!
+
+    ldp   x26, x27, [sp, #-16]
+    stp   x27, x29, [x28, #16]! // Save x28 properly
+
+    mrs   x27, spsr_el1
+    and   x27, x27, #7
+    cmp   x27, #0
+    bne   savesp_swi_el1
+    mrs   x27, sp_el0
+    b     finish_swi
+savesp_swi_el1:
+    mov   x27, sp
+finish_swi:
+    stp   x30, x27, [x28, #16]!
+    
+    mrs   x27, elr_el1
+    str   x27, [x28, #16]! // Note: the 16 immediate value refers to the previously saved pair
+
+    mrs   x27, ttbr0_el1
+    str   x27, [x28, #8]!
+
+    mrs   x27, spsr_el1
+    str   x27, [x28, #8]!
+
+    ldp   x27, x28, [sp, #-16]
+
     str   x1,  [sp, #-16]!
     stp   x2,  x3,  [sp, #-16]!
     stp   x4,  x5,  [sp, #-16]!

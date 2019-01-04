@@ -61,7 +61,6 @@ SECTIONS
         . = . + 16384;  /* EL2 stack size (start-up) */
         . = ALIGN(16);
         __EL2_stack = .;
-        . = . + 4096;  /* EL2 stack size (start-up) */
         . = ALIGN(16);
         __stack_end__ = .;    
     } > RAM

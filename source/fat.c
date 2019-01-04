@@ -1,28 +1,3 @@
-/*
- * Copyright (C) 2018 bzt (bztsrc@github)
- *
- * Permission is hereby granted, free of charge, to any person
- * obtaining a copy of this software and associated documentation
- * files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use, copy,
- * modify, merge, publish, distribute, sublicense, and/or sell copies
- * of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- *
- */
-
 #include "sd.h"
 #include "uart.h"
 #include "utils.h"
@@ -72,10 +47,7 @@ typedef struct {
 } __attribute__((packed)) fatdir_t;
 
 unsigned char bios_partition_block[512];
-unsigned char root_dir[512*4];
-
-/* The maximum partition size it can handle is 100MB */
-unsigned int FAT32[0x100000];
+unsigned char root_dir[512 * 4];
 
 static inline unsigned int get_lba_address(unsigned int cluster) {
     bpb_t *bpb = (bpb_t *)bios_partition_block;
@@ -101,7 +73,7 @@ int fat_getpartition(void) {
         // check partition type
         // 0x1C2 is the fourth (4) byte of the first partition entry in the mbr,
         // containing the partition type (fat32, fat16,...)
-        if (mbr[0x1C2] != 0xB && mbr[0x1C2] != 0xE /*FAT16 LBA*/ && mbr[0x1C2] != 0xC /*FAT32 LBA*/) {
+        if (mbr[0x1C2] != 0xB && mbr[0x1C2] != 0xC /*FAT32 LBA*/) {
             uart_puts("ERROR: Wrong partition type\n");
             return 0;
         }
@@ -110,7 +82,7 @@ int fat_getpartition(void) {
         // (over a double word, or 4 bytes)
         partitionlba = mbr[0x1C6] + (mbr[0x1C7] << 8) + (mbr[0x1C8] << 16) + (mbr[0x1C9] << 24);
         // read the boot record
-        if (!sd_transferblock(partitionlba, (unsigned char*) bpb, 1, SD_READBLOCK)) {
+        if (!sd_transferblock(partitionlba, (unsigned char *)bpb, 1, SD_READBLOCK)) {
             uart_puts("ERROR: Unable to read boot record\n");
             return 0;
         }
@@ -122,26 +94,26 @@ int fat_getpartition(void) {
         }
     }
     // find the root directory's LBA
-    root_directory_sector = ((bpb->spf16 ? bpb->spf16 : bpb->spf32) * bpb->nf) + bpb->rsc;
+    root_directory_sector = (bpb->spf32 * bpb->nf) + bpb->rsc;
     // add partition LBA
     root_directory_sector += partitionlba;
 
-    if (bpb->spf16 == 0) {
-        // adjust for FAT32
-        // Cluster begin numbering at 2
-        root_directory_sector += (bpb->rc - 2) * bpb->spc;
-    }
-
-    sd_transferblock(partitionlba + bpb->rsc, (unsigned char *)FAT32, (bpb->spf16 ? bpb->spf16 : bpb->spf32), SD_READBLOCK);
-
     return 1;
+}
+
+unsigned int fat_get_table_entry(unsigned int index) {
+    unsigned int buffer[512 / 4];
+    unsigned int entry_sector_offset = (index * 4) / 512;
+    bpb_t *      bpb = (bpb_t *)bios_partition_block;
+    sd_transferblock(partitionlba + bpb->rsc + entry_sector_offset, (unsigned char *)buffer, 1, SD_READBLOCK);
+    return buffer[index % (512 / 4)];
 }
 
 /**
  * Find a file in root directory entries
  */
 unsigned int fat_getcluster(char *fn) {
-    bpb_t *bpb = (bpb_t *)bios_partition_block;
+    bpb_t *      bpb = (bpb_t *)bios_partition_block;
     fatdir_t *   dir = (fatdir_t *)root_dir;
     unsigned int s;
     // find the root directory's LBA
@@ -174,27 +146,17 @@ unsigned int fat_getcluster(char *fn) {
     return 0;
 }
 
-unsigned char readfile[512];
-
 /**
  * Read a file into memory
  */
 int fat_transferfile(unsigned int cluster, unsigned char *data, unsigned int num, readwrite_t readwrite) {
     // BIOS Parameter Block
     bpb_t *bpb = (bpb_t *)bios_partition_block;
-    // File allocation tables. We choose between FAT16 and FAT32 dynamically
-    unsigned int *  fat32 = (unsigned int *)FAT32;
-    unsigned short *fat16 = (unsigned short *)fat32;
     // Data pointers
-    unsigned int   data_sec, s, counter;
-    int            read = 0, tmp;
+    unsigned int data_sec, counter;
+    int          read = 0, tmp;
     // find the LBA of the first data sector
-    data_sec = ((bpb->spf16 ? bpb->spf16 : bpb->spf32) * bpb->nf) + bpb->rsc;
-    s        = (bpb->nr0 + (bpb->nr1 << 8)) * sizeof(fatdir_t);
-    if (bpb->spf16 > 0) {
-        // adjust for FAT16
-        data_sec += (s + 511) >> 9;
-    }
+    data_sec = (bpb->spf32 * bpb->nf) + bpb->rsc;
     // add partition LBA
     data_sec += partitionlba;
     // dump important properties
@@ -221,12 +183,13 @@ int fat_transferfile(unsigned int cluster, unsigned char *data, unsigned int num
             if (tmp == 0) {
                 uart0_puts("empty transfer block!\n");
                 return -1;
-                //continue;
+                // continue;
             }
             read += tmp;
         } else {
             // get the next cluster in chain
-            cluster = bpb->spf16 > 0 ? fat16[cluster] : fat32[cluster];
+            //cluster = bpb->spf16 > 0 ? fat16[cluster] : fat32[cluster];
+            cluster = fat_get_table_entry(cluster);
         }
         counter++;
     }
