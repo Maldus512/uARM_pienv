@@ -8,6 +8,17 @@
 /* Mailbox 1 base address (Read by GPU) */
 #define MBOX1_BASE (IO_BASE + 0xB8A0)
 
+/* Core Mailbox Interrupt control */
+#define CORE0_MBOX_INTERRUPT_CONTROL    0x40000050
+#define CORE1_MBOX_INTERRUPT_CONTROL    0x40000054
+#define CORE2_MBOX_INTERRUPT_CONTROL    0x40000058
+#define CORE3_MBOX_INTERRUPT_CONTROL    0x4000005C
+
+#define CORE1_MBOX0_WRITESET            0x40000090
+#define CORE1_MBOX0_CLEARSET                0x400000D0
+
+
+
 
 /* Status register value when mailbox is full/empty */
 #define MBOX_RESPONSE 0x80000000
@@ -79,6 +90,7 @@ struct framebuffer_mailbox_msg {
 void led(uint32_t onoff);
 void serialNumber(uint32_t serial[2]);
 void setUart0Baud();
+void initIPI();
 
 unsigned int getMemorySplit();
 int mbox_call(unsigned char ch);

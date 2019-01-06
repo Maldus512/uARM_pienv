@@ -42,7 +42,7 @@ uint32_t c_swi_handler(uint32_t code, uint32_t *registers) {
 
 void c_irq_handler() {
     static uint8_t  f_led       = 0;
-    uint8_t         f_interrupt = 0;
+    uint8_t         f_app_interrupt = 1;
     uint32_t        tmp;
     static uint64_t lastBlink = 0;
     uint64_t        timer, handler_present;
@@ -68,8 +68,14 @@ void c_irq_handler() {
         tmp = *((volatile uint32_t *)CORE0_IRQ_SOURCE);
     } else if (core_id == 1) {
         tmp = *((volatile uint32_t *)CORE1_IRQ_SOURCE);
+        uart0_puts("interrupt!") ;
+        hexstring(tmp);
         if (tmp & 0x08)
-            setTimer(1000 * 1000);
+            setTimer(5000 * 1000);
+        if (tmp & 0x10) {
+            *((uint32_t*) CORE1_MBOX0_CLEARSET) = 0xFFFFFFFF;
+        }
+
         return;
     } else {
         return;
@@ -81,10 +87,10 @@ void c_irq_handler() {
         //        if (IRQ_CONTROLLER->IRQ_basic_pending & (1 << 9)) {
         if (IRQ_CONTROLLER->IRQ_pending_2 & (1 << 25)) {
             if (UART0->MASKED_IRQ & (1 << 4)) {
-                f_interrupt = 1;
+                nop();
             }
             if (UART0->MASKED_IRQ & (1 << 5)) {
-                f_interrupt = 1;
+                nop();
             }
         }
     }
@@ -105,22 +111,23 @@ void c_irq_handler() {
             }
             setTimer(100);
         } else if (next_timer - timer < 100) {
+            f_app_interrupt = 0;
             setTimer(next_timer - timer);
         } else if (next_timer - timer >= 100) {
+            f_app_interrupt = 0;
             setTimer(100);
         }
     }
 
     for (i = 0; i < IL_LINES; i++) {
         if (interrupt_lines[i] && !(interrupt_mask & (1 << i))) {
-            f_interrupt = 1;
             /* Until there are interrupt lines pending fire interrupts immediately */
             setTimer(0);
             break;
         }
     }
 
-    if (f_interrupt && handler_present != 0) {
+    if (f_app_interrupt && handler_present != 0) {
         interrupt_handler = (void (*)(void *))handler_present;
         interrupt_handler();
     }

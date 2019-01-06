@@ -29,6 +29,7 @@ void initSystem() {
     initGpio();
     initUart0();
     startUart0Int();
+    initIPI();
     lfb_init();
     if (sd_init() == SD_OK) {
         fat_getpartition();
@@ -60,13 +61,6 @@ void function1() {
     }
 }
 
-void function2() {
-    while(1) {
-        uart0_puts("ciao numero 2\n");
-        delay_us(800*1000);
-    }
-}
-
 void idle() {
     state_t state;
     state.exception_link_register = (uint64_t)function1;
@@ -76,25 +70,13 @@ void idle() {
     LDST(&state);
 }
 
-void idle2() {
-    state_t state;
-    state.exception_link_register = (uint64_t)function2;
-    state.stack_pointer           = (uint64_t)0x1000000 + 0x4000;
-    state.status_register         = 0x340;
-    setTimer(500*1000);
-    LDST(&state);
-}
-
-
-
-
 int __attribute__((weak)) main() {
     uart0_puts("Echoing everything\n");
     // echo everything back
     CoreExecute(1, idle);
-    idle2();
     while (1) {
         uart0_putc(uart0_getc());
+        *((uint32_t*)CORE1_MBOX0_WRITESET) = 2;
     }
 }
 

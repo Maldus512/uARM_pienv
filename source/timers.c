@@ -61,7 +61,7 @@ void initArmTimer() {
     armTimerFrequency = GETARMCLKFRQ();
     /* routing core0 counter to core0 irq */
     *(volatile uint32_t *)CORE0_TIMER_IRQCNTL = 0x08;
-    //*(volatile uint32_t *)CORE1_TIMER_IRQCNTL = 0x08;
+    *(volatile uint32_t *)CORE1_TIMER_IRQCNTL = 0x08;
     // enableCounter();
 }
 
