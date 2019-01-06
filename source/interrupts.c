@@ -18,10 +18,6 @@ void set_next_timer(uint64_t microseconds) {
     uint8_t *interrupt_lines  = (uint8_t *)INTERRUPT_LINES;
     next_timer                = get_us() + microseconds;
     interrupt_lines[IL_TIMER] = 0;
-    /*uart0_puts("current time: ");
-    hexstring(get_us());
-    uart0_puts("next timer: ");
-    hexstring(next_timer);*/
     if (microseconds < 100) {
         setTimer(microseconds);
     }
@@ -138,14 +134,14 @@ void c_abort_handler(uint64_t exception_code, uint64_t iss) {
     switch (exception_code) {
         case 0x24:     // Data abort (MMU)
             uart0_puts("Data abort (lower exception level) caused by ");
-            if (iss & 0b1000000)
+            if (iss & 0x40)
                 uart0_puts("write\n");
             else
                 uart0_puts("read\n");
             break;
         case 0x25:     // Data abort (MMU)
             uart0_puts("Data abort (same exception level) caused by ");
-            if (iss & 0b1000000)
+            if (iss & 0x40)
                 uart0_puts("write\n");
             else
                 uart0_puts("read\n");

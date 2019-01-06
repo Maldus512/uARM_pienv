@@ -3,39 +3,6 @@
 
 volatile unsigned int __attribute__((aligned(16))) mbox[36];
 
-void initUart0Request(struct mailbox_msg *msg) {
-    /* set up clock for consistent divisor values */
-    msg->msg_size        = sizeof(struct mailbox_msg);
-    msg->request_code    = MBOX_REQUEST;
-    msg->tag.tag_id      = MBOX_TAG_SETCLKRATE;
-    msg->tag.buffer_size = 12;
-    msg->tag.data_size   = 8;
-    msg->tag.dev_id      = 2;
-    msg->tag.val         = 4000000;
-    msg->end_tag         = MBOX_TAG_LAST;
-}
-
-void initSerialNumberRequest(struct mailbox_msg *msg) {
-    msg->msg_size        = sizeof(struct mailbox_msg);
-    msg->request_code    = MBOX_REQUEST;
-    msg->tag.tag_id      = MBOX_TAG_GETSERIAL;
-    msg->tag.buffer_size = 0x8;
-    msg->tag.data_size   = 0x0;
-    msg->tag.dev_id      = 0;
-    msg->tag.val         = 0;
-    msg->end_tag         = MBOX_TAG_LAST;
-}
-
-void initLedRequest(struct mailbox_msg *msg, uint32_t val) {
-    msg->msg_size        = sizeof(struct mailbox_msg);
-    msg->request_code    = MBOX_REQUEST;
-    msg->tag.tag_id      = 0x00038041;
-    msg->tag.buffer_size = 0x8;
-    msg->tag.data_size   = 0x0;
-    msg->tag.dev_id      = 130;
-    msg->tag.val         = val;
-    msg->end_tag         = MBOX_TAG_LAST;
-}
 
 void wait_mailbox_write(Mailbox *m) {
     while (m->status & MBOX_FULL)
@@ -65,43 +32,68 @@ void readMailbox0(uint8_t channel) {
 }
 
 void led(uint32_t onoff) {
-    struct mailbox_msg local;
-    initLedRequest(&local, onoff);
-    writeMailbox0((uint32_t *)&local, MBOX_TAG_PROPERTY);
-    readMailbox0(MBOX_TAG_PROPERTY);
+    struct mailbox_msg msg;
+    msg.msg_size        = sizeof(struct mailbox_msg);
+    msg.request_code    = MBOX_REQUEST;
+    msg.tag.tag_id      = 0x00038041;
+    msg.tag.buffer_size = 0x8;
+    msg.tag.data_size   = 0x0;
+    msg.tag.dev_id      = 130;
+    msg.tag.val         = onoff;
+    msg.end_tag         = MBOX_TAG_LAST;
+
+    writeMailbox0((uint32_t *)&msg, MBOX_CH_PROP);
+    readMailbox0(MBOX_CH_PROP);
 }
 
 void serialNumber(uint32_t serial[2]) {
-    struct mailbox_msg local;
-    initSerialNumberRequest(&local);
-    writeMailbox0((uint32_t *)&local, MBOX_TAG_PROPERTY);
-    readMailbox0(MBOX_TAG_PROPERTY);
-    serial[0] = local.tag.dev_id;
-    serial[1] = local.tag.val;
+    struct mailbox_msg msg;
+    msg.msg_size        = sizeof(struct mailbox_msg);
+    msg.request_code    = MBOX_REQUEST;
+    msg.tag.tag_id      = MBOX_TAG_GETSERIAL;
+    msg.tag.buffer_size = 0x8;
+    msg.tag.data_size   = 0x0;
+    msg.tag.dev_id      = 0;
+    msg.tag.val         = 0;
+    msg.end_tag         = MBOX_TAG_LAST;
+
+    writeMailbox0((uint32_t *)&msg, MBOX_CH_PROP);
+    readMailbox0(MBOX_CH_PROP);
+    serial[0] = msg.tag.dev_id;
+    serial[1] = msg.tag.val;
 }
 
 void setUart0Baud() {
-    struct mailbox_msg local;
-    initUart0Request(&local);
-    writeMailbox0((uint32_t *)&local, MBOX_TAG_PROPERTY);
-    readMailbox0(MBOX_TAG_PROPERTY);
+    struct mailbox_msg msg;
+    /* set up clock for consistent divisor values */
+    msg.msg_size        = sizeof(struct mailbox_msg);
+    msg.request_code    = MBOX_REQUEST;
+    msg.tag.tag_id      = MBOX_TAG_SETCLKRATE;
+    msg.tag.buffer_size = 12;
+    msg.tag.data_size   = 8;
+    msg.tag.dev_id      = 2;
+    msg.tag.val         = 4000000;
+    msg.end_tag         = MBOX_TAG_LAST;
+
+    writeMailbox0((uint32_t *)&msg, MBOX_CH_PROP);
+    readMailbox0(MBOX_CH_PROP);
 }
 
 unsigned int getMemorySplit() {
-    struct mailbox_msg local;
-    local.msg_size        = sizeof(struct mailbox_msg);
-    local.request_code    = MBOX_REQUEST;
-    local.tag.tag_id      = MBOX_TAG_MEMSPLIT;
-    local.tag.buffer_size = 0x8;
-    local.tag.data_size   = 0x0;
-    local.tag.dev_id      = 0;
-    local.tag.val         = 0;
-    local.end_tag         = MBOX_TAG_LAST;
+    struct mailbox_msg msg;
+    msg.msg_size        = sizeof(struct mailbox_msg);
+    msg.request_code    = MBOX_REQUEST;
+    msg.tag.tag_id      = MBOX_TAG_MEMSPLIT;
+    msg.tag.buffer_size = 0x8;
+    msg.tag.data_size   = 0x0;
+    msg.tag.dev_id      = 0;
+    msg.tag.val         = 0;
+    msg.end_tag         = MBOX_TAG_LAST;
 
-    writeMailbox0((uint32_t *)&local, MBOX_TAG_PROPERTY);
-    readMailbox0(MBOX_TAG_PROPERTY);
+    writeMailbox0((uint32_t *)&msg, MBOX_CH_PROP);
+    readMailbox0(MBOX_CH_PROP);
 
-    return local.tag.val;
+    return msg.tag.val;
 }
 
 int mbox_call(unsigned char ch) {
@@ -123,8 +115,8 @@ int mbox_call(unsigned char ch) {
 }
 
 void initIPI() {
-    *((uint32_t*)CORE0_MBOX_INTERRUPT_CONTROL) = 1;
-    *((uint32_t*)CORE1_MBOX_INTERRUPT_CONTROL) = 1;
-    *((uint32_t*)CORE2_MBOX_INTERRUPT_CONTROL) = 1;
-    *((uint32_t*)CORE3_MBOX_INTERRUPT_CONTROL) = 1;
+    *((uint32_t *)CORE0_MBOX_INTERRUPT_CONTROL) = 1;
+    *((uint32_t *)CORE1_MBOX_INTERRUPT_CONTROL) = 1;
+    *((uint32_t *)CORE2_MBOX_INTERRUPT_CONTROL) = 1;
+    *((uint32_t *)CORE3_MBOX_INTERRUPT_CONTROL) = 1;
 }

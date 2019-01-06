@@ -39,14 +39,14 @@ void init_emulated_tapes() {
 unsigned int read_tape_block(int tape, unsigned char *buffer) {
     if (emulated_tapes[tape].fat32_cluster == 0)
         return 0;
-    return fat_transferfile(emulated_tapes[tape].fat32_cluster, buffer, emulated_tapes[tape].block_index++,
+    return fat_transferfile(emulated_tapes[tape].fat32_cluster, buffer, emulated_tapes[tape].block_index,
                             SD_READBLOCK);
 }
 
 unsigned int write_tape_block(int tape, unsigned char *buffer) {
     if (emulated_tapes[tape].fat32_cluster == 0)
         return 0;
-    return fat_transferfile(emulated_tapes[tape].fat32_cluster, buffer, emulated_tapes[tape].block_index++,
+    return fat_transferfile(emulated_tapes[tape].fat32_cluster, buffer, emulated_tapes[tape].block_index,
                             SD_WRITEBLOCK);
 }
 

@@ -85,14 +85,14 @@ void lfb_init() {
     mbox[2] = 0x48003;     // set phy wh
     mbox[3] = 8;
     mbox[4] = 8;
-    mbox[5] = REQUESTED_WIDTH;     // FrameBufferInfo.width
-    mbox[6] = REQUESTED_HEIGHT;      // FrameBufferInfo.height
+    mbox[5] = REQUESTED_WIDTH;      // FrameBufferInfo.width
+    mbox[6] = REQUESTED_HEIGHT;     // FrameBufferInfo.height
 
     mbox[7]  = 0x48004;     // set virt wh
     mbox[8]  = 8;
     mbox[9]  = 8;
-    mbox[10] = REQUESTED_WIDTH;     // FrameBufferInfo.virtual_width
-    mbox[11] = REQUESTED_HEIGHT;      // FrameBufferInfo.virtual_height
+    mbox[10] = REQUESTED_WIDTH;      // FrameBufferInfo.virtual_width
+    mbox[11] = REQUESTED_HEIGHT;     // FrameBufferInfo.virtual_height
 
     mbox[12] = 0x48009;     // set virt offset
     mbox[13] = 8;

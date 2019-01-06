@@ -1,28 +1,3 @@
-/*
- * Copyright (C) 2018 bzt (bztsrc@github)
- *
- * Permission is hereby granted, free of charge, to any person
- * obtaining a copy of this software and associated documentation
- * files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use, copy,
- * modify, merge, publish, distribute, sublicense, and/or sell copies
- * of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- *
- */
-
 #include "gpio.h"
 #include "uart.h"
 #include "sd.h"
@@ -356,40 +331,25 @@ int sd_clk(unsigned int f) {
 int sd_init() {
     long r, cnt, ccs = 0;
     // GPIO_CD
-    r = *GPFSEL4;
-    r &= ~(7 << (7 * 3));
-    *GPFSEL4 = r;
-    *GPPUD   = 2;
-    wait_cycles(150);
-    *GPPUDCLK1 = (1 << 15);
-    wait_cycles(150);
-    *GPPUD     = 0;
-    *GPPUDCLK1 = 0;
-    r          = *GPHEN1;
-    r |= 1 << 15;
-    *GPHEN1 = r;
+    setupGpio(47, GPIO_ALTFUNC3);
+    setPullUpDown(47, GPIO_PULL_UP);
+    setHighDetect(47);
 
     // GPIO_CLK, GPIO_CMD
-    r = *GPFSEL4;
-    r |= (7 << (8 * 3)) | (7 << (9 * 3));
-    *GPFSEL4 = r;
-    *GPPUD   = 2;
-    wait_cycles(150);
-    *GPPUDCLK1 = (1 << 16) | (1 << 17);
-    wait_cycles(150);
-    *GPPUD     = 0;
-    *GPPUDCLK1 = 0;
+    setupGpio(48, GPIO_ALTFUNC3);
+    setupGpio(49, GPIO_ALTFUNC3);
+    setPullUpDown(48, GPIO_PULL_UP);
+    setPullUpDown(49, GPIO_PULL_UP);
 
     // GPIO_DAT0, GPIO_DAT1, GPIO_DAT2, GPIO_DAT3
-    r = *GPFSEL5;
-    r |= (7 << (0 * 3)) | (7 << (1 * 3)) | (7 << (2 * 3)) | (7 << (3 * 3));
-    *GPFSEL5 = r;
-    *GPPUD   = 2;
-    wait_cycles(150);
-    *GPPUDCLK1 = (1 << 18) | (1 << 19) | (1 << 20) | (1 << 21);
-    wait_cycles(150);
-    *GPPUD     = 0;
-    *GPPUDCLK1 = 0;
+    setupGpio(50, GPIO_ALTFUNC3);
+    setupGpio(51, GPIO_ALTFUNC3);
+    setupGpio(52, GPIO_ALTFUNC3);
+    setupGpio(53, GPIO_ALTFUNC3);
+    setPullUpDown(50, GPIO_PULL_UP);
+    setPullUpDown(51, GPIO_PULL_UP);
+    setPullUpDown(52, GPIO_PULL_UP);
+    setPullUpDown(53, GPIO_PULL_UP);
 
     sd_hv = (*EMMC_SLOTISR_VER & HOST_SPEC_NUM) >> HOST_SPEC_NUM_SHIFT;
     uart0_puts("EMMC: GPIO set up\n");

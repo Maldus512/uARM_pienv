@@ -38,7 +38,7 @@ struct GPIOREG {
     volatile uint32_t AFEDETECTEN0;
     volatile uint32_t AFEDETECTEN1;
     volatile uint32_t rsvd10;
-    volatile uint32_t PUDEN;
+    volatile uint32_t PUD;
     volatile uint32_t PUDCLOCK0;
     volatile uint32_t PUDCLOCK1;
 };
@@ -59,9 +59,17 @@ typedef enum {
     GPIO_ALTFUNC3 = 0x07,
 } GPIOMODE;
 
+typedef enum {
+    GPIO_PUD_DISABLE = 0x0,
+    GPIO_PULL_DOWN   = 0x1,
+    GPIO_PULL_UP     = 0x2,
+} GPIOPUD;
+
 
 void initGpio();
 void setupGpio(uint_fast8_t num, GPIOMODE mode);
+void setPullUpDown(unsigned int gpio, GPIOPUD mode);
+void setHighDetect(unsigned int gpio);
 
 void setGpio(int num);
 void clearGpio(int num);

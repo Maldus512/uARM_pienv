@@ -43,7 +43,6 @@
 #define MBOX_TAG_MEMSPLIT 0x10005
 #define MBOX_TAG_SETCLKRATE 0x38002
 #define MBOX_TAG_LAST 0
-#define MBOX_TAG_PROPERTY 8
 
 
 #define MAILBOX0 ((Mailbox *)MBOX0_BASE)
@@ -91,8 +90,8 @@ void led(uint32_t onoff);
 void serialNumber(uint32_t serial[2]);
 void setUart0Baud();
 void initIPI();
-
 unsigned int getMemorySplit();
+
 int mbox_call(unsigned char ch);
 
 extern volatile unsigned int mbox[36];

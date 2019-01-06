@@ -21,6 +21,33 @@ void setupGpio(uint_fast8_t gpio, GPIOMODE mode) {
     GPIO->SEL[reg] = mem;                      // Write value to register
 }
 
+void setPullUpDown(unsigned int gpio, GPIOPUD mode) {
+    int c = 0;
+    GPIO->PUD = mode;
+
+    while(c++ <= 150)
+        nop();
+
+    if (gpio < 32)
+        GPIO->PUDCLOCK0 = (1 << gpio);
+    else
+        GPIO->PUDCLOCK1 = (1 << (32-gpio));
+
+    while(c++ <= 150)
+        nop();
+
+    GPIO->PUD = 0;
+    GPIO->PUDCLOCK0 = 0;
+    GPIO->PUDCLOCK1 = 0;
+}
+
+void setHighDetect(unsigned int gpio) {
+    if (gpio < 32)
+        GPIO->HIDETECTEN0 = (1 << gpio);
+    else
+        GPIO->HIDETECTEN1 = (1 << (32-gpio));
+}
+
 
 void setGpio(int num) {
     if (num < 32) {

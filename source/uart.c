@@ -12,8 +12,6 @@ volatile char RxBuffer[MU_RX_BUFFER_SIZE];
  **********************/
 
 void initUart1(void) {
-    int i;
-
     // IRQ_CONTROLLER->Disable_IRQs_1 = 1 << 29;
 
     AUX_EN |= 1; /* Enable mini-uart */
@@ -27,21 +25,12 @@ void initUart1(void) {
     MU_IIR = 0xC6;
 
     MU_BAUD = 270;                            /* 115200 baud.  */
-    GPIO->SEL[1] &= ~((7 << 12) | (7 << 15)); /* GPIO14 & 15: alt5  */
-    GPIO->SEL[1] |= (2 << 12) | (2 << 15);
+    setupGpio(14, GPIO_ALTFUNC5);
+    setupGpio(15, GPIO_ALTFUNC5);
 
     /* Disable pull-up/down.  */
-    GPIO->PUDEN = 0;
-
-    for (i = 0; i < 150; i++)
-        nop();
-
-    GPIO->PUDCLOCK0 = (2 << 14) | (2 << 15);
-
-    for (i = 0; i < 150; i++)
-        nop();
-
-    GPIO->PUDCLOCK0 = 0;
+    setPullUpDown(14, GPIO_PUD_DISABLE);
+    setPullUpDown(15, GPIO_PUD_DISABLE);
 
     MU_CNTL = 3; /* Enable Tx and Rx.  */
 
@@ -88,8 +77,6 @@ void uart1_puts(char *s) {
  ************/
 
 void initUart0() {
-    int i;
-
     /* initialize UART */
     UART0->CTRL = 0;
 
@@ -97,21 +84,11 @@ void initUart0() {
     setUart0Baud();
 
     /* map UART0 to GPIO pins */
-    GPIO->SEL[1] &= ~((7 << 12) | (7 << 15)); /* GPIO14 & 15: alt5  */
-    GPIO->SEL[1] |= (4 << 12) | (4 << 15);
+    setupGpio(14, GPIO_ALTFUNC0);
+    setupGpio(15, GPIO_ALTFUNC0);
 
-    /* Disable pull-up/down.  */
-    GPIO->PUDEN = 0;
-
-    for (i = 0; i < 150; i++)
-        nop();
-
-    GPIO->PUDCLOCK0 = (2 << 14) | (2 << 15);
-
-    for (i = 0; i < 150; i++)
-        nop();
-
-    GPIO->PUDCLOCK0 = 0;
+    setPullUpDown(14, GPIO_PUD_DISABLE);
+    setPullUpDown(15, GPIO_PUD_DISABLE);
 
     UART0->IRQ_CLEAR = 0x7FF;
     UART0->IBRD      = 2;
@@ -139,10 +116,6 @@ char uart0_getc() {
     r = (char)(UART0->DATA);
     /* convert carrige return to newline */
     return r == '\r' ? '\n' : r;
-}
-
-void tprint(char *s) {
-    uart0_puts(s);
 }
 
 void uart0_puts(char *s) {

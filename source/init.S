@@ -101,7 +101,6 @@ start_kernel_core0:
     //orr    w1, w1, #0x1000
     //msr    sctlr_el1, x1
 
-#define spin_cpu1 0xe0
     mov     x1, #spin_cpu1
     ldr     x2, =multicore_start
     str     x2, [x1]
@@ -112,7 +111,6 @@ start_kernel_core0:
     cmp     w1, #2
     bne     .wait_ack_core1
 
-#define spin_cpu2 0xe8
     mov     x1, #spin_cpu2
     ldr     x2, =multicore_start
     str     x2, [x1]
@@ -123,7 +121,6 @@ start_kernel_core0:
     cmp     w1, #3
     bne     .wait_ack_core2
 
-#define spin_cpu3 0xf0
     mov     x1, #spin_cpu3
     ldr     x2, =multicore_start
     str     x2, [x1]
@@ -417,7 +414,6 @@ finish:
     //msr   daifclr, #2
     eret
 
-#define spin_cpu0 0xd8
 .balign 4
 start_idle_core_spin:
     mrs     x6, mpidr_el1

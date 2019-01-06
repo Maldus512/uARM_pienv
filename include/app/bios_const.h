@@ -17,4 +17,8 @@
 #define INTERRUPT_HANDLER 0x70400
 #define SYNCHRONOUS_HANDLER 0x70600
 
+#define spin_cpu0 0xd8
+#define spin_cpu1 0xe0
+#define spin_cpu2 0xe8
+#define spin_cpu3 0xf0
 #endif

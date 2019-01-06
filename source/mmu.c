@@ -63,21 +63,6 @@ typedef union {
 } VMSAv8_64_STAGE1_BLOCK_DESCRIPTOR;
 
 
-/*--------------------------------------------------------------------------}
-{					 CODE TYPE STRUCTURE COMPILE TIME CHECKS	            }
-{--------------------------------------------------------------------------*/
-/* If you have never seen compile time assertions it's worth google search */
-/* on "Compile Time Assertions". It is part of the C11++ specification and */
-/* all compilers that support the standard will have them (GCC, MSC inc)   */
-/*-------------------------------------------------------------------------*/
-#include <assert.h>     // Need for compile time static_assert
-
-/* Check the code type structure size */
-static_assert(sizeof(VMSAv8_64_NEXTLEVEL_DESCRIPTOR) == 0x08,
-              "VMSAv8_64_NEXTLEVEL_DESCRIPTOR should be 0x08 bytes in size");
-static_assert(sizeof(VMSAv8_64_STAGE1_BLOCK_DESCRIPTOR) == 0x08,
-              "VMSAv8_64_STAGE1_BLOCK_DESCRIPTOR should be 0x08 bytes in size");
-
 /* Level0 1:1 mapping to Level1 */
 static __attribute__((aligned(4096))) VMSAv8_64_NEXTLEVEL_DESCRIPTOR Level0map1to1[512] = {0};
 
@@ -164,8 +149,6 @@ void init_page_table(void) {
 /**
  * Use the previous setup page translation tables
  */
-// FIXME: when interrupts and MMU are enabled an unknown exception is fired (ESR is 0)
-// Also there are some permission problems, MMU and EL0 don't work together
 void mmu_init(void) {
     uint64_t r;
 
