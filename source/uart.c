@@ -2,6 +2,8 @@
 #include "uart.h"
 #include "mailbox.h"
 #include "interrupts.h"
+#include "utils.h"
+#include "timers.h"
 
 volatile int  rx_tail = 0;
 volatile int  rx_head = 0;
@@ -24,7 +26,7 @@ void initUart1(void) {
     MU_IER = 0x5;
     MU_IIR = 0xC6;
 
-    MU_BAUD = 270;                            /* 115200 baud.  */
+    MU_BAUD = 270; /* 115200 baud.  */
     setupGpio(14, GPIO_ALTFUNC5);
     setupGpio(15, GPIO_ALTFUNC5);
 
@@ -197,7 +199,7 @@ void uart_dump(void *ptr) {
 
 void startUart0Int() {
     // enable UART RX interrupt.
-    //UART0->IRQ_MASK = 1 << 4;
+    // UART0->IRQ_MASK = 1 << 4;
     // enable UART TX interrupt.
     //    UART0->IRQ_MASK |= 1 << 5;
 
@@ -206,4 +208,42 @@ void startUart0Int() {
 
     // IRQ routeing to CORE0.
     *GPU_INTERRUPTS_ROUTING = 0x00;
+}
+
+
+//TODO: check for overflowing
+void logprint(LOGLEVEL lvl, char *msg) {
+    uint64_t timer = get_us();
+    int      len = 0, i = 1;
+    char     string[256];
+    char     tmp[32];
+    string[0] = '[';
+    itoa(timer, tmp, 10);
+
+    while (tmp[len] != '\0')
+        len++;
+    for (i = 1; i < 14 - len + 1; i++)
+        string[i] = '0';
+    memcpy(&string[i], tmp, len);
+    string[15] = ']';
+
+    len = 0;
+    while (msg[len] != '\0')
+        len++;
+
+    switch (lvl) {
+        case INFO:
+            memcpy(&string[16], " [INFO]  ", 9);
+            break;
+        case WARN:
+            memcpy(&string[16], " [WARN]  ", 9);
+            break;
+        case ERROR:
+            memcpy(&string[16], " [ERROR] ", 9);
+            break;
+    }
+    memcpy(&string[25], msg, len + 1);
+    string[strlen(string)+1] = '\0';
+    string[strlen(string)] = '\n';
+    uart0_puts(string);
 }

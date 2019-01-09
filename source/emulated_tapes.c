@@ -1,4 +1,5 @@
 #include "uart.h"
+#include "utils.h"
 #include "emulated_tapes.h"
 #include "sd.h"
 #include "fat.h"
@@ -7,7 +8,8 @@ volatile tape_internal_state_t emulated_tapes[MAX_TAPES];
 
 void init_emulated_tapes() {
     int      i;
-    char     nome[]           = "TAPEn      ";
+    char     nome[] = "TAPEn      ";
+    char     string[32];
     uint8_t *device_installed = (uint8_t *)DEVICE_INSTALLED;
     uint8_t  tmp;
 
@@ -22,9 +24,9 @@ void init_emulated_tapes() {
 
         if (emulated_tapes[i].fat32_cluster) {
             emulated_tapes[i].device_registers->status = DEVICE_READY;
-            uart0_puts("Found tape device ");
-            uart0_puts(nome);
-            uart0_puts("\n");
+            strcpy(string, "Found tape device ");
+            strcpy(&string[strlen(string)], nome);
+            LOG(INFO, string);
             tmp                                       = device_installed[IL_TAPE] | ((uint8_t)(1 << i));
             device_installed[IL_TAPE]                 = tmp;
             emulated_tapes[i].device_registers->data1 = TS;
@@ -39,8 +41,7 @@ void init_emulated_tapes() {
 unsigned int read_tape_block(int tape, unsigned char *buffer) {
     if (emulated_tapes[tape].fat32_cluster == 0)
         return 0;
-    return fat_transferfile(emulated_tapes[tape].fat32_cluster, buffer, emulated_tapes[tape].block_index,
-                            SD_READBLOCK);
+    return fat_transferfile(emulated_tapes[tape].fat32_cluster, buffer, emulated_tapes[tape].block_index, SD_READBLOCK);
 }
 
 unsigned int write_tape_block(int tape, unsigned char *buffer) {

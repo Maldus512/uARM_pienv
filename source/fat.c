@@ -104,7 +104,7 @@ int fat_getpartition(void) {
 unsigned int fat_get_table_entry(unsigned int index) {
     unsigned int buffer[512 / 4];
     unsigned int entry_sector_offset = (index * 4) / 512;
-    bpb_t *      bpb = (bpb_t *)bios_partition_block;
+    bpb_t *      bpb                 = (bpb_t *)bios_partition_block;
     sd_transferblock(partitionlba + bpb->rsc + entry_sector_offset, (unsigned char *)buffer, 1, SD_READBLOCK);
     return buffer[index % (512 / 4)];
 }
@@ -115,6 +115,7 @@ unsigned int fat_get_table_entry(unsigned int index) {
 unsigned int fat_getcluster(char *fn) {
     bpb_t *      bpb = (bpb_t *)bios_partition_block;
     fatdir_t *   dir = (fatdir_t *)root_dir;
+    char         string[128];
     unsigned int s;
     // find the root directory's LBA
     // This is only for FAT16
@@ -128,18 +129,19 @@ unsigned int fat_getcluster(char *fn) {
                 continue;
             // filename match?
             if (!memcmp((unsigned char *)dir->name, (unsigned char *)fn, 11)) {
-                uart_puts("FAT File ");
-                uart_puts(fn);
-                uart_puts(" starts at cluster: ");
-                uart_hex(((unsigned int)dir->ch) << 16 | dir->cl);
-                uart_puts("\n");
+                strcpy(string, "FAT File ");
+                strcpy(&string[strlen(string)], fn);
+                strcpy(&string[strlen(string)], " starts at cluster: ");
+                itoa(((unsigned int)dir->ch) << 16 | dir->cl, &string[strlen(string)], 16);
+                LOG(INFO, string);
                 // if so, return starting cluster
                 return ((unsigned int)dir->ch) << 16 | dir->cl;
             }
         }
-        uart_puts("ERROR: file not found: ");
-        uart0_puts(fn);
-        uart0_puts("\n");
+
+        strcpy(string, "ERROR: file not found: ");
+        strcpy(&string[strlen(string)], fn);
+        LOG(WARN, string);
     } else {
         uart_puts("ERROR: Unable to load root directory\n");
     }
@@ -188,7 +190,7 @@ int fat_transferfile(unsigned int cluster, unsigned char *data, unsigned int num
             read += tmp;
         } else {
             // get the next cluster in chain
-            //cluster = bpb->spf16 > 0 ? fat16[cluster] : fat32[cluster];
+            // cluster = bpb->spf16 > 0 ? fat16[cluster] : fat32[cluster];
             cluster = fat_get_table_entry(cluster);
         }
         counter++;

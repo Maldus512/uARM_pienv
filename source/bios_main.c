@@ -13,10 +13,12 @@
 #include "fat.h"
 #include "emulated_terminals.h"
 #include "emulated_tapes.h"
+#include "utils.h"
 
 
 void initSystem() {
     int i = 0;
+    char string[32];
     *((uint64_t *)INTERRUPT_HANDLER)   = 0;
     *((uint64_t *)SYNCHRONOUS_HANDLER) = 0;
     *((uint8_t *)INTERRUPT_MASK)       = 0xFF;
@@ -36,8 +38,9 @@ void initSystem() {
         init_emulated_tapes();
     }
     init_emulated_terminals();
-    uart0_puts("CPU-GPU memory split: ");
-    hexstring(getMemorySplit());
+    strcpy(string, "CPU-GPU memory split: ");
+    itoa(getMemorySplit(), &string[strlen(string)], 16);
+    LOG(INFO, string);
     uart0_puts("\n");
     uart0_puts("************************************\n");
     uart0_puts("*        MaldOS running...         *\n");
@@ -70,13 +73,26 @@ void idle() {
     LDST(&state);
 }
 
-int __attribute__((weak)) main() {
+void echo() {
     uart0_puts("Echoing everything\n");
-    // echo everything back
-    CoreExecute(1, idle);
     while (1) {
         uart0_putc(uart0_getc());
-        *((uint32_t*)CORE1_MBOX0_WRITESET) = 2;
+        *((uint32_t*)CORE0_MBOX0_WRITESET) = 2;
+    }
+}
+
+int __attribute__((weak)) main() {
+    state_t state;
+    state.exception_link_register = (uint64_t)echo;
+    state.stack_pointer           = (uint64_t)0x1000000 + 0x4000;
+    state.status_register         = 0x300;
+    setTimer(1000*1000);
+    // echo everything back
+    CoreExecute(1, idle);
+    LDST(&state);
+    while (1) {
+        //uart0_putc(uart0_getc());
+        //*((uint32_t*)CORE0_MBOX0_WRITESET) = 2;
     }
 }
 

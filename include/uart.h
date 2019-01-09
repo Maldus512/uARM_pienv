@@ -43,8 +43,22 @@ struct UART0REG {
     volatile uint32_t IRQ_CLEAR;      // ICR
 };
 
+typedef enum {
+    INFO,
+    WARN,
+    ERROR
+} LOGLEVEL;
+
 
 #define UART0 ((struct UART0REG *)UART0_BASE)
+
+#define DEBUG
+
+#ifdef DEBUG
+    #define LOG(x, y)     logprint(x,y)
+#else
+    #define LOG(x, y)     asm volatile("nop")
+#endif
 
 
 void initUart1();
@@ -60,5 +74,6 @@ void uart_hex(unsigned int d);
 void hexstrings(unsigned int d);
 void hexstring(unsigned int d);
 void startUart0Int();
+void logprint(LOGLEVEL lvl, char* msg);
 
 #endif
