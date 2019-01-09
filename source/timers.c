@@ -58,10 +58,10 @@ uint64_t get_us() {
 }
 
 void initArmTimer() {
-    /* routing core0 counter to core0 irq */
-    *(volatile uint32_t *)CORE0_TIMER_IRQCNTL = 0x08;
-    *(volatile uint32_t *)CORE1_TIMER_IRQCNTL = 0x08;
-    // enableCounter();
+    GIC->Core0_Timers_Interrupt_Control = 0x08;
+    GIC->Core1_Timers_Interrupt_Control = 0x08;
+    GIC->Core2_Timers_Interrupt_Control = 0x08;
+    GIC->Core3_Timers_Interrupt_Control = 0x08;
 }
 
 void wait_msec(unsigned int n) { delay_us(n * 1000); }

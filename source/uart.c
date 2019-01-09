@@ -207,7 +207,7 @@ void startUart0Int() {
     IRQ_CONTROLLER->Enable_IRQs_2 |= 1 << 25;
 
     // IRQ routeing to CORE0.
-    *GPU_INTERRUPTS_ROUTING = 0x00;
+    GIC->GPU_Interrupts_Routing = 0x00;
 }
 
 

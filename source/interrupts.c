@@ -61,17 +61,17 @@ void c_irq_handler() {
     }
 
     core_id = GETCOREID();
-    tmp2 = *CORE0_FIQ_SOURCE;
+    tmp2 = GIC->Core0_FIQ_Source;
     if (core_id == 0) {
-        tmp = *((volatile uint32_t *)CORE0_IRQ_SOURCE);
+        tmp = GIC->Core0_IRQ_Source;
     } else if (core_id == 1) {
-        tmp = *((volatile uint32_t *)CORE1_IRQ_SOURCE);
+        tmp = GIC->Core1_IRQ_Source;
         uart0_puts("interrupt!");
         hexstring(tmp);
         if (tmp & 0x08)
             setTimer(5000 * 1000);
         if (tmp & 0x10) {
-            *((uint32_t *)CORE1_MBOX0_CLEARSET) = 0xFFFFFFFF;
+            GIC->Core1_MailBox0_ClearSet = 0xFFFFFFFF;
         }
 
         return;
@@ -119,7 +119,7 @@ void c_irq_handler() {
     
         if (tmp & 0x10 || tmp2 & 0x10) {
             uart0_puts("mailbox\n");
-            *((uint32_t *)CORE0_MBOX0_CLEARSET) = 0xFFFFFFFF;
+            GIC->Core0_MailBox0_ClearSet = 0xFFFFFFFF;
         }
 
     for (i = 0; i < IL_LINES; i++) {

@@ -1,5 +1,6 @@
 #include "arch.h"
 #include "mailbox.h"
+#include "interrupts.h"
 
 volatile unsigned int __attribute__((aligned(16))) mbox[36];
 
@@ -115,8 +116,8 @@ int mbox_call(unsigned char ch) {
 }
 
 void initIPI() {
-    *((uint32_t *)CORE0_MBOX_INTERRUPT_CONTROL) = 0x10;
-    *((uint32_t *)CORE1_MBOX_INTERRUPT_CONTROL) = 1;
-    *((uint32_t *)CORE2_MBOX_INTERRUPT_CONTROL) = 1;
-    *((uint32_t *)CORE3_MBOX_INTERRUPT_CONTROL) = 1;
+    GIC->Core0_Mailbox_Interrupt_Control = 0x10;
+    GIC->Core1_Mailbox_Interrupt_Control = 1;
+    GIC->Core2_Mailbox_Interrupt_Control = 1;
+    GIC->Core3_Mailbox_Interrupt_Control = 1;
 }

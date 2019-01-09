@@ -8,18 +8,6 @@
 /* Mailbox 1 base address (Read by GPU) */
 #define MBOX1_BASE (IO_BASE + 0xB8A0)
 
-/* Core Mailbox Interrupt control */
-#define CORE0_MBOX_INTERRUPT_CONTROL    0x40000050
-#define CORE1_MBOX_INTERRUPT_CONTROL    0x40000054
-#define CORE2_MBOX_INTERRUPT_CONTROL    0x40000058
-#define CORE3_MBOX_INTERRUPT_CONTROL    0x4000005C
-
-#define CORE0_MBOX0_WRITESET            0x40000080
-#define CORE0_MBOX0_CLEARSET            0x400000C0
-
-#define CORE1_MBOX0_WRITESET            0x40000090
-#define CORE1_MBOX0_CLEARSET                0x400000D0
-
 
 
 

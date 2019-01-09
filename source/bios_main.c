@@ -74,10 +74,9 @@ void idle() {
 }
 
 void echo() {
-    uart0_puts("Echoing everything\n");
     while (1) {
         uart0_putc(uart0_getc());
-        *((uint32_t*)CORE0_MBOX0_WRITESET) = 2;
+        GIC->Core0_MailBox0_WriteSet = 2;
     }
 }
 
@@ -88,11 +87,11 @@ int __attribute__((weak)) main() {
     state.status_register         = 0x300;
     setTimer(1000*1000);
     // echo everything back
+    uart0_puts("Echoing everything\n");
     CoreExecute(1, idle);
     LDST(&state);
     while (1) {
         //uart0_putc(uart0_getc());
-        //*((uint32_t*)CORE0_MBOX0_WRITESET) = 2;
     }
 }
 
