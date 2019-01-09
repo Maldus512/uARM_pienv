@@ -9,22 +9,6 @@ GET32:
     ldr w0,[x0]
     ret
 
-.globl WAIT1S
-WAIT1S:
-    mov x0, #1000
-waitloop:
-    cmp x0, #0
-    beq endloop
-    sub x0, x0, #1
-    dsb ish
-    wfi
-    b waitloop
-endloop:
-    ret
-
-
-
-
 .globl GETEL
 GETEL:
     mrs x0,CurrentEL
@@ -48,11 +32,29 @@ GETTTBR0:
     ret
 
 
+.global wait_lock
 .global WAIT
 WAIT:
     dsb ish
+    //mrs     x1, mpidr_el1
+    //ands    x6, x6, #0x3
+    //beq     core0_WAIT
+    //wfi
+    //ret
+//core0_WAIT:
+    mov  x1, 0
+    ldr  x0, =wait_lock
+    str  x1, [x0]
+waitloop:
     wfi
+    ldr  x1, [x0]
+    cmp  x1, #1 
+    b.ne  waitloop
+
     ret
+
+    
+
 
 .global HALT
 HALT:
@@ -245,3 +247,86 @@ end:
     ldr     x1, [x0, #8]
     ldr     x0, [x0]
     eret
+
+
+.global pushRegisters
+pushRegisters:
+    /* save register values on the stack */
+    stp   x0,  x1,  [sp, #-16]!
+    stp   x2,  x3,  [sp, #-16]!
+    stp   x4,  x5,  [sp, #-16]!
+    stp   x6,  x7,  [sp, #-16]!
+    stp   x8,  x9,  [sp, #-16]!
+    stp   x10, x11, [sp, #-16]!
+    stp   x12, x13, [sp, #-16]!
+    stp   x14, x15, [sp, #-16]!
+    stp   x16, x17, [sp, #-16]!
+    stp   x18, x19, [sp, #-16]!
+    stp   x20, x21, [sp, #-16]!
+    stp   x22, x23, [sp, #-16]!
+    stp   x24, x25, [sp, #-16]!
+    stp   x26, x27, [sp, #-16]!
+    str   x28, [sp, #-16]!
+    // Do not save x29 and 30, (frame pointer and link register) as they are corrupted by the branch instruction
+    ret
+
+.global popRegisters
+popRegisters:
+    // Do not load x29 and 30, (frame pointer and link register) as they were corrupted by the branch instruction
+    ldr   x28, [sp], #16
+    ldp   x26, x27, [sp], #16
+    ldp   x24, x25, [sp], #16
+    ldp   x22, x23, [sp], #16
+    ldp   x20, x21, [sp], #16
+    ldp   x18, x19, [sp], #16
+    ldp   x16, x17, [sp], #16
+    ldp   x14, x15, [sp], #16
+    ldp   x12, x13, [sp], #16
+    ldp   x10, x11, [sp], #16
+    ldp   x8,  x9,  [sp], #16
+    ldp   x6,  x7,  [sp], #16
+    ldp   x4,  x5,  [sp], #16
+    ldp   x2,  x3,  [sp], #16
+    ldp   x0,  x1,  [sp], #16
+    ret
+
+.global saveRegisters
+saveRegisters:
+    stp   x0, x1, [x28]
+    stp   x2, x3, [x28, #16]!
+    stp   x4, x5, [x28, #16]!
+    stp   x6, x7, [x28, #16]!
+    stp   x8, x9, [x28, #16]!
+    stp   x10, x11, [x28, #16]!
+    stp   x12, x13, [x28, #16]!
+    stp   x14, x15, [x28, #16]!
+    stp   x16, x17, [x28, #16]!
+    stp   x18, x19, [x28, #16]!
+    stp   x20, x21, [x28, #16]!
+    stp   x22, x23, [x28, #16]!
+    stp   x24, x25, [x28, #16]!
+    stp   x26, x27, [x28, #16]!
+    ret
+
+.global saveState
+saveState:
+    mrs   x27, spsr_el1
+    and   x27, x27, #7
+    cmp   x27, #0
+    bne   savesp_el1
+    mrs   x27, sp_el0
+    b     finish_saveState
+savesp_el1:
+    mov   x27, sp
+finish_saveState:
+    stp   x30, x27, [x28, #16]!
+    
+    mrs   x27, elr_el1
+    str   x27, [x28, #16]! // Note: the 16 immediate value refers to the previously saved pair
+
+    mrs   x27, ttbr0_el1
+    str   x27, [x28, #8]!
+
+    mrs   x27, spsr_el1
+    str   x27, [x28, #8]!
+    ret

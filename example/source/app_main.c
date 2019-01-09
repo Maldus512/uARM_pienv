@@ -4,11 +4,14 @@
 #include "libuarm.h"
 #include "types.h"
 
+#define REGISTER = x;\
+    delay(x);
+
 #define ST_READY 1
 #define ST_BUSY 3
 #define ST_TRANSMITTED 5
 
-#define CMD_ACK 1
+#define CMD_ACK 1; asm volatile("wfi")
 #define CMD_TRANSMIT 2
 
 #define CHAR_OFFSET 8
@@ -72,13 +75,12 @@ static int term_putchar(char c) {
         return -1;
 
     term0_reg->transm_command = ((c << CHAR_OFFSET) | CMD_TRANSMIT);
-    WAIT();
-
+    asm volatile("wfi");
     while ((stat = tx_status(term0_reg)) == ST_BUSY)
         ;
 
     term0_reg->transm_command = CMD_ACK;
-    WAIT();
+    //asm volatile("wfi");
 
     if (stat != ST_TRANSMITTED)
         return -1;
@@ -151,16 +153,17 @@ void test1() {
         uart_hex(numeri[contatore]);
         print("\n");
         delay(600 * 1000);
+        //WAIT();
     }
 }
 
 void test2() {
     unsigned long timer;
     print("partenza 2\n");
-    SYSCALL(5, 0,0,0);
     while (1) {
         timer = get_us();
         print("test2 vivo: ");
+        SYSCALL(5, 0, 0, 0);
         term_puts("test2 vivo\n");
         uart_hex(timer);
         print("\n");
@@ -168,9 +171,7 @@ void test2() {
     }
 }
 
-void synchronous(unsigned int code, unsigned int x0, unsigned int x1, unsigned int x2) {
-    print("system call!\n");
-}
+void synchronous(unsigned int code, unsigned int x0, unsigned int x1, unsigned int x2) { print("system call!\n"); }
 
 void interrupt() {
     state_t *oldarea         = (state_t *)INTERRUPT_OLDAREA;
@@ -198,9 +199,9 @@ void interrupt() {
 }
 
 int main() {
-    tape                             = DEV_REG_ADDR(IL_TAPE, 0);
-    *((uint8_t *)INTERRUPT_MASK)     = 0xFC;     //&= ~((1 << IL_TIMER) | (1 << IL_TAPE));
-    *((uint64_t *)INTERRUPT_HANDLER) = (uint64_t)&interrupt;
+    tape                               = DEV_REG_ADDR(IL_TAPE, 0);
+    *((uint8_t *)INTERRUPT_MASK)       = 0xFC;     //&= ~((1 << IL_TIMER) | (1 << IL_TAPE));
+    *((uint64_t *)INTERRUPT_HANDLER)   = (uint64_t)&interrupt;
     *((uint64_t *)SYNCHRONOUS_HANDLER) = (uint64_t)&synchronous;
 
     print("sono l'applicazione\n");

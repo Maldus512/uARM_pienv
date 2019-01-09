@@ -13,6 +13,7 @@
 
 uint64_t next_timer                 = 0;
 uint64_t f_emulated_timer_interrupt = 0;
+uint64_t  wait_lock                  = 0;
 
 void set_next_timer(uint64_t microseconds) {
     uint8_t *interrupt_lines  = (uint8_t *)INTERRUPT_LINES;
@@ -32,14 +33,14 @@ uint32_t c_swi_handler(uint32_t code, uint32_t *registers) {
         synchronous_handler = (void (*)(unsigned int, unsigned int, unsigned int, unsigned int))handler_present;
         synchronous_handler(code, registers[0], registers[1], registers[2]);
     }
-    
+
     return 0;
 }
 
 void c_irq_handler() {
-    static uint8_t  f_led       = 0;
+    static uint8_t  f_led           = 0;
     uint8_t         f_app_interrupt = 1;
-    uint32_t        tmp;
+    uint32_t        tmp, tmp2;
     static uint64_t lastBlink = 0;
     uint64_t        timer, handler_present;
     int             i;
@@ -60,16 +61,17 @@ void c_irq_handler() {
     }
 
     core_id = GETCOREID();
+    tmp2 = *CORE0_FIQ_SOURCE;
     if (core_id == 0) {
         tmp = *((volatile uint32_t *)CORE0_IRQ_SOURCE);
     } else if (core_id == 1) {
         tmp = *((volatile uint32_t *)CORE1_IRQ_SOURCE);
-        uart0_puts("interrupt!") ;
+        uart0_puts("interrupt!");
         hexstring(tmp);
         if (tmp & 0x08)
             setTimer(5000 * 1000);
         if (tmp & 0x10) {
-            *((uint32_t*) CORE1_MBOX0_CLEARSET) = 0xFFFFFFFF;
+            *((uint32_t *)CORE1_MBOX0_CLEARSET) = 0xFFFFFFFF;
         }
 
         return;
@@ -114,6 +116,11 @@ void c_irq_handler() {
             setTimer(100);
         }
     }
+    
+        if (tmp & 0x10 || tmp2 & 0x10) {
+            uart0_puts("mailbox\n");
+            *((uint32_t *)CORE0_MBOX0_CLEARSET) = 0xFFFFFFFF;
+        }
 
     for (i = 0; i < IL_LINES; i++) {
         if (interrupt_lines[i] && !(interrupt_mask & (1 << i))) {
@@ -124,6 +131,7 @@ void c_irq_handler() {
     }
 
     if (f_app_interrupt && handler_present != 0) {
+        wait_lock = 1;
         interrupt_handler = (void (*)(void *))handler_present;
         interrupt_handler();
     }

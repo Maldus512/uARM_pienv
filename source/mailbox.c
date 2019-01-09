@@ -115,7 +115,7 @@ int mbox_call(unsigned char ch) {
 }
 
 void initIPI() {
-    *((uint32_t *)CORE0_MBOX_INTERRUPT_CONTROL) = 1;
+    *((uint32_t *)CORE0_MBOX_INTERRUPT_CONTROL) = 0x10;
     *((uint32_t *)CORE1_MBOX_INTERRUPT_CONTROL) = 1;
     *((uint32_t *)CORE2_MBOX_INTERRUPT_CONTROL) = 1;
     *((uint32_t *)CORE3_MBOX_INTERRUPT_CONTROL) = 1;
