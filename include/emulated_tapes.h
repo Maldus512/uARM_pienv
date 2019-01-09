@@ -15,6 +15,7 @@
 #define READBLK 3
 #define BACKBLK 4
 #define WRITEBLK 5
+#define READ_REGISTERS 6
 
 #define DEVICE_NOT_INSTALLED    0
 #define DEVICE_READY            1
@@ -28,18 +29,18 @@
 #define MAX_TAPES   4
 
 typedef struct {
-    unsigned int old_command;
-    unsigned int executing_command;
     unsigned int block_index;
     unsigned int fat32_cluster;
-    tapereg_t *device_registers;
+    tapereg_t *mailbox_registers;
+    tapereg_t internal_registers;
 } tape_internal_state_t;
 
-extern volatile tape_internal_state_t emulated_tapes[MAX_TAPES];
+extern tape_internal_state_t emulated_tapes[MAX_TAPES];
 
 unsigned int read_tape_block(int tape, unsigned char *buffer);
 unsigned int write_tape_block(int tape, unsigned char *buffer);
 void init_emulated_tapes();
 void manage_emulated_tape(int i);
+void emulated_tape_mailbox(int i, tapereg_t *registers);
 
 #endif

@@ -13,7 +13,7 @@
 
 uint64_t next_timer                 = 0;
 uint64_t f_emulated_timer_interrupt = 0;
-uint64_t  wait_lock                  = 0;
+uint64_t wait_lock                  = 0;
 
 void set_next_timer(uint64_t microseconds) {
     uint8_t *interrupt_lines  = (uint8_t *)INTERRUPT_LINES;
@@ -21,6 +21,32 @@ void set_next_timer(uint64_t microseconds) {
     interrupt_lines[IL_TIMER] = 0;
     if (microseconds < 100) {
         setTimer(microseconds);
+    }
+}
+
+
+void c_fiq_handler() {
+    uint32_t tmp, data, device_num, device_class;
+    uint64_t address;
+    tmp = GIC->Core0_FIQ_Source;
+
+    if (tmp & 0x10) {
+        data = GIC->Core0_MailBox0_ClearSet;
+        address = (uint64_t)(data & ~0xF);
+        device_class = data & 0x0000000C;
+        device_num = data & 0x00000003;
+
+        switch(device_class >> 2) {
+            case DEVICE_CLASS_PRINTER:
+                emulated_printer_mailbox(device_num, (printreg_t *)address);
+                break;
+            case DEVICE_CLASS_TAPE:
+                emulated_tape_mailbox(device_num, (tapereg_t *)address);
+                break;
+        }
+
+
+        GIC->Core0_MailBox0_ClearSet = data;
     }
 }
 
@@ -40,7 +66,7 @@ uint32_t c_swi_handler(uint32_t code, uint32_t *registers) {
 void c_irq_handler() {
     static uint8_t  f_led           = 0;
     uint8_t         f_app_interrupt = 1;
-    uint32_t        tmp, tmp2;
+    uint32_t        tmp;
     static uint64_t lastBlink = 0;
     uint64_t        timer, handler_present;
     int             i;
@@ -61,7 +87,6 @@ void c_irq_handler() {
     }
 
     core_id = GETCOREID();
-    tmp2 = GIC->Core0_FIQ_Source;
     if (core_id == 0) {
         tmp = GIC->Core0_IRQ_Source;
     } else if (core_id == 1) {
@@ -98,8 +123,8 @@ void c_irq_handler() {
     }
 
     /* Check emulated devices */
-    for (i = 0; i < MAX_TERMINALS; i++) {
-        manage_emulated_terminal(i);
+    for (i = 0; i < MAX_PRINTERS; i++) {
+        manage_emulated_printer(i);
     }
 
     if (tmp & 0x08) {
@@ -116,11 +141,11 @@ void c_irq_handler() {
             setTimer(100);
         }
     }
-    
-        if (tmp & 0x10 || tmp2 & 0x10) {
-            uart0_puts("mailbox\n");
-            GIC->Core0_MailBox0_ClearSet = 0xFFFFFFFF;
-        }
+
+    if (tmp & 0x10) {
+        uart0_puts("mailbox\n");
+        GIC->Core0_MailBox0_ClearSet = 0xFFFFFFFF;
+    }
 
     for (i = 0; i < IL_LINES; i++) {
         if (interrupt_lines[i] && !(interrupt_mask & (1 << i))) {
@@ -131,7 +156,7 @@ void c_irq_handler() {
     }
 
     if (f_app_interrupt && handler_present != 0) {
-        wait_lock = 1;
+        wait_lock         = 1;
         interrupt_handler = (void (*)(void *))handler_present;
         interrupt_handler();
     }

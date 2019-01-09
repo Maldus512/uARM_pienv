@@ -68,7 +68,7 @@ void idle() {
     state_t state;
     state.exception_link_register = (uint64_t)function1;
     state.stack_pointer           = (uint64_t)0x1000000 + 0x2000;
-    state.status_register         = 0x340;
+    state.status_register         = 0x300;
     setTimer(1000*1000);
     LDST(&state);
 }

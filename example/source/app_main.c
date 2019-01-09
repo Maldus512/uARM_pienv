@@ -4,14 +4,13 @@
 #include "libuarm.h"
 #include "types.h"
 
-#define REGISTER = x;\
-    delay(x);
-
 #define ST_READY 1
 #define ST_BUSY 3
 #define ST_TRANSMITTED 5
 
-#define CMD_ACK 1; asm volatile("wfi")
+#define CMD_ACK                                                                                                        \
+    1;                                                                                                                 \
+    asm volatile("wfi")
 #define CMD_TRANSMIT 2
 
 #define CHAR_OFFSET 8
@@ -20,10 +19,11 @@
 #define DEVICE_READY 1
 #define DEVICE_BUSY 3
 #define CHAR_TRANSMIT 5
+#define READ_REGISTERS 6
 
 #define RESET 0
 #define ACK 1
-#define TRANSMIT_CHAR 2
+#define PRINT_CHAR 2
 
 #define RESET 0
 #define ACK 1
@@ -36,9 +36,6 @@ state_t  t1, t2;
 state_t *current;
 int      semaforo = 0;
 
-extern volatile unsigned char __EL0_stack;
-
-tapereg_t *tape;
 
 void delay(unsigned int us) {
     volatile unsigned long timestamp = get_us();
@@ -64,28 +61,36 @@ void copy_state(state_t *dest, state_t *src) {
     dest->status_register         = src->status_register;
 }
 
-static uint32_t tx_status(termreg_t *tp) { return ((tp->transm_status) & TERM_STATUS_MASK); }
+static uint32_t print_status(printreg_t *tp) { return ((tp->status) & TERM_STATUS_MASK); }
 
 static int term_putchar(char c) {
     uint32_t   stat;
-    termreg_t *term0_reg = (termreg_t *)DEV_REG_ADDR(IL_TERMINAL, 3);
+    printreg_t print0_reg = {0, READ_REGISTERS, 0, 0, 0};
 
-    stat = tx_status(term0_reg);
-    if (stat != ST_READY && stat != ST_TRANSMITTED)
+    CORE0_MAILBOX0 = (((uint32_t)(uint64_t)&print0_reg) & ~0xF) | 0x0;
+    while (print0_reg.mailbox == 0)
+        nop();
+
+    stat = print_status(&print0_reg);
+    if (stat != ST_READY)
         return -1;
 
-    term0_reg->transm_command = ((c << CHAR_OFFSET) | CMD_TRANSMIT);
-    asm volatile("wfi");
-    while ((stat = tx_status(term0_reg)) == ST_BUSY)
-        ;
+    print0_reg.mailbox = 0;
+    print0_reg.command = PRINT_CHAR;
+    print0_reg.data0   = c;
+    CORE0_MAILBOX0     = (((uint32_t)(uint64_t)&print0_reg) & ~0xF) | 0x0;
+    while (print0_reg.mailbox == 0)
+        nop();
+    while (print_status(&print0_reg) == ST_BUSY)
+        nop();
 
-    term0_reg->transm_command = CMD_ACK;
-    //asm volatile("wfi");
+    print0_reg.mailbox = 0;
+    print0_reg.command = CMD_ACK;
+    CORE0_MAILBOX0     = (((uint32_t)(uint64_t)&print0_reg) & ~0xF) | 0x0;
+    while (print0_reg.mailbox == 0)
+        nop();
 
-    if (stat != ST_TRANSMITTED)
-        return -1;
-    else
-        return 0;
+    return 0;
 }
 
 static void term_puts(const char *str) {
@@ -124,11 +129,18 @@ static void uart_hex(unsigned int d) {
 void test1() {
     int           numeri[100];
     unsigned char buffer[512];
+    tapereg_t     tape_reg = {0, READ_REGISTERS, 0, 0, 0};
 
     int contatore = 0;
     print("partenza 1\n");
-    tape->data0   = (unsigned int)(unsigned long)buffer;
-    tape->command = READBLK;
+
+    CORE0_MAILBOX0 = (((uint32_t)(uint64_t)&tape_reg) & ~0xF) | 0x4;
+    while (tape_reg.mailbox == 0)
+        nop();
+
+    tape_reg.data0   = (unsigned int)(unsigned long)buffer;
+    tape_reg.command = READBLK;
+    CORE0_MAILBOX0   = (((uint32_t)(uint64_t)&tape_reg) & ~0xF) | 0x4;
     while (semaforo == 0)
         ;
 
@@ -138,8 +150,9 @@ void test1() {
 
     buffer[0] = buffer[0] == 'M' ? 'P' : 'M';
 
-    semaforo      = 0;
-    tape->command = WRITEBLK;
+    semaforo         = 0;
+    tape_reg.command = WRITEBLK;
+    CORE0_MAILBOX0   = (((uint32_t)(uint64_t)&tape_reg) & ~0xF) | 0x4;
     while (semaforo == 0)
         ;
 
@@ -153,7 +166,7 @@ void test1() {
         uart_hex(numeri[contatore]);
         print("\n");
         delay(600 * 1000);
-        //WAIT();
+        // WAIT();
     }
 }
 
@@ -174,8 +187,9 @@ void test2() {
 void synchronous(unsigned int code, unsigned int x0, unsigned int x1, unsigned int x2) { print("system call!\n"); }
 
 void interrupt() {
-    state_t *oldarea         = (state_t *)INTERRUPT_OLDAREA;
-    uint8_t *interrupt_lines = (uint8_t *)INTERRUPT_LINES;
+    state_t * oldarea         = (state_t *)INTERRUPT_OLDAREA;
+    uint8_t * interrupt_lines = (uint8_t *)INTERRUPT_LINES;
+    tapereg_t tape_reg        = {0, ACK, 0, 0, 0};
 
     copy_state(current, oldarea);
 
@@ -191,15 +205,17 @@ void interrupt() {
     }
 
     if (interrupt_lines[IL_TAPE]) {
-        semaforo      = 1;
-        tape->command = ACK;
+        semaforo = 1;
+
+        CORE0_MAILBOX0 = (((uint32_t)(uint64_t)&tape_reg) & ~0xF) | 0x4;
+        while (tape_reg.mailbox == 0)
+            nop();
     }
 
     LDST(current);
 }
 
 int main() {
-    tape                               = DEV_REG_ADDR(IL_TAPE, 0);
     *((uint8_t *)INTERRUPT_MASK)       = 0xFC;     //&= ~((1 << IL_TIMER) | (1 << IL_TAPE));
     *((uint64_t *)INTERRUPT_HANDLER)   = (uint64_t)&interrupt;
     *((uint64_t *)SYNCHRONOUS_HANDLER) = (uint64_t)&synchronous;
@@ -213,8 +229,8 @@ int main() {
     t2.exception_link_register = (uint64_t)test2;
     t1.stack_pointer           = (uint64_t)0x1000000 + 0x2000;
     t2.stack_pointer           = (uint64_t)0x1000000 + 0x4000;
-    t1.status_register         = 0x340;
-    t2.status_register         = 0x340;
+    t1.status_register         = 0x300;
+    t2.status_register         = 0x300;
     current                    = &t1;
     set_next_timer(1000);
 

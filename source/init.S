@@ -72,7 +72,7 @@ set_stacks:
     mrs     x0, hcr_el2
 
     /* change execution level to EL1 */
-    mov     x2, #0x3C5
+    mov     x2, #0x385      // IRQ disabled, FIQ enabled
     msr     spsr_el2, x2
     adr     x2, start_kernel
     msr     elr_el2, x2
@@ -277,13 +277,26 @@ finish_swi:
 
 
 fiq_handler:
-    nop
-    b irq_handler
+    msr   daifset, #3
+    /* save register values on the stack */
+    stp   x29, x30, [sp, #-16]!
+    bl    pushRegisters
+
+    // call c handler.
+    bl    c_fiq_handler
+
+    /* Ideally the scheduler should manage returning */
+    bl    popRegisters
+    ldp   x29, x30, [sp], #16
+
+    msr   daifclr, #1
+    eret
     
 /* Interrupts run at level EL1; they are enabled only at level EL0, so there are
     no nested interrupts */
 irq_handler:
     msr   daifset, #2
+    msr   daifclr, #1
     
     mrs     x10, mpidr_el1
     and     x10, x10, #0x3

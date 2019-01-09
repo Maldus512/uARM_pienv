@@ -2,28 +2,26 @@
 #include "arch.h"
 #include "emulated_terminals.h"
 #include "lfb.h"
+#include "timers.h"
+#include "utils.h"
 
 #define WIDTH (REQUESTED_WIDTH / 2)
 #define HEIGHT (REQUESTED_HEIGHT / 2)
 
 static int terminal_coordinates[MAX_TERMINALS][2];
 
+static printer_internal_state_t printers[MAX_PRINTERS] = {0};
+
 
 void init_emulated_terminals() {
-    int        i;
-    termreg_t *terminal;
-    uint8_t *  device_installed = (uint8_t *)DEVICE_INSTALLED;
-    uint8_t    tmp;
+    int      i;
+    uint8_t *device_installed = (uint8_t *)DEVICE_INSTALLED;
 
     device_installed[IL_TERMINAL] = 0x00;
-    for (i = 0; i < MAX_TERMINALS; i++) {
-        terminal                      = (termreg_t *)DEV_REG_ADDR(IL_TERMINAL, i);
-        terminal->recv_status         = DEVICE_READY;
-        terminal->transm_status       = DEVICE_READY;
-        terminal->recv_command        = RESET;
-        terminal->transm_command      = RESET;
-        tmp                           = device_installed[IL_TERMINAL] | ((uint8_t)(1 << i));
-        device_installed[IL_TERMINAL] = tmp;
+
+    for (i = 0; i < MAX_PRINTERS; i++) {
+        printers[i].internal_registers.command = RESET;
+        printers[i].internal_registers.status  = DEVICE_READY;
     }
 }
 
@@ -69,36 +67,66 @@ void terminal_send(int num, char c) {
     terminal_coordinates[num][1] = y - terminal_starting_coordinates[num][1];
 }
 
+void emulated_printer_mailbox(int i, printreg_t *registers) {
+    uint8_t *interrupt_lines = (uint8_t *)INTERRUPT_LINES;
 
-void manage_emulated_terminal(int i) {
-    uint8_t *  interrupt_lines = (uint8_t *)INTERRUPT_LINES;
-    uint8_t    interrupt_mask  = *((uint8_t *)INTERRUPT_MASK);
-    termreg_t *terminal        = (termreg_t *)DEV_REG_ADDR(IL_TERMINAL, i);
+    if (registers == NULL)
+        return;
 
-    switch (terminal->transm_command & 0xFF) {
+    if (printers[i].internal_registers.status == DEVICE_NOT_INSTALLED && registers->command != READ_REGISTERS)
+        return;
+
+    printers[i].mailbox_registers = registers;
+
+    switch (registers->command & 0xFF) {
         case RESET:
-            terminal->transm_command = RESET;
-            terminal->transm_status  = DEVICE_READY;
+            printers[i].internal_registers.status  = DEVICE_READY;
+            printers[i].internal_registers.command = RESET;
             /* Reset command also removes interrupt */
-            interrupt_lines[IL_TERMINAL] &= ~(1 << i);
+            interrupt_lines[IL_PRINTER] &= ~(1 << i);
             break;
         case ACK:
-            terminal->transm_command     = RESET;
-            terminal->transm_status      = DEVICE_READY;
-            interrupt_lines[IL_TERMINAL] = 0;     //&= ~(1 << i);
-            break;
-        case TRANSMIT_CHAR:
-            if ((terminal->transm_status & 0xFF) == DEVICE_READY) {
-                terminal->transm_status = DEVICE_BUSY;
-                // TODO: there might be sync problems between processes due to this system
-                // I need to check if it's meant to be like that or I should avoid them
-            } else if ((terminal->transm_status & 0xFF) == DEVICE_BUSY) {
-                terminal_send(i, terminal->transm_command >> 8);
-                terminal->transm_status = CHAR_TRANSMIT;
-                if (!(interrupt_mask & (1 << IL_TERMINAL))) {
-                    interrupt_lines[IL_TERMINAL] |= 1 << i;
-                }
+            if ((printers[i].internal_registers.status & 0xFF) != DEVICE_BUSY) {
+                printers[i].internal_registers.command = ACK;
+                printers[i].internal_registers.status  = DEVICE_READY;
+                interrupt_lines[IL_PRINTER] &= ~(1 << i);
             }
             break;
+        case READ_REGISTERS:
+            break;
+        case PRINT_CHAR:
+            if ((printers[i].internal_registers.status & 0xFF) != DEVICE_BUSY) {
+                printers[i].internal_registers.status  = DEVICE_BUSY;
+                printers[i].internal_registers.command = PRINT_CHAR;
+                printers[i].internal_registers.data0   = registers->data0;
+                // TODO: set a proper work timer
+                setTimer(100);
+            }
+            break;
+        default:
+            printers[i].internal_registers.status = ILLEGAL_OPERATION;
+            break;
+    }
+
+    memcpy(printers[i].mailbox_registers, &printers[i].internal_registers, sizeof(printreg_t));
+    printers[i].mailbox_registers->mailbox = 1;
+}
+
+void manage_emulated_printer(int i) {
+    uint8_t *interrupt_lines = (uint8_t *)INTERRUPT_LINES;
+
+    if (printers[i].internal_registers.status == DEVICE_BUSY) {
+        switch (printers[i].internal_registers.command) {
+            case PRINT_CHAR:
+                terminal_send(i, printers[i].internal_registers.data0);
+                printers[i].internal_registers.status = DEVICE_READY;
+                interrupt_lines[IL_TERMINAL] |= 1 << i;
+                printers[i].executing_command = RESET;
+                memcpy(printers[i].mailbox_registers, &printers[i].internal_registers, sizeof(printreg_t));
+                printers[i].mailbox_registers = NULL;
+                break;
+            default:
+                break;
+        }
     }
 }
