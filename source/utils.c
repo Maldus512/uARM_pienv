@@ -28,8 +28,8 @@ char *itoa(long unsigned int value, char *result, int base) {
         return result;
     }
 
-    char *ptr = result, *ptr1 = result, tmp_char;
-    long unsigned int   tmp_value;
+    char *            ptr = result, *ptr1 = result, tmp_char;
+    long unsigned int tmp_value;
 
     do {
         tmp_value = value;
@@ -63,4 +63,11 @@ int strcpy(char *dest, char *src) {
     }
     dest[len] = src[len];
     return len;
+}
+
+void *memset(void *s, int c, unsigned int n) {
+    unsigned char *p = s;
+    while (n--)
+        *p++ = (unsigned char)c;
+    return s;
 }

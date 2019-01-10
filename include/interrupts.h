@@ -97,6 +97,6 @@ struct GIC_REGISTERS {
 
 void         enable_irq();
 void         enable_irq_el0();
-unsigned int setNextTimerInterrupt(unsigned int timer);
+void set_device_timer(uint64_t microseconds);
 
 #endif

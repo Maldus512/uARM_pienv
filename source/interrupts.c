@@ -11,18 +11,27 @@
 #include "emulated_terminals.h"
 #include "emulated_tapes.h"
 
-uint64_t next_timer                 = 0;
+uint64_t emulated_timer             = 0;
+uint64_t device_timer               = 0;
 uint64_t f_emulated_timer_interrupt = 0;
 uint64_t wait_lock                  = 0;
 
 void set_next_timer(uint64_t microseconds) {
     uint8_t *interrupt_lines  = (uint8_t *)INTERRUPT_LINES;
-    next_timer                = get_us() + microseconds;
+    emulated_timer            = get_us() + microseconds;
     interrupt_lines[IL_TIMER] = 0;
-    if (microseconds < 100) {
+    if (device_timer == 0 || emulated_timer < device_timer) {
         setTimer(microseconds);
     }
 }
+
+void set_device_timer(uint64_t microseconds) {
+    device_timer = get_us() + microseconds;
+    if (emulated_timer == 0 || device_timer < emulated_timer) {
+        setTimer(microseconds);
+    }
+}
+
 
 
 void c_fiq_handler() {
@@ -31,12 +40,12 @@ void c_fiq_handler() {
     tmp = GIC->Core0_FIQ_Source;
 
     if (tmp & 0x10) {
-        data = GIC->Core0_MailBox0_ClearSet;
-        address = (uint64_t)(data & ~0xF);
+        data         = GIC->Core0_MailBox0_ClearSet;
+        address      = (uint64_t)(data & ~0xF);
         device_class = data & 0x0000000C;
-        device_num = data & 0x00000003;
+        device_num   = data & 0x00000003;
 
-        switch(device_class >> 2) {
+        switch (device_class >> 2) {
             case DEVICE_CLASS_PRINTER:
                 emulated_printer_mailbox(device_num, (printreg_t *)address);
                 break;
@@ -128,23 +137,26 @@ void c_irq_handler() {
     }
 
     if (tmp & 0x08) {
-        if (next_timer > 0 && timer >= next_timer) {
+        /* More precise timing */
+        timer = get_us();
+        /* Don't clear the timer interrupt on purpose; it's on the user to to that */
+        if (emulated_timer > 0 && timer >= emulated_timer) {
             if (!(interrupt_mask & (1 << IL_TIMER))) {
                 interrupt_lines[IL_TIMER] = 1;
             }
-            setTimer(100);
-        } else if (next_timer - timer < 100) {
-            f_app_interrupt = 0;
-            setTimer(next_timer - timer);
-        } else if (next_timer - timer >= 100) {
-            f_app_interrupt = 0;
-            setTimer(100);
+            /*if (device_timer > 0 && timer < device_timer) {
+                setTimer(device_timer);
+            }*/
         }
-    }
-
-    if (tmp & 0x10) {
-        uart0_puts("mailbox\n");
-        GIC->Core0_MailBox0_ClearSet = 0xFFFFFFFF;
+        if (device_timer > 0 && timer >= device_timer) {
+            // TODO: implement a proper timer queue
+            device_timer = 0;
+            if (emulated_timer > 0 && timer < emulated_timer) {
+                setTimer(emulated_timer - timer);
+            }
+        } else if (device_timer > 0) {
+            setTimer(device_timer - timer);
+        }
     }
 
     for (i = 0; i < IL_LINES; i++) {

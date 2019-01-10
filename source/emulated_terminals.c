@@ -76,7 +76,7 @@ void emulated_printer_mailbox(int i, printreg_t *registers) {
     if (printers[i].internal_registers.status == DEVICE_NOT_INSTALLED && registers->command != READ_REGISTERS)
         return;
 
-    printers[i].mailbox_registers = registers;
+    printers[i].internal_registers.mailbox = 1;
 
     switch (registers->command & 0xFF) {
         case RESET:
@@ -84,32 +84,38 @@ void emulated_printer_mailbox(int i, printreg_t *registers) {
             printers[i].internal_registers.command = RESET;
             /* Reset command also removes interrupt */
             interrupt_lines[IL_PRINTER] &= ~(1 << i);
+            memcpy(registers, &printers[i].internal_registers, sizeof(printreg_t));
             break;
         case ACK:
-            if ((printers[i].internal_registers.status & 0xFF) != DEVICE_BUSY) {
+            if (printers[i].internal_registers.status != DEVICE_BUSY) {
                 printers[i].internal_registers.command = ACK;
                 printers[i].internal_registers.status  = DEVICE_READY;
                 interrupt_lines[IL_PRINTER] &= ~(1 << i);
+                memcpy(registers, &printers[i].internal_registers, sizeof(printreg_t));
+            } else {
+                registers->mailbox = 2;
             }
             break;
         case READ_REGISTERS:
+            memcpy(registers, &printers[i].internal_registers, sizeof(printreg_t));
             break;
         case PRINT_CHAR:
-            if ((printers[i].internal_registers.status & 0xFF) != DEVICE_BUSY) {
+            if (printers[i].internal_registers.status != DEVICE_BUSY) {
                 printers[i].internal_registers.status  = DEVICE_BUSY;
                 printers[i].internal_registers.command = PRINT_CHAR;
                 printers[i].internal_registers.data0   = registers->data0;
-                // TODO: set a proper work timer
-                setTimer(100);
+                printers[i].mailbox_registers          = registers;
+                memcpy(registers, &printers[i].internal_registers, sizeof(printreg_t));
+                set_device_timer(100);
+            } else {
+                registers->mailbox = 2;
             }
             break;
         default:
             printers[i].internal_registers.status = ILLEGAL_OPERATION;
+            memcpy(registers, &printers[i].internal_registers, sizeof(printreg_t));
             break;
     }
-
-    memcpy(printers[i].mailbox_registers, &printers[i].internal_registers, sizeof(printreg_t));
-    printers[i].mailbox_registers->mailbox = 1;
 }
 
 void manage_emulated_printer(int i) {

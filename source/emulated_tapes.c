@@ -4,6 +4,7 @@
 #include "sd.h"
 #include "fat.h"
 #include "timers.h"
+#include "interrupts.h"
 
 tape_internal_state_t emulated_tapes[MAX_TAPES];
 
@@ -111,15 +112,16 @@ void emulated_tape_mailbox(int i, tapereg_t *registers) {
     if (registers == NULL)
         return;
 
-    emulated_tapes[i].mailbox_registers = registers;
-
     if (emulated_tapes[i].internal_registers.status == DEVICE_NOT_INSTALLED && registers->command != READ_REGISTERS)
         return;
+
+    emulated_tapes[i].internal_registers.mailbox = 1;
 
     switch (registers->command) {
         case RESET:
             emulated_tapes[i].internal_registers.command = RESET;
             emulated_tapes[i].internal_registers.status  = DEVICE_READY;
+            memcpy(registers, &emulated_tapes[i].internal_registers, sizeof(tapereg_t));
             break;
         case ACK:
             if (emulated_tapes[i].internal_registers.status != DEVICE_BUSY) {
@@ -127,22 +129,32 @@ void emulated_tape_mailbox(int i, tapereg_t *registers) {
                 emulated_tapes[i].internal_registers.status  = DEVICE_READY;
                 intline                                      = interrupt_lines[IL_TAPE] & ((uint8_t)(~(1 << i)));
                 interrupt_lines[IL_TAPE]                     = intline;
+                memcpy(registers, &emulated_tapes[i].internal_registers, sizeof(tapereg_t));
             }
             break;
         case READ_REGISTERS:
+            memcpy(registers, &emulated_tapes[i].internal_registers, sizeof(tapereg_t));
             break;
         case SKIPBLK:
             if (emulated_tapes[i].internal_registers.status != DEVICE_BUSY) {
                 emulated_tapes[i].internal_registers.command = SKIPBLK;
                 emulated_tapes[i].internal_registers.status  = DEVICE_BUSY;
-                setTimer(100);
+                emulated_tapes[i].mailbox_registers          = registers;
+                memcpy(registers, &emulated_tapes[i].internal_registers, sizeof(tapereg_t));
+                set_device_timer(100);
+            } else {
+                registers->mailbox = 2;
             }
         case READBLK:
             if (emulated_tapes[i].internal_registers.status != DEVICE_BUSY) {
                 emulated_tapes[i].internal_registers.command = READBLK;
                 emulated_tapes[i].internal_registers.data0   = registers->data0;
                 emulated_tapes[i].internal_registers.status  = DEVICE_BUSY;
-                setTimer(100);
+                emulated_tapes[i].mailbox_registers          = registers;
+                memcpy(registers, &emulated_tapes[i].internal_registers, sizeof(tapereg_t));
+                set_device_timer(100);
+            } else {
+                registers->mailbox = 2;
             }
             break;
         case WRITEBLK:
@@ -150,14 +162,16 @@ void emulated_tape_mailbox(int i, tapereg_t *registers) {
                 emulated_tapes[i].internal_registers.command = WRITEBLK;
                 emulated_tapes[i].internal_registers.data0   = registers->data0;
                 emulated_tapes[i].internal_registers.status  = DEVICE_BUSY;
-                setTimer(100);
+                emulated_tapes[i].mailbox_registers          = registers;
+                memcpy(registers, &emulated_tapes[i].internal_registers, sizeof(tapereg_t));
+                set_device_timer(100);
+            } else {
+                registers->mailbox = 2;
             }
             break;
         default:
             emulated_tapes[i].internal_registers.status = ILLEGAL_OPERATION;
+            memcpy(registers, &emulated_tapes[i].internal_registers, sizeof(tapereg_t));
             break;
     }
-
-    memcpy(emulated_tapes[i].mailbox_registers, &emulated_tapes[i].internal_registers, sizeof(tapereg_t));
-    emulated_tapes[i].mailbox_registers->mailbox = 1;
 }

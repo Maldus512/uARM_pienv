@@ -38,6 +38,7 @@ void initSystem() {
         init_emulated_tapes();
     }
     init_emulated_terminals();
+    init_emulated_timers();
     strcpy(string, "CPU-GPU memory split: ");
     itoa(getMemorySplit(), &string[strlen(string)], 16);
     LOG(INFO, string);
