@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include "arch.h"
 #include "emulated_terminals.h"
+#include "interrupts.h"
 #include "lfb.h"
 #include "timers.h"
 #include "utils.h"
@@ -106,7 +107,7 @@ void emulated_printer_mailbox(int i, printreg_t *registers) {
                 printers[i].internal_registers.data0   = registers->data0;
                 printers[i].mailbox_registers          = registers;
                 memcpy(registers, &printers[i].internal_registers, sizeof(printreg_t));
-                set_device_timer(100);
+                set_device_timer(8, PRINTER, i);
             } else {
                 registers->mailbox = 2;
             }

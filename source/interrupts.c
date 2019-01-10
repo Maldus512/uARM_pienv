@@ -10,25 +10,39 @@
 #include "mmu.h"
 #include "emulated_terminals.h"
 #include "emulated_tapes.h"
+#include "emulated_timers.h"
 
-uint64_t emulated_timer             = 0;
-uint64_t device_timer               = 0;
 uint64_t f_emulated_timer_interrupt = 0;
 uint64_t wait_lock                  = 0;
 
 void set_next_timer(uint64_t microseconds) {
-    uint8_t *interrupt_lines  = (uint8_t *)INTERRUPT_LINES;
-    emulated_timer            = get_us() + microseconds;
+    uint8_t *interrupt_lines = (uint8_t *)INTERRUPT_LINES;
+    uint64_t currentTime     = get_us();
+    uint64_t timer           = currentTime + microseconds;
+    timer_t  next;
+
     interrupt_lines[IL_TIMER] = 0;
-    if (device_timer == 0 || emulated_timer < device_timer) {
-        setTimer(microseconds);
+
+    add_timer(timer, TIMER, 0);
+    if (next_timer(&next) == 0) {
+        if (currentTime < next.time)
+            setTimer(next.time - currentTime);
+        else
+            setTimer(0);
     }
 }
 
-void set_device_timer(uint64_t microseconds) {
-    device_timer = get_us() + microseconds;
-    if (emulated_timer == 0 || device_timer < emulated_timer) {
-        setTimer(microseconds);
+void set_device_timer(uint64_t microseconds, TIMER_TYPE type, int device_num) {
+    uint64_t currentTime     = get_us();
+    uint64_t timer           = currentTime + microseconds;
+    timer_t  next;
+
+    add_timer(timer, type, device_num);
+    if (next_timer(&next) == 0) {
+        if (currentTime < next.time)
+            setTimer(next.time - currentTime);
+        else
+            setTimer(0);
     }
 }
 
@@ -77,22 +91,23 @@ void c_irq_handler() {
     uint8_t         f_app_interrupt = 1;
     uint32_t        tmp;
     static uint64_t lastBlink = 0;
-    uint64_t        timer, handler_present;
-    int             i;
+    uint64_t        currentTime, handler_present;
+    int             i, res;
     void (*interrupt_handler)();
     uint8_t *    interrupt_lines = (uint8_t *)INTERRUPT_LINES;
     uint8_t      interrupt_mask  = *((uint8_t *)INTERRUPT_MASK);
     unsigned int core_id;
+    timer_t      next;
 
     handler_present = *((uint64_t *)INTERRUPT_HANDLER);
 
-    timer = get_us();
+    currentTime = get_us();
 
     /* Blink running led on real hardware */
-    if (timer / 1000 - lastBlink >= 1000) {
+    if (currentTime / 1000 - lastBlink >= 1000) {
         led(f_led);
         f_led     = f_led == 0 ? 1 : 0;
-        lastBlink = timer / 1000;
+        lastBlink = currentTime / 1000;
     }
 
     core_id = GETCOREID();
@@ -127,35 +142,32 @@ void c_irq_handler() {
         }
     }
 
-    for (i = 0; i < MAX_TAPES; i++) {
-        manage_emulated_tape(i);
-    }
-
-    /* Check emulated devices */
-    for (i = 0; i < MAX_PRINTERS; i++) {
-        manage_emulated_printer(i);
-    }
 
     if (tmp & 0x08) {
         /* More precise timing */
-        timer = get_us();
-        /* Don't clear the timer interrupt on purpose; it's on the user to to that */
-        if (emulated_timer > 0 && timer >= emulated_timer) {
-            if (!(interrupt_mask & (1 << IL_TIMER))) {
-                interrupt_lines[IL_TIMER] = 1;
+        currentTime = get_us();
+
+        while ((res = next_pending_timer(currentTime, &next)) > 0) {
+            switch (next.type) {
+                /* Don't clear the timer interrupt on purpose; it's on the user to to that */
+                case TIMER:
+                    interrupt_lines[IL_TIMER] = 1;
+                    break;
+                case TAPE:
+                    manage_emulated_tape(next.code);
+                    break;
+                case PRINTER:
+                    manage_emulated_printer(next.code);
+                    break;
+                case DISK:
+                    break;
+                case UNALLOCATED:
+                    break;
             }
-            /*if (device_timer > 0 && timer < device_timer) {
-                setTimer(device_timer);
-            }*/
         }
-        if (device_timer > 0 && timer >= device_timer) {
-            // TODO: implement a proper timer queue
-            device_timer = 0;
-            if (emulated_timer > 0 && timer < emulated_timer) {
-                setTimer(emulated_timer - timer);
-            }
-        } else if (device_timer > 0) {
-            setTimer(device_timer - timer);
+
+        if (res == 0) {
+            setTimer(next.time-currentTime);
         }
     }
 

@@ -3,8 +3,8 @@
 #include "emulated_tapes.h"
 #include "sd.h"
 #include "fat.h"
-#include "timers.h"
 #include "interrupts.h"
+#include "emulated_timers.h"
 
 tape_internal_state_t emulated_tapes[MAX_TAPES];
 
@@ -141,7 +141,7 @@ void emulated_tape_mailbox(int i, tapereg_t *registers) {
                 emulated_tapes[i].internal_registers.status  = DEVICE_BUSY;
                 emulated_tapes[i].mailbox_registers          = registers;
                 memcpy(registers, &emulated_tapes[i].internal_registers, sizeof(tapereg_t));
-                set_device_timer(100);
+                set_device_timer(100, TAPE, i);
             } else {
                 registers->mailbox = 2;
             }
@@ -152,7 +152,7 @@ void emulated_tape_mailbox(int i, tapereg_t *registers) {
                 emulated_tapes[i].internal_registers.status  = DEVICE_BUSY;
                 emulated_tapes[i].mailbox_registers          = registers;
                 memcpy(registers, &emulated_tapes[i].internal_registers, sizeof(tapereg_t));
-                set_device_timer(100);
+                set_device_timer(100, TAPE, i);
             } else {
                 registers->mailbox = 2;
             }
@@ -164,7 +164,7 @@ void emulated_tape_mailbox(int i, tapereg_t *registers) {
                 emulated_tapes[i].internal_registers.status  = DEVICE_BUSY;
                 emulated_tapes[i].mailbox_registers          = registers;
                 memcpy(registers, &emulated_tapes[i].internal_registers, sizeof(tapereg_t));
-                set_device_timer(100);
+                set_device_timer(100, TAPE, i);
             } else {
                 registers->mailbox = 2;
             }

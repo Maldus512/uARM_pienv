@@ -5,6 +5,7 @@
 #include "listx.h"
 
 typedef enum {
+    UNALLOCATED = 0,
     TIMER,
     PRINTER,
     TAPE,
@@ -23,5 +24,6 @@ typedef struct {
 void init_emulated_timers();
 void add_timer(uint64_t time, TIMER_TYPE type, int code);
 int next_pending_timer(uint64_t currentTime, timer_t *next);
+int next_timer(timer_t *next);
 
 #endif

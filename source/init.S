@@ -72,7 +72,7 @@ set_stacks:
     mrs     x0, hcr_el2
 
     /* change execution level to EL1 */
-    mov     x2, #0x385      // IRQ disabled, FIQ enabled
+    mov     x2, #0x3C5      // IRQ disabled, FIQ enabled
     msr     spsr_el2, x2
     adr     x2, start_kernel
     msr     elr_el2, x2

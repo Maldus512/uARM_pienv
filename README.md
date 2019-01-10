@@ -1,4 +1,4 @@
-# uARM_pienv
+# MaldOS
 
 ## What is this?
 
@@ -78,6 +78,12 @@ qemu-system-aarch64 -M raspi3 -kernel boot/kernel8.img -drive file=test.dd,if=sd
 ## Debugging
 
 A qemu-running kernel can be debugged using the options '-s' (run a gdb server at localhost:1234) and '-S' (freeze the cpu at startup). An appropriate gdb client for the aarch64 architecture is needed, such as `aarch64-linux-gnu-gdb` or `aarch64-elf-gdb`.
+
+## TODO
+
+- Properly implement emulated tapes and disks
+- Make some order around the various stack pointers
+- Decide a naming convention (probably underscore_separated_names)
 
 ## Acknowledgements
 

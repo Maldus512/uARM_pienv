@@ -8,9 +8,7 @@
 #define ST_BUSY 3
 #define ST_TRANSMITTED 5
 
-#define CMD_ACK                                                                                                        \
-    1;                                                                                                                 \
-    asm volatile("wfi")
+#define CMD_ACK 1
 #define CMD_TRANSMIT 2
 
 #define CHAR_OFFSET 8
@@ -176,7 +174,7 @@ void test2() {
     while (1) {
         timer = get_us();
         print("test2 vivo: ");
-        SYSCALL(5, 0, 0, 0);
+        //SYSCALL(5, 0, 0, 0);
         term_puts("test2 vivo\n");
         uart_hex(timer);
         print("\n");
@@ -231,7 +229,7 @@ int main() {
     t2.stack_pointer           = (uint64_t)0x1000000 + 0x4000;
     t1.status_register         = 0x300;
     t2.status_register         = 0x300;
-    current                    = &t1;
+    current                    = &t2;
     set_next_timer(1000);
 
     print("about to launch the first process\n");

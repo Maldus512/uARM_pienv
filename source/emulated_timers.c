@@ -20,22 +20,24 @@
 
 
 struct list_head pendingTimers = LIST_HEAD_INIT(pendingTimers);
-struct list_head freeTimers    = LIST_HEAD_INIT(pendingTimers);
+struct list_head freeTimers    = LIST_HEAD_INIT(freeTimers);
 
 
 // inizializza la lista pcbFree
 void init_emulated_timers() {
     static timer_t timer_array[MAX_TIMERS];
     int            i;
-    for (i = 0; i < 20; i++) {
+    for (i = 0; i < MAX_TIMERS; i++) {
         list_add_tail(&timer_array[i].list, &freeTimers);
     }
 }
 
 // Alloca un pcb dalla lista pcbFree
 timer_t *allocTimer() {
-    if (list_empty(&freeTimers))
+    if (list_empty(&freeTimers)) {
+        LOG(ERROR, "Fatal: unable to allocate timer");
         return NULL;
+    }
     else {
         timer_t *block;
         block = container_of(freeTimers.next, timer_t, list);
@@ -113,7 +115,7 @@ void removeTimerType(struct list_head *q, TIMER_TYPE type, int code) {
 // Restituisce il primo pcb dalla lista la cui list_head è puntata da q, senza rimuoverlo
 timer_t *headTimer(struct list_head *q) {
     if (q == NULL || list_empty(q))
-        return NULL; /*same as removeProcQ*/
+        return NULL;
     q = q->next;
     return container_of(q, timer_t, list);
 }
@@ -137,10 +139,19 @@ void add_timer(uint64_t time, TIMER_TYPE type, int code) {
     insertTimer(&pendingTimers, timer);
 }
 
+int next_timer(timer_t *next) {
+    timer_t *timer = headTimer(&pendingTimers);
+    if (timer == NULL)
+        return -1;
+
+    memcpy(next, timer, sizeof(timer_t));
+    return 0; 
+}
+
 int next_pending_timer(uint64_t currentTime, timer_t *next) {
     timer_t *timer = headTimer(&pendingTimers);
     if (timer == NULL)
-        return 0;
+        return -1;
 
     memcpy(next, timer, sizeof(timer_t));
     if (timer->time < currentTime) {

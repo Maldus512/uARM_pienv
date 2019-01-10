@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "arch.h"
+#include "emulated_timers.h"
 
 
 #define INTERRUPT_CONTROLLER_BASE (IO_BASE + 0xB200)
@@ -97,6 +98,6 @@ struct GIC_REGISTERS {
 
 void         enable_irq();
 void         enable_irq_el0();
-void set_device_timer(uint64_t microseconds);
+void set_device_timer(uint64_t microseconds, TIMER_TYPE type, int device_num);
 
 #endif
