@@ -53,7 +53,7 @@ void initSystem() {
     lfb_print(1, 3, "*******************************");
 
     initArmTimer();
-    setTimer(1);
+    //setTimer(1);
 }
 
 
@@ -86,7 +86,7 @@ int __attribute__((weak)) main() {
     state.exception_link_register = (uint64_t)echo;
     state.stack_pointer           = (uint64_t)0x1000000 + 0x4000;
     state.status_register         = 0x300;
-    setTimer(1000*1000);
+    //setTimer(1000*1000);
     // echo everything back
     uart0_puts("Echoing everything\n");
     CoreExecute(1, idle);

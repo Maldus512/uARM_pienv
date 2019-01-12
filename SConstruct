@@ -32,9 +32,8 @@ AddOption(
     action='store',
     help='Alternative toolchain path')
 
-
-
 ELF = 'output.elf'
+HAL = 'hal.elf'
 LDSCRIPT = 'hal.ld'
 KERNEL = 'kernel8.img'
 APP = GetOption('app')
@@ -87,15 +86,16 @@ env_options = {
     "{}gcc".format(TOOLCHAIN),
     "LINK":
     "{}ld".format(TOOLCHAIN),
-    "ENV": externalEnvironment,
+    "ENV":
+    externalEnvironment,
     "CPPPATH": ['include', 'include/app'],
     "ASFLAGS":
     FLAGS,
     "CCFLAGS":
     FLAGS,
     "LINKFLAGS": [
-        '-nostdlib', '-nostartfiles', '-T{}'.format(LDSCRIPT),
-        '-o{}'.format(ELF)
+        '-nostdlib', '-nostartfiles', '-r', '-T{}'.format(LDSCRIPT),
+        '-o{}'.format(HAL)
     ],
 }
 
@@ -103,12 +103,20 @@ sources = Glob("{}/*.S".format(BUILD))
 sources += Glob("{}/*.c".format(BUILD))
 sources += ["res/font.bin"]
 
-if APP:
-    sources += [APP]
 
 env = Environment(**env_options)
 
-env.Program(ELF, sources)
+env.Program(HAL, sources)
+
+env_options['LINKFLAGS'] = [
+    '-nostdlib', '-nostartfiles', '-T{}'.format(LDSCRIPT),
+    '-o{}'.format(ELF)
+]
+
+if APP:
+    env.Command(ELF, HAL, '{}ld -nostdlib -nostartfiles -T{} -o{} {} {}'.format(TOOLCHAIN, LDSCRIPT, ELF, HAL, APP))
+else:
+    env.Command(ELF, HAL, '{}ld -nostdlib -nostartfiles -T{} -o{} {}'.format(TOOLCHAIN, LDSCRIPT, ELF, HAL))
 
 kernel = env.Command(
     KERNEL, ELF, '{}objcopy {} -O binary {}'.format(TOOLCHAIN, ELF, KERNEL))

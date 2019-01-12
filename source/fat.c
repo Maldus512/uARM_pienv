@@ -67,14 +67,14 @@ int fat_getpartition(void) {
     if (sd_transferblock(0, mbr, 1, SD_READBLOCK)) {
         // check magic
         if (mbr[510] != 0x55 || mbr[511] != 0xAA) {
-            uart_puts("ERROR: Bad magic in MBR\n");
+            LOG(ERROR, "Bad magic in MBR");
             return 0;
         }
         // check partition type
         // 0x1C2 is the fourth (4) byte of the first partition entry in the mbr,
         // containing the partition type (fat32, fat16,...)
         if (mbr[0x1C2] != 0xB && mbr[0x1C2] != 0xC /*FAT32 LBA*/) {
-            uart_puts("ERROR: Wrong partition type\n");
+            LOG(ERROR, "Wrong partition type");
             return 0;
         }
         // 0x1C6 is the eighth byte of the first partition entry in the mbr,
@@ -83,13 +83,13 @@ int fat_getpartition(void) {
         partitionlba = mbr[0x1C6] + (mbr[0x1C7] << 8) + (mbr[0x1C8] << 16) + (mbr[0x1C9] << 24);
         // read the boot record
         if (!sd_transferblock(partitionlba, (unsigned char *)bpb, 1, SD_READBLOCK)) {
-            uart_puts("ERROR: Unable to read boot record\n");
+            LOG(ERROR, "Unable to read boot record");
             return 0;
         }
         // check file system type. We don't use cluster numbers for that, but magic bytes
         if (!(bpb->fst[0] == 'F' && bpb->fst[1] == 'A' && bpb->fst[2] == 'T') &&
             !(bpb->fst2[0] == 'F' && bpb->fst2[1] == 'A' && bpb->fst2[2] == 'T')) {
-            uart_puts("ERROR: Unknown file system type\n");
+            LOG(ERROR,"Unknown file system type");
             return 0;
         }
     }
@@ -139,11 +139,11 @@ unsigned int fat_getcluster(char *fn) {
             }
         }
 
-        strcpy(string, "ERROR: file not found: ");
+        strcpy(string, "File not found: ");
         strcpy(&string[strlen(string)], fn);
         LOG(WARN, string);
     } else {
-        uart_puts("ERROR: Unable to load root directory\n");
+        LOG(ERROR, "Unable to load root directory");
     }
     return 0;
 }
@@ -152,6 +152,7 @@ unsigned int fat_getcluster(char *fn) {
  * Read a file into memory
  */
 int fat_transferfile(unsigned int cluster, unsigned char *data, unsigned int num, readwrite_t readwrite) {
+    char string[128];
     // BIOS Parameter Block
     bpb_t *bpb = (bpb_t *)bios_partition_block;
     // Data pointers
@@ -162,19 +163,24 @@ int fat_transferfile(unsigned int cluster, unsigned char *data, unsigned int num
     // add partition LBA
     data_sec += partitionlba;
     // dump important properties
-    uart_puts("FAT Bytes per Sector: ");
-    uart_hex(bpb->bps0 + (bpb->bps1 << 8));
-    uart_puts("\nFAT Sectors per Cluster: ");
-    uart_hex(bpb->spc);
-    uart_puts("\nFAT Number of FAT: ");
-    uart_hex(bpb->nf);
-    uart_puts("\nFAT Sectors per FAT: ");
-    uart_hex((bpb->spf16 ? bpb->spf16 : bpb->spf32));
-    uart_puts("\nFAT Reserved Sectors Count: ");
-    uart_hex(bpb->rsc);
-    uart_puts("\nFAT First data sector: ");
-    uart_hex(data_sec);
-    uart_puts("\n");
+    strcpy(string, "FAT Bytes per Sector: ");
+    itoa(bpb->bps0 + (bpb->bps1 << 8), &string[strlen(string)], 10);
+    LOG(INFO, string);
+    strcpy(string, "FAT Sectors per Cluster: ");
+    itoa(bpb->spc, &string[strlen(string)], 10);
+    LOG(INFO, string);
+    strcpy(string, "FAT Number of FAT: ");
+    itoa(bpb->nf, &string[strlen(string)], 10);
+    LOG(INFO, string);
+    strcpy(string, "FAT Sectors per FAT: ");
+    itoa((bpb->spf16 ? bpb->spf16 : bpb->spf32), &string[strlen(string)], 10);
+    LOG(INFO, string);
+    strcpy(string, "FAT Reserved Sectors Count: ");
+    itoa(bpb->rsc, &string[strlen(string)], 10);
+    LOG(INFO, string);
+    strcpy(string, "FAT First data sector: ");
+    itoa(data_sec, &string[strlen(string)], 10);
+    LOG(INFO, string);
     // end of FAT in memory
     // iterate on cluster chain
     counter = 0;
@@ -183,7 +189,7 @@ int fat_transferfile(unsigned int cluster, unsigned char *data, unsigned int num
             // load all sectors in a cluster
             tmp = sd_transferblock((cluster - 2) * bpb->spc + data_sec, data, bpb->spc, readwrite);
             if (tmp == 0) {
-                uart0_puts("empty transfer block!\n");
+                LOG(WARN, "Empty transfer block!");
                 return -1;
                 // continue;
             }
