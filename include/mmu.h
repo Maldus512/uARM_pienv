@@ -21,7 +21,6 @@ extern uint32_t table_loaded;
 
 void init_page_table(void);
 
-void     initMMU(void);
-uint64_t virtualmap(uint32_t phys_addr, uint8_t memattrs);
+void     mmu_init(void);
 
 #endif

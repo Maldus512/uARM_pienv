@@ -29,6 +29,7 @@ void initSystem() {
     }
 
     initGpio();
+    initUart1();
     initUart0();
     startUart0Int();
     initIPI();
@@ -60,8 +61,12 @@ void initSystem() {
 void function1() {
     uart0_puts("ciao");
     while(1) {
-        uart0_puts("ciao\n");
-        delay_us(1000*1000);
+        initUart1();
+        uart1_puts("ciao uart1\n");
+        delay_us(500*1000);
+        initUart0();
+        uart0_puts("ciao uart0\n");
+        delay_us(500*1000);
     }
 }
 
@@ -77,29 +82,38 @@ void idle() {
 void echo() {
     while (1) {
         uart0_putc(uart0_getc());
-        GIC->Core0_MailBox0_WriteSet = 2;
+        //GIC->Core0_MailBox0_WriteSet = 2;
     }
 }
 
 int __attribute__((weak)) main() {
-    state_t state;
+    /*state_t state;
     state.exception_link_register = (uint64_t)echo;
     state.stack_pointer           = (uint64_t)0x1000000 + 0x4000;
     state.status_register         = 0x300;
-    //setTimer(1000*1000);
-    // echo everything back
+    //setTimer(1000*1000);*/
     uart0_puts("Echoing everything\n");
-    CoreExecute(1, idle);
-    LDST(&state);
+    //CoreExecute(1, idle);
+    //LDST(&state);
     while (1) {
-        //uart0_putc(uart0_getc());
+        uart0_putc(uart0_getc());
+        GIC->Core0_MailBox0_WriteSet = 2;
     }
 }
 
 
 void bios_main() {
+    char x = 'X';
+    char *ptr;
     initSystem();
-    // init_page_table();
-    // mmu_init();
+    init_page_table();
+    mmu_init();
+    //vbarForMMU();
+
+    ptr = &x;
+    uart0_putc(*ptr);
+    ptr = (char*)((uint64_t)ptr | 0xffff000000000000);
+    uart0_putc(*ptr);
+     
     main();
 }

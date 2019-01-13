@@ -12,7 +12,7 @@
 // TODO: mini uart register is not regular, having two 3-bit field at the beginning (shared with SPI)
 //      does it make sense to have a structure or is it better to keep single defines?
 
-#define AUX_IRQ (*(volatile uint32_t *)(UART1_BASE + 0x00))     // auxiliari interrupts
+#define AUX_IRQ (*(volatile uint32_t *)(UART1_BASE + 0x00))     // auxiliary interrupts
 #define AUX_EN (*(volatile uint32_t *)(UART1_BASE + 0x04))      // auxiliary enables
 #define MU_IO (*(volatile uint32_t *)(UART1_BASE + 0x40))       // I/O data
 #define MU_IER (*(volatile uint32_t *)(UART1_BASE + 0x44))      // interrupt enable

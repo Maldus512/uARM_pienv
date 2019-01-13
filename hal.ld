@@ -2,7 +2,7 @@
 /*OUTPUT_ARCH(arm)*/
 
 MEMORY {
-    RAM (xrw)      : ORIGIN = 0x80000 , LENGTH = 0x8000000 /* 128MB */
+    RAM (xrw)      : ORIGIN = 0x80000 , LENGTH = 0x30000000 /* 128MB */
 }
 
 ENTRY(_start)
@@ -11,7 +11,6 @@ SECTIONS
     . = 0x80000;
     __text_start = .;
     .text : {
-        KEEP(*(.text.startup))
         KEEP(*(.init))
         *(.text .text.* .gnu.linkonce.t*)
     }  > RAM

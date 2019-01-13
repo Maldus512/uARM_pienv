@@ -74,26 +74,16 @@ static __attribute__((aligned(4096))) VMSAv8_64_STAGE1_BLOCK_DESCRIPTOR Level1ma
 void init_page_table(void) {
     uint32_t base = 0;
 
-
     // initialize 1:1 mapping for TTBR0
     // 1024MB of ram memory (some belongs to the VC)
     // default: 880 MB ARM ram, 128MB VC
 
-    /* The 21-12 entries are because that is only for 4K granual it makes it obvious to change for other granual sizes
-     */
-
     /* 880Mb of ram */
     for (base = 0; base < 440; base++) {
-        APBITS_TYPE permessi;
-
-        if (base == 0)
-            permessi = APBITS_NO_EL0;
-        else
-            permessi = APBITS_NO_LIMIT;
         // Each block descriptor (2 MB)
         Level1map1to1[base] = (VMSAv8_64_STAGE1_BLOCK_DESCRIPTOR){.Address   = (uintptr_t)base << (21 - 12),
                                                                   .AF        = 1,
-                                                                  .AP        = permessi,
+                                                                  .AP        = APBITS_NO_EL0,
                                                                   .SH        = SH_INNER_SHAREABLE,
                                                                   .MemAttr   = MT_NORMAL_INDEX,
                                                                   .EntryType = 1};
@@ -161,6 +151,7 @@ void mmu_init(void) {
 
     // Bring both tables online and execute memory barrier
     asm volatile("msr ttbr0_el1, %0" : : "r"((uintptr_t)&Level0map1to1[0]));
+    asm volatile("msr ttbr1_el1, %0" : : "r"((uintptr_t)&Level0map1to1[0]));
     asm volatile("isb");
 
     /* Specify mapping characteristics in translate control register

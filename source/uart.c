@@ -23,7 +23,7 @@ void initUart1(void) {
     MU_LCR  = 3; /* 8 bit.  */
     MU_MCR  = 0;
 
-    MU_IER = 0x5;
+    MU_IER = 0x0;
     MU_IIR = 0xC6;
 
     MU_BAUD = 270; /* 115200 baud.  */
@@ -36,7 +36,7 @@ void initUart1(void) {
 
     MU_CNTL = 3; /* Enable Tx and Rx.  */
 
-    // IRQ_CONTROLLER->Enable_IRQs_1 = 1<<29;
+    IRQ_CONTROLLER->Enable_IRQs_1 |= 1<<29;
 }
 
 char uart1_getc() {
@@ -199,9 +199,9 @@ void uart_dump(void *ptr) {
 
 void startUart0Int() {
     // enable UART RX interrupt.
-    // UART0->IRQ_MASK = 1 << 4;
+    //UART0->IRQ_MASK = 1 << 4;
     // enable UART TX interrupt.
-    //    UART0->IRQ_MASK |= 1 << 5;
+    //UART0->IRQ_MASK |= 1 << 5;
 
     // UART interrupt routing.
     IRQ_CONTROLLER->Enable_IRQs_2 |= 1 << 25;

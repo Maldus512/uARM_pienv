@@ -330,3 +330,10 @@ finish_saveState:
     mrs   x27, spsr_el1
     str   x27, [x28, #8]!
     ret
+
+.global vbarForMMU
+vbarForMMU:
+    mrs    x0, vbar_el1
+    orr    x0, x0, 0xFFFF000000000000
+    msr    vbar_el1, x0
+    ret

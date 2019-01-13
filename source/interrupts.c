@@ -53,6 +53,10 @@ void c_fiq_handler() {
     uint64_t address;
     tmp = GIC->Core0_FIQ_Source;
 
+    GIC->Core0_MailBox0_ClearSet = 0xFFFFFFFF;
+    uart0_puts("FIQ!\n");
+    return;
+
     if (tmp & 0x10) {
         data         = GIC->Core0_MailBox0_ClearSet;
         address      = (uint64_t)(data & ~0xF);
@@ -130,14 +134,23 @@ void c_irq_handler() {
 
     if (tmp & (1 << 8)) {
         // TODO: uart interrupt. to be managed
+        unsigned int temp = MU_IIR;
+
+        if ((temp & 0x01) == 0) {
+            //MU_IIR = temp;
+            nop();
+        }
+
         // apparently not needed for real hw
         //        if (IRQ_CONTROLLER->IRQ_basic_pending & (1 << 9)) {
         if (IRQ_CONTROLLER->IRQ_pending_2 & (1 << 25)) {
             if (UART0->MASKED_IRQ & (1 << 4)) {
                 nop();
+                //UART0->IRQ_CLEAR = 0xFFF;
             }
             if (UART0->MASKED_IRQ & (1 << 5)) {
                 nop();
+                //UART0->IRQ_CLEAR = 0xFFF;
             }
         }
     }
@@ -175,6 +188,7 @@ void c_irq_handler() {
         if (interrupt_lines[i] && !(interrupt_mask & (1 << i))) {
             /* Until there are interrupt lines pending fire interrupts immediately */
             setTimer(0);
+            f_app_interrupt = 1;
             break;
         }
     }

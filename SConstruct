@@ -145,7 +145,7 @@ if 'debug' in COMMAND_LINE_TARGETS:
         target='debug',
         depends=boot,
         action=
-        "{} -M raspi3 -kernel boot/{} -drive file=test.dd,if=sd,format=raw -serial stdio -s -S"
+        "{} -M raspi3 -kernel boot/{} -drive file=test.dd,if=sd,format=raw -serial stdio -serial vc -s -S"
         .format(QEMU, KERNEL))
 
 elif 'run' in COMMAND_LINE_TARGETS:
@@ -160,7 +160,7 @@ elif 'run' in COMMAND_LINE_TARGETS:
         target='run',
         depends=boot,
         action=
-        "{} -M raspi3 -kernel boot/{} -drive file=test.dd,if=sd,format=raw -serial stdio"
+        "{} -M raspi3 -kernel boot/{} -drive file=test.dd,if=sd,format=raw -serial stdio -serial vc"
         .format(QEMU, KERNEL))
 
 if not os.path.exists(BUILD):

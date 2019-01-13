@@ -1,11 +1,9 @@
 #include "system.h"
-
 #include "bios_const.h"
 
 .SECTION .init
 
 .global _start
-
 _start:
     /* Assuming to start at EL2
        Setup various cores and exception levels stack */
@@ -53,17 +51,18 @@ set_stacks:
     msr     sp_el0, x4
 
     /* Those instructions apparently have no effect */
-	mrs	x0, midr_el1
+	/*mrs	x0, midr_el1
 	mrs	x1, mpidr_el1
 	msr	vpidr_el2, x0
     msr vmpidr_el2, x1
 
-    /*  Disable coprocessor traps for all Cores */
+    //  Disable coprocessor traps for all Cores
 	mov	x0, #0x33ff
 	msr	cptr_el2, x0						// Disable coprocessor traps to EL2
 	msr	hstr_el2, xzr						// Disable coprocessor traps to EL2
 	mov	x0, #3 << 20
     msr cpacr_el1, x0 // Enable FP/SIMD at EL1
+    */
 
     /* Enable AArch64 in EL1 */
     mov     x0, #(1 << 31)      // AArch64
@@ -72,7 +71,7 @@ set_stacks:
     mrs     x0, hcr_el2
 
     /* change execution level to EL1 */
-    mov     x2, #0x3C5      // IRQ disabled, FIQ enabled
+    mov     x2, #0x385      // IRQ disabled, FIQ enabled
     msr     spsr_el2, x2
     adr     x2, start_kernel
     msr     elr_el2, x2
@@ -196,30 +195,30 @@ unrecognized:
 swi_handler:
     msr   daifset, #2
 
-    mrs     x10, mpidr_el1
-    and     x10, x10, #0x3
-    cmp     x10, #0
+    mrs     x27, mpidr_el1
+    and     x27, x27, #0x3
+    cmp     x27, #0
     beq     set_swi_stack_core0
-    cmp     x10, #1
+    cmp     x27, #1
     beq     set_swi_stack_core1
-    cmp     x10, #2
+    cmp     x27, #2
     beq     set_swi_stack_core2
-    cmp     x10, #3
+    cmp     x27, #3
     beq     set_swi_stack_core3
 
 set_swi_stack_core0:
-    ldr     x10, =__EL1_stack_core0
+    ldr     x27, =__EL1_stack_core0
     b       set_chosen_swi_stack
 set_swi_stack_core1:
-    ldr     x10, =__EL1_stack_core1
+    ldr     x27, =__EL1_stack_core1
     b       set_chosen_swi_stack
 set_swi_stack_core2:
-    ldr     x10, =__EL1_stack_core2
+    ldr     x27, =__EL1_stack_core2
     b       set_chosen_swi_stack
 set_swi_stack_core3:
-    ldr     x10, =__EL1_stack_core3
+    ldr     x27, =__EL1_stack_core3
 set_chosen_swi_stack:
-    mov     sp, x10
+    mov     sp, x27
     // save state in oldarea
     stp   x27, x28, [sp, #-16]
     mov   x28, #INTERRUPT_OLDAREA
@@ -297,31 +296,33 @@ fiq_handler:
 irq_handler:
     msr   daifset, #2
     msr   daifclr, #1
+
+    mrs     x27, ttbr0_el1
     
-    mrs     x10, mpidr_el1
-    and     x10, x10, #0x3
-    cmp     x10, #0
+    mrs     x27, mpidr_el1
+    and     x27, x27, #0x3
+    cmp     x27, #0
     beq     set_irq_stack_core0
-    cmp     x10, #1
+    cmp     x27, #1
     beq     set_irq_stack_core1
-    cmp     x10, #2
+    cmp     x27, #2
     beq     set_irq_stack_core2
-    cmp     x10, #3
+    cmp     x27, #3
     beq     set_irq_stack_core3
 
 set_irq_stack_core0:
-    ldr     x10, =__EL1_stack_core0
+    ldr     x27, =__EL1_stack_core0
     b       set_chosen_stack
 set_irq_stack_core1:
-    ldr     x10, =__EL1_stack_core1
+    ldr     x27, =__EL1_stack_core1
     b       set_chosen_stack
 set_irq_stack_core2:
-    ldr     x10, =__EL1_stack_core2
+    ldr     x27, =__EL1_stack_core2
     b       set_chosen_stack
 set_irq_stack_core3:
-    ldr     x10, =__EL1_stack_core3
+    ldr     x27, =__EL1_stack_core3
 set_chosen_stack:
-    mov     sp, x10
+    mov     sp, x27
     // save state in oldarea
     stp   x27, x28, [sp, #-16]
     mov   x28, #INTERRUPT_OLDAREA
