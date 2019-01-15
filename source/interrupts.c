@@ -33,8 +33,8 @@ void set_next_timer(uint64_t microseconds) {
 }
 
 void set_device_timer(uint64_t microseconds, TIMER_TYPE type, int device_num) {
-    uint64_t currentTime     = get_us();
-    uint64_t timer           = currentTime + microseconds;
+    uint64_t currentTime = get_us();
+    uint64_t timer       = currentTime + microseconds;
     timer_t  next;
 
     add_timer(timer, type, device_num);
@@ -52,10 +52,6 @@ void c_fiq_handler() {
     uint32_t tmp, data, device_num, device_class;
     uint64_t address;
     tmp = GIC->Core0_FIQ_Source;
-
-    GIC->Core0_MailBox0_ClearSet = 0xFFFFFFFF;
-    uart0_puts("FIQ!\n");
-    return;
 
     if (tmp & 0x10) {
         data         = GIC->Core0_MailBox0_ClearSet;
@@ -134,10 +130,10 @@ void c_irq_handler() {
 
     if (tmp & (1 << 8)) {
         // TODO: uart interrupt. to be managed
-        unsigned int temp = MU_IIR;
+        unsigned int temp = UART1->IIR;
 
         if ((temp & 0x01) == 0) {
-            //MU_IIR = temp;
+            // MU_IIR = temp;
             nop();
         }
 
@@ -146,11 +142,11 @@ void c_irq_handler() {
         if (IRQ_CONTROLLER->IRQ_pending_2 & (1 << 25)) {
             if (UART0->MASKED_IRQ & (1 << 4)) {
                 nop();
-                //UART0->IRQ_CLEAR = 0xFFF;
+                // UART0->IRQ_CLEAR = 0xFFF;
             }
             if (UART0->MASKED_IRQ & (1 << 5)) {
                 nop();
-                //UART0->IRQ_CLEAR = 0xFFF;
+                // UART0->IRQ_CLEAR = 0xFFF;
             }
         }
     }
@@ -180,7 +176,7 @@ void c_irq_handler() {
         }
 
         if (res == 0) {
-            setTimer(next.time-currentTime);
+            setTimer(next.time - currentTime);
         }
     }
 
@@ -202,28 +198,37 @@ void c_irq_handler() {
 
 
 void c_abort_handler(uint64_t exception_code, uint64_t iss) {
-    switch (exception_code) {
-        case 0x24:     // Data abort (MMU)
-            uart0_puts("Data abort (lower exception level) caused by ");
-            if (iss & 0x40)
-                uart0_puts("write\n");
-            else
-                uart0_puts("read\n");
-            break;
-        case 0x25:     // Data abort (MMU)
-            uart0_puts("Data abort (same exception level) caused by ");
-            if (iss & 0x40)
-                uart0_puts("write\n");
-            else
-                uart0_puts("read\n");
-            break;
-        default:
-            break;
-    }
+    void (*interrupt_handler)();
+    uint64_t handler_present;
+    handler_present = *((uint64_t *)ABORT_HANDLER);
 
-    hexstring(exception_code);
-    hexstring(iss);
-    while (1) {
-        HALT();
+    if (handler_present) {
+        interrupt_handler = (void (*)(void *))handler_present;
+        interrupt_handler();
+    } else {
+        switch (exception_code) {
+            case 0x24:     // Data abort (MMU)
+                uart0_puts("Data abort (lower exception level) caused by ");
+                if (iss & 0x40)
+                    uart0_puts("write\n");
+                else
+                    uart0_puts("read\n");
+                break;
+            case 0x25:     // Data abort (MMU)
+                uart0_puts("Data abort (same exception level) caused by ");
+                if (iss & 0x40)
+                    uart0_puts("write\n");
+                else
+                    uart0_puts("read\n");
+                break;
+            default:
+                break;
+        }
+
+        hexstring(exception_code);
+        hexstring(iss);
+        while (1) {
+            HALT();
+        }
     }
 }

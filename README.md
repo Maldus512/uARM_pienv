@@ -98,4 +98,4 @@ As of now this work has been built putting together the following pre-existing t
 - https://github.com/vanvught/rpidmx512
 - https://www.raspberrypi.org/app/uploads/2012/02/BCM2835-ARM-Peripherals.pdf
 
- This project is licensed under the terms of the Beerware license.
+ This project is licensed under the terms of GPL v3.

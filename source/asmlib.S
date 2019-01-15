@@ -337,3 +337,61 @@ vbarForMMU:
     orr    x0, x0, 0xFFFF000000000000
     msr    vbar_el1, x0
     ret
+
+
+.globl STST_asm
+STST_asm:
+    /* General purpose registers */
+    str     x0, [x28]
+    str     x1, [x28, #8]!
+    str     x2, [x28, #8]!
+    str     x3, [x28, #8]!
+    str     x4, [x28, #8]!
+    str     x5, [x28, #8]!
+    str     x6, [x28, #8]!
+    str     x7, [x28, #8]!
+    str     x8, [x28, #8]!
+    str     x9, [x28, #8]!
+    str     x10, [x28, #8]!
+    str     x11, [x28, #8]!
+    str     x12, [x28, #8]!
+    str     x13, [x28, #8]!
+    str     x14, [x28, #8]!
+    str     x15, [x28, #8]!
+    str     x16, [x28, #8]!
+    str     x17, [x28, #8]!
+    str     x18, [x28, #8]!
+    str     x19, [x28, #8]!
+    str     x20, [x28, #8]!
+    str     x21, [x28, #8]!
+    str     x22, [x28, #8]!
+    str     x23, [x28, #8]!
+    str     x24, [x28, #8]!
+    str     x25, [x28, #8]!
+    str     x26, [x28, #8]!
+    str     x27, [x28, #8]!
+    str     x28, [x28, #8]!
+
+    str     x26, [x28, #8]! /* Frame Pointer */
+    str     x27, [x28, #8]! /* Link Register */
+
+    mrs   x27, spsr_el1
+    and   x27, x27, #7
+    cmp   x27, #0
+    bne   savesp_el1_asm
+    mrs   x27, sp_el0
+    b     finish_asm
+savesp_el1_asm:
+    mov   x27, sp
+finish_asm:
+    str   x27, [x28, #8]!
+    
+    mrs   x27, elr_el1
+    str   x27, [x28, #8]! // Note: the 16 immediate value refers to the previously saved pair
+
+    mrs   x27, ttbr0_el1
+    str   x27, [x28, #8]!
+
+    mrs   x27, spsr_el1
+    str   x27, [x28, #8]!
+    ret

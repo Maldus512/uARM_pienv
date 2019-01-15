@@ -18,15 +18,15 @@ void initUart1(void) {
 
     AUX_EN |= 1; /* Enable mini-uart */
 
-    MU_IER  = 0;
-    MU_CNTL = 0;
-    MU_LCR  = 3; /* 8 bit.  */
-    MU_MCR  = 0;
+    UART1->IER  = 0;
+    UART1->CNTL = 0;
+    UART1->LCR  = 3; /* 8 bit.  */
+    UART1->MCR  = 0;
 
-    MU_IER = 0x0;
-    MU_IIR = 0xC6;
+    UART1->IER = 0x0;
+    UART1->IIR = 0xC6;
 
-    MU_BAUD = 270; /* 115200 baud.  */
+    UART1->BAUD = 270; /* 115200 baud.  */
     setupGpio(14, GPIO_ALTFUNC5);
     setupGpio(15, GPIO_ALTFUNC5);
 
@@ -34,7 +34,7 @@ void initUart1(void) {
     setPullUpDown(14, GPIO_PUD_DISABLE);
     setPullUpDown(15, GPIO_PUD_DISABLE);
 
-    MU_CNTL = 3; /* Enable Tx and Rx.  */
+    UART1->CNTL = 3; /* Enable Tx and Rx.  */
 
     IRQ_CONTROLLER->Enable_IRQs_1 |= 1<<29;
 }
@@ -44,19 +44,19 @@ char uart1_getc() {
     /* wait until something is in the buffer */
     do {
         nop();
-    } while (!(MU_LSR & 0x01));
+    } while (!(UART1->LSR & 0x01));
     /* read it and return */
-    r = (char)(MU_IO);
+    r = (char)(UART1->IO);
     /* convert carrige return to newline */
     return r == '\r' ? '\n' : r;
 }
 
 
 void uart1_send(char c) {
-    while (!(MU_LSR & 0x20))
+    while (!(UART1->LSR & 0x20))
         nop();
 
-    MU_IO = c;
+    UART1->IO = c;
 }
 
 void uart1_putc(char c) {

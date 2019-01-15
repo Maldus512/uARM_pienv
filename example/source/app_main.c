@@ -174,7 +174,7 @@ void test2() {
     while (1) {
         timer = get_us();
         print("test2 vivo: ");
-        //SYSCALL(5, 0, 0, 0);
+        SYSCALL(5, 0, 0, 0);
         term_puts("test2 vivo\n");
         uart_hex(timer);
         print("\n");

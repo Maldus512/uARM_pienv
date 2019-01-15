@@ -62,6 +62,7 @@ static inline unsigned int get_lba_address(unsigned int cluster) {
  */
 int fat_getpartition(void) {
     unsigned char mbr[512];
+    char          string[128];
     bpb_t *       bpb = (bpb_t *)bios_partition_block;
     // read the partitioning table
     if (sd_transferblock(0, mbr, 1, SD_READBLOCK)) {
@@ -89,7 +90,7 @@ int fat_getpartition(void) {
         // check file system type. We don't use cluster numbers for that, but magic bytes
         if (!(bpb->fst[0] == 'F' && bpb->fst[1] == 'A' && bpb->fst[2] == 'T') &&
             !(bpb->fst2[0] == 'F' && bpb->fst2[1] == 'A' && bpb->fst2[2] == 'T')) {
-            LOG(ERROR,"Unknown file system type");
+            LOG(ERROR, "Unknown file system type");
             return 0;
         }
     }
@@ -97,6 +98,26 @@ int fat_getpartition(void) {
     root_directory_sector = (bpb->spf32 * bpb->nf) + bpb->rsc;
     // add partition LBA
     root_directory_sector += partitionlba;
+
+    // dump important properties
+    strcpy(string, "FAT Bytes per Sector: ");
+    itoa(bpb->bps0 + (bpb->bps1 << 8), &string[strlen(string)], 10);
+    LOG(INFO, string);
+    strcpy(string, "FAT Sectors per Cluster: ");
+    itoa(bpb->spc, &string[strlen(string)], 10);
+    LOG(INFO, string);
+    strcpy(string, "FAT Number of FAT: ");
+    itoa(bpb->nf, &string[strlen(string)], 10);
+    LOG(INFO, string);
+    strcpy(string, "FAT Sectors per FAT: ");
+    itoa(bpb->spf32, &string[strlen(string)], 10);
+    LOG(INFO, string);
+    strcpy(string, "FAT Reserved Sectors Count: ");
+    itoa(bpb->rsc, &string[strlen(string)], 10);
+    LOG(INFO, string);
+    strcpy(string, "FAT First data sector: ");
+    itoa(root_directory_sector, &string[strlen(string)], 10);
+    LOG(INFO, string);
 
     return 1;
 }
@@ -149,10 +170,61 @@ unsigned int fat_getcluster(char *fn) {
 }
 
 /**
- * Read a file into memory
+ * List root directory entries in a FAT file system
+ */
+void fat_listdirectory(void) {
+    bpb_t *      bpb = (bpb_t *)bios_partition_block;
+    fatdir_t *   dir = (fatdir_t *)root_dir;
+    int          i   = 0;
+    unsigned int s;
+    char         string[128];
+    s = (bpb->nr0 + (bpb->nr1 << 8));
+    strcpy(string, "FAT number of root diretory entries: ");
+    itoa(s, &string[strlen(string)], 10);
+    LOG(INFO, string);
+
+    s *= sizeof(fatdir_t);
+    // load the root directory
+    if (sd_transferblock(root_directory_sector, (unsigned char *)dir, s / 512 + 1, SD_READBLOCK)) {
+        LOG(INFO, "Attrib\tCluster\tSize\t\tName");
+        // iterate on each entry and print out
+        for (; dir->name[0] != 0; dir++) {
+            // is it a valid entry?
+            if (dir->name[0] == 0xE5 || dir->attr[0] == 0xF)
+                continue;
+
+            i = 0;
+            // decode attributes
+            string[i++] = dir->attr[0] & 1 ? 'R' : '.';      // read-only
+            string[i++] = dir->attr[0] & 2 ? 'H' : '.';      // hidden
+            string[i++] = dir->attr[0] & 4 ? 'S' : '.';      // system
+            string[i++] = dir->attr[0] & 8 ? 'L' : '.';      // volume label
+            string[i++] = dir->attr[0] & 16 ? 'D' : '.';     // directory
+            string[i++] = dir->attr[0] & 32 ? 'A' : '.';     // archive
+            string[i++] = '\t';
+            // staring cluster
+            itoa(((unsigned int)dir->ch) << 16 | dir->cl, &string[i], 16);
+            i           = strlen(string);
+            string[i++] = '\t';
+            // size
+            itoa(dir->size, &string[i], 16);
+            i           = strlen(string);
+            string[i++] = '\t';
+            string[i++] = '\t';
+            // filename
+            dir->attr[0] = 0;
+            strcpy(&string[i], dir->name);
+            LOG(INFO, string);
+        }
+    } else {
+        LOG(ERROR, "Unable to load root directory");
+    }
+}
+
+/**
+ * Read or write a file into memory
  */
 int fat_transferfile(unsigned int cluster, unsigned char *data, unsigned int num, readwrite_t readwrite) {
-    char string[128];
     // BIOS Parameter Block
     bpb_t *bpb = (bpb_t *)bios_partition_block;
     // Data pointers
@@ -162,25 +234,6 @@ int fat_transferfile(unsigned int cluster, unsigned char *data, unsigned int num
     data_sec = (bpb->spf32 * bpb->nf) + bpb->rsc;
     // add partition LBA
     data_sec += partitionlba;
-    // dump important properties
-    strcpy(string, "FAT Bytes per Sector: ");
-    itoa(bpb->bps0 + (bpb->bps1 << 8), &string[strlen(string)], 10);
-    LOG(INFO, string);
-    strcpy(string, "FAT Sectors per Cluster: ");
-    itoa(bpb->spc, &string[strlen(string)], 10);
-    LOG(INFO, string);
-    strcpy(string, "FAT Number of FAT: ");
-    itoa(bpb->nf, &string[strlen(string)], 10);
-    LOG(INFO, string);
-    strcpy(string, "FAT Sectors per FAT: ");
-    itoa((bpb->spf16 ? bpb->spf16 : bpb->spf32), &string[strlen(string)], 10);
-    LOG(INFO, string);
-    strcpy(string, "FAT Reserved Sectors Count: ");
-    itoa(bpb->rsc, &string[strlen(string)], 10);
-    LOG(INFO, string);
-    strcpy(string, "FAT First data sector: ");
-    itoa(data_sec, &string[strlen(string)], 10);
-    LOG(INFO, string);
     // end of FAT in memory
     // iterate on cluster chain
     counter = 0;
@@ -202,4 +255,24 @@ int fat_transferfile(unsigned int cluster, unsigned char *data, unsigned int num
         counter++;
     }
     return read;
+}
+
+int fat_readfile(unsigned int cluster, unsigned char *data, unsigned int seek, unsigned int length) {
+    bpb_t *       bpb = (bpb_t *)bios_partition_block;
+    unsigned char buffer[2048];
+    unsigned int  block, start, size, index, effectiveLen;
+
+    block = seek / (512 * bpb->spc);
+    start = seek % (512 * bpb->spc);
+    index = 0;
+
+    while (length > 0) {
+        size         = fat_transferfile(cluster, buffer, block, SD_READBLOCK);
+        effectiveLen = size < length ? size : length;
+        memcpy(&data[index], &buffer[start], effectiveLen);
+        start = 0;
+        index += effectiveLen;
+        length -= effectiveLen;
+    }
+    return index;
 }

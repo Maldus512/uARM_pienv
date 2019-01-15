@@ -167,7 +167,7 @@ void mmu_init(void) {
                               // thru cacheable, 11 = Write Back Non-cacheable
         (0b0LL << 23) |       // EPD1 ... Translation table walk disable for translations using TTBR1_EL1  0 = walk, 1 =
                               // generate fault
-        (25LL << 16) |        // T1SZ=25 (512G) ... The region size is 2 POWER (64-T1SZ) bytes
+        (25LL << 0) |        // T1SZ=25 (512G) ... The region size is 2 POWER (64-T1SZ) bytes
         (0b00LL << 14) |      // TG0=4k  ... options are 00=4KB, 01=64KB, 10=16KB,  ... take care differs from TG1
         (0b11LL << 12) |      // SH0=3 inner ... .. options 00 = Non-shareable, 01 = INVALID, 10 = Outer Shareable, 11 =
                               // Inner Shareable
