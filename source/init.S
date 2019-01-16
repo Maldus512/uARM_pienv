@@ -24,9 +24,7 @@ multicore_start:
     msr cntkctl_el1, x0
 
 
-    ldr     x2, =__EL2_stack
     ldr     x3, =__EL1_stack_core0
-    ldr     x4, =__EL0_stack
     mrs     x6, mpidr_el1           // Read core id
 
     ands    x6, x6, #0x3
@@ -46,23 +44,7 @@ multicore_start:
 
 //TODO: check if I can be at some other level than EL2 here
 set_stacks:
-    mov     sp, x2
     msr     sp_el1, x3
-    msr     sp_el0, x4
-
-    /* Those instructions apparently have no effect */
-	/*mrs	x0, midr_el1
-	mrs	x1, mpidr_el1
-	msr	vpidr_el2, x0
-    msr vmpidr_el2, x1
-
-    //  Disable coprocessor traps for all Cores
-	mov	x0, #0x33ff
-	msr	cptr_el2, x0						// Disable coprocessor traps to EL2
-	msr	hstr_el2, xzr						// Disable coprocessor traps to EL2
-	mov	x0, #3 << 20
-    msr cpacr_el1, x0 // Enable FP/SIMD at EL1
-    */
 
     /* Enable AArch64 in EL1 */
     mov     x0, #(1 << 31)      // AArch64

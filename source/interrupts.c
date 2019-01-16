@@ -8,7 +8,7 @@
 #include "uart.h"
 #include "asmlib.h"
 #include "mmu.h"
-#include "emulated_terminals.h"
+#include "emulated_printers.h"
 #include "emulated_tapes.h"
 #include "emulated_timers.h"
 
@@ -111,21 +111,19 @@ void c_irq_handler() {
     }
 
     core_id = GETCOREID();
-    if (core_id == 0) {
-        tmp = GIC->Core0_IRQ_Source;
-    } else if (core_id == 1) {
-        tmp = GIC->Core1_IRQ_Source;
-        uart0_puts("interrupt!");
-        hexstring(tmp);
-        if (tmp & 0x08)
-            setTimer(5000 * 1000);
-        if (tmp & 0x10) {
-            GIC->Core1_MailBox0_ClearSet = 0xFFFFFFFF;
-        }
-
-        return;
-    } else {
-        return;
+    switch (core_id) {
+        case 0:
+            tmp = GIC->Core0_IRQ_Source;
+            break;
+        case 1:
+            tmp = GIC->Core1_IRQ_Source;
+            break;
+        case 2:
+            tmp = GIC->Core2_IRQ_Source;
+            break;
+        case 3:
+            tmp = GIC->Core3_IRQ_Source;
+            break;
     }
 
     if (tmp & (1 << 8)) {

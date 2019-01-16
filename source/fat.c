@@ -2,7 +2,7 @@
 #include "uart.h"
 #include "utils.h"
 
-// get the end of bss segment from linker
+//unsigned int FAT32[0x200000];
 
 static unsigned int partitionlba          = 0;
 static unsigned int root_directory_sector = 0;
@@ -119,13 +119,14 @@ int fat_getpartition(void) {
     itoa(root_directory_sector, &string[strlen(string)], 10);
     LOG(INFO, string);
 
+    //sd_transferblock(partitionlba + bpb->rsc, (unsigned char *)FAT32, bpb->spf32, SD_READBLOCK);
     return 1;
 }
 
 unsigned int fat_get_table_entry(unsigned int index) {
+    bpb_t *      bpb = (bpb_t *)bios_partition_block;
     unsigned int buffer[512 / 4];
     unsigned int entry_sector_offset = (index * 4) / 512;
-    bpb_t *      bpb                 = (bpb_t *)bios_partition_block;
     sd_transferblock(partitionlba + bpb->rsc + entry_sector_offset, (unsigned char *)buffer, 1, SD_READBLOCK);
     return buffer[index % (512 / 4)];
 }
@@ -227,6 +228,7 @@ void fat_listdirectory(void) {
 int fat_transferfile(unsigned int cluster, unsigned char *data, unsigned int num, readwrite_t readwrite) {
     // BIOS Parameter Block
     bpb_t *bpb = (bpb_t *)bios_partition_block;
+    //unsigned int *  fat32 = (unsigned int *)FAT32;
     // Data pointers
     unsigned int data_sec, counter;
     int          read = 0, tmp;
@@ -241,7 +243,7 @@ int fat_transferfile(unsigned int cluster, unsigned char *data, unsigned int num
         if (counter == num) {
             // load all sectors in a cluster
             tmp = sd_transferblock((cluster - 2) * bpb->spc + data_sec, data, bpb->spc, readwrite);
-            if (tmp == 0) {
+            if (tmp <= 0) {
                 LOG(WARN, "Empty transfer block!");
                 return -1;
                 // continue;
@@ -249,30 +251,46 @@ int fat_transferfile(unsigned int cluster, unsigned char *data, unsigned int num
             read += tmp;
         } else {
             // get the next cluster in chain
-            // cluster = bpb->spf16 > 0 ? fat16[cluster] : fat32[cluster];
+            //cluster = fat32[cluster];
             cluster = fat_get_table_entry(cluster);
         }
         counter++;
+    }
+    if (read <= 0) {
+        LOG(WARN, "Could not find cluster");
     }
     return read;
 }
 
 int fat_readfile(unsigned int cluster, unsigned char *data, unsigned int seek, unsigned int length) {
     bpb_t *       bpb = (bpb_t *)bios_partition_block;
-    unsigned char buffer[2048];
-    unsigned int  block, start, size, index, effectiveLen;
+    unsigned char buffer[4096];
+    unsigned int  cluster_num, start, index, effectiveLen;
+    int           size;
 
-    block = seek / (512 * bpb->spc);
+    cluster_num = seek / (512 * bpb->spc);
     start = seek % (512 * bpb->spc);
     index = 0;
 
     while (length > 0) {
-        size         = fat_transferfile(cluster, buffer, block, SD_READBLOCK);
+        size = fat_transferfile(cluster, buffer, cluster_num, SD_READBLOCK);
+        if (size <= 0) {
+            LOG(WARN, "Empty read");
+            return -1;
+        }
+        /*LOG(INFO, "reading in process");
+        itoa(size, string, 10);
+        LOG(INFO, string);*/
         effectiveLen = size < length ? size : length;
         memcpy(&data[index], &buffer[start], effectiveLen);
         start = 0;
         index += effectiveLen;
         length -= effectiveLen;
+        cluster_num++;
+        /*itoa(index, string, 10);
+        LOG(INFO, string);
+        itoa(length, string, 10);
+        LOG(INFO, string);*/
     }
     return index;
 }

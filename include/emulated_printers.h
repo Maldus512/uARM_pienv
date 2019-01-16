@@ -36,7 +36,7 @@ void lfb_print(int x, int y, char *s);
 void terminal_send(int i, char c);
 void manage_emulated_printer(int i);
 void emulated_printer_mailbox(int i, printreg_t *registers);
-void init_emulated_terminals();
+void init_emulated_printers();
 extern volatile termreg_t terminals[MAX_TERMINALS];
 
 

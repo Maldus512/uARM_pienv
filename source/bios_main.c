@@ -11,7 +11,7 @@
 #include "sd.h"
 #include "system.h"
 #include "fat.h"
-#include "emulated_terminals.h"
+#include "emulated_printers.h"
 #include "emulated_tapes.h"
 #include "utils.h"
 
@@ -39,7 +39,7 @@ void initSystem() {
         fat_listdirectory();
         init_emulated_tapes();
     }
-    init_emulated_terminals();
+    init_emulated_printers();
     init_emulated_timers();
     strcpy(string, "CPU-GPU memory split: ");
     itoa(getMemorySplit(), &string[strlen(string)], 16);
@@ -104,16 +104,16 @@ int __attribute__((weak)) main() {
 
 
 void bios_main() {
-    char         buffer[101];
+    unsigned  char         buffer[65];
     unsigned int licence;
-    unsigned int read = 0;
+    int          read = 0, ret;
     initSystem();
 
-    licence = fat_getcluster("BROADCOM   ");
-    while (read < 0xC8C) {
-        read += fat_readfile(licence, buffer, read, 100);
-        buffer[100] = '\0';
-        uart0_puts(buffer);
+    licence = fat_getcluster("LICENC~1BRO");
+    while ((ret = fat_readfile(licence, buffer, read, 64)) > 0) {
+        read += ret;
+        buffer[64] = '\0';
+        uart0_puts((char*)buffer);
     }
     /*init_page_table();
     mmu_init();

@@ -1,6 +1,6 @@
 #include <stdint.h>
 #include "arch.h"
-#include "emulated_terminals.h"
+#include "emulated_printers.h"
 #include "interrupts.h"
 #include "lfb.h"
 #include "timers.h"
@@ -9,16 +9,16 @@
 #define WIDTH (REQUESTED_WIDTH / 2)
 #define HEIGHT (REQUESTED_HEIGHT / 2)
 
-static int terminal_coordinates[MAX_TERMINALS][2];
+static int terminal_coordinates[MAX_PRINTERS][2];
 
 static printer_internal_state_t printers[MAX_PRINTERS] = {0};
 
 
-void init_emulated_terminals() {
+void init_emulated_printers() {
     int      i;
     uint8_t *device_installed = (uint8_t *)DEVICE_INSTALLED;
 
-    device_installed[IL_TERMINAL] = 0x00;
+    device_installed[IL_PRINTER] = 0x00;
 
     for (i = 0; i < MAX_PRINTERS; i++) {
         printers[i].internal_registers.command = RESET;
@@ -26,7 +26,7 @@ void init_emulated_terminals() {
     }
 }
 
-const int terminal_starting_coordinates[MAX_TERMINALS][2] = {
+const int terminal_starting_coordinates[MAX_PRINTERS][2] = {
     {0, 0},
     {WIDTH / 9 + 1, 0},
     {0, HEIGHT / 16 + 1},
@@ -127,7 +127,7 @@ void manage_emulated_printer(int i) {
             case PRINT_CHAR:
                 terminal_send(i, printers[i].internal_registers.data0);
                 printers[i].internal_registers.status = DEVICE_READY;
-                interrupt_lines[IL_TERMINAL] |= 1 << i;
+                interrupt_lines[IL_PRINTER] |= 1 << i;
                 printers[i].executing_command = RESET;
                 memcpy(printers[i].mailbox_registers, &printers[i].internal_registers, sizeof(printreg_t));
                 printers[i].mailbox_registers = NULL;

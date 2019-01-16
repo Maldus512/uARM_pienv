@@ -198,6 +198,7 @@ int sd_cmd(unsigned int code, unsigned int arg) {
 
 int sd_transferblock(unsigned int lba, unsigned char *buffer, unsigned int num, readwrite_t readwrite) {
     int          r, c = 0, d;
+    char string[64];
     unsigned int cmd_single = readwrite == SD_READBLOCK ? CMD_READ_SINGLE : CMD_WRITE_SINGLE;
     unsigned int cmd_multi  = readwrite == SD_READBLOCK ? CMD_READ_MULTI : CMD_WRITE_MULTI;
     unsigned int mask       = readwrite == SD_READBLOCK ? INT_READ_RDY : INT_WRITE_RDY;
@@ -229,7 +230,11 @@ int sd_transferblock(unsigned int lba, unsigned char *buffer, unsigned int num, 
         if (!(sd_scr[0] & SCR_SUPP_CCS)) {
             sd_cmd(cmd_single, (lba + c) * 512);
             if (sd_err) {
-                LOG(ERROR, "Unable to carry on operation");
+                strcpy(string, "Unable to carry on operation for block ");
+                itoa(c, &string[strlen(string)], 10);
+                strcpy(&string[strlen(string)], " of ");
+                itoa(num, &string[strlen(string)], 10);
+                LOG(WARN, string);
                 return 0;
             }
         }

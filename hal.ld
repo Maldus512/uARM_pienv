@@ -41,9 +41,6 @@ SECTIONS
     .stack : {
         . = ALIGN(16);  /* Stack must always be aligned to 8 byte boundary AAPCS64 call standard */
         __stack_start__ = .;
-        . = . + 512;    /* EL0 stack size */
-        . = ALIGN(16);
-        __EL0_stack = .;
         . = . + 16384;    /* EL0 stack size */
         . = ALIGN(16);
         __EL1_stack_core0 = .;
@@ -56,10 +53,6 @@ SECTIONS
         . = . + 16384;    /* EL1 stack size */
         . = ALIGN(16);
         __EL1_stack_core3 = .;
-        __EL1_stack = .;
-        . = . + 16384;  /* EL2 stack size (start-up) */
-        . = ALIGN(16);
-        __EL2_stack = .;
         . = ALIGN(16);
         __stack_end__ = .;    
     } > RAM
@@ -67,10 +60,6 @@ SECTIONS
 
     .heap : {
         . = ALIGN(4096);
-        _page_table = .; 
-        PROVIDE (page_table = .);
-        . = . + 524288;
-        . = ALIGN(4096); /* Room for page table */
         __heap_start__ = .;	/* Label in case we want address of heap section start */
         _end = .; 
         PROVIDE (end = .); /* Any memory from here is free to use so this is end of code and start of heap */

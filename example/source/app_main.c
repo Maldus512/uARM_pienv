@@ -126,35 +126,31 @@ static void uart_hex(unsigned int d) {
 
 void test1() {
     int           numeri[100];
-    unsigned char buffer[512];
+    unsigned char buffer[4096];
     tapereg_t     tape_reg = {0, READ_REGISTERS, 0, 0, 0};
 
     int contatore = 0;
     print("partenza 1\n");
 
-    CORE0_MAILBOX0 = (((uint32_t)(uint64_t)&tape_reg) & ~0xF) | 0x4;
-    while (tape_reg.mailbox == 0)
-        nop();
+    do {
+        semaforo       = 0;
+        tape_reg.command = READ_REGISTERS;
+        tape_reg.mailbox = 0;
+        CORE0_MAILBOX0 = (((uint32_t)(uint64_t)&tape_reg) & ~0xF) | 0x4;
+        while (tape_reg.mailbox == 0)
+            nop();
 
-    tape_reg.data0   = (unsigned int)(unsigned long)buffer;
-    tape_reg.command = READBLK;
-    CORE0_MAILBOX0   = (((uint32_t)(uint64_t)&tape_reg) & ~0xF) | 0x4;
-    while (semaforo == 0)
-        ;
+        tape_reg.data0   = (unsigned int)(unsigned long)buffer;
+        tape_reg.command = READBLK;
+        CORE0_MAILBOX0   = (((uint32_t)(uint64_t)&tape_reg) & ~0xF) | 0x4;
+        while (semaforo == 0)
+            ;
 
-    print("letto nastro: ");
-    print((char *)buffer);
-    print("\n");
+        print("\n\nletto nastro: ");
+        print((char *)buffer);
+        print("\n");
+    } while (tape_reg.data1 != 0);
 
-    buffer[0] = buffer[0] == 'M' ? 'P' : 'M';
-
-    semaforo         = 0;
-    tape_reg.command = WRITEBLK;
-    CORE0_MAILBOX0   = (((uint32_t)(uint64_t)&tape_reg) & ~0xF) | 0x4;
-    while (semaforo == 0)
-        ;
-
-    print("scritto nastro\n");
 
     while (1) {
         contatore         = (contatore + 1) % 100;
