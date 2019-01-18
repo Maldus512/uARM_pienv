@@ -53,7 +53,7 @@ set_stacks:
     mrs     x0, hcr_el2
 
     /* change execution level to EL1 */
-    mov     x2, #0x385      // IRQ disabled, FIQ enabled
+    mov     x2, #0x305      // IRQ disabled, FIQ enabled
     msr     spsr_el2, x2
     adr     x2, start_kernel
     msr     elr_el2, x2
@@ -75,13 +75,6 @@ start_kernel:
     b       start_idle_core_spin
 
 start_kernel_core0:
-
-    //TODO: enable when everything works
-    //mrs    x1, sctlr_el1
-    /* Enable instruction cache */
-    //orr    w1, w1, #0x1000
-    //msr    sctlr_el1, x1
-
     mov     x1, #spin_cpu1
     ldr     x2, =multicore_start
     str     x2, [x1]
@@ -176,6 +169,17 @@ unrecognized:
 
 swi_handler:
     msr   daifset, #2
+    msr   daifclr, #1
+
+    mrs     x28, ttbr0_el1
+    mrs     x27, ttbr1_el1
+    msr     ttbr0_el1, x27
+
+    // if coming from level other than EL0 keep the current stack
+    mrs     x27, spsr_el1
+    and     x27, x27, #7
+    cmp     x27, #0
+    bne     keep_current_stack_swi
 
     mrs     x27, mpidr_el1
     and     x27, x27, #0x3
@@ -201,13 +205,18 @@ set_swi_stack_core3:
     ldr     x27, =__EL1_stack_core3
 set_chosen_swi_stack:
     mov     sp, x27
+keep_current_stack_swi:
+    // save link and frame pointers
     stp     x29, x30, [sp, #-16]!
+    // save ttbr0
+    str     x28, [sp, #-16]!
 
     // save state in oldarea
-    mov     x26, x29
-    mov     x27, x30
     mov   x28, #EXCEPTION_OLDAREA
     orr   x28, x28, #SYNCHRONOUS_OFFSET
+    //madd   x28, #CORE_OFFSET, x27, x28
+    mov     x26, x29
+    mov     x27, x30
     bl    STST_asm
 
     bl    pushRegisters
@@ -216,7 +225,10 @@ set_chosen_swi_stack:
     bl    c_swi_handler
 
     bl    popRegisters
+    // restore ttbr0
+    ldr   x28, [sp], #16
     ldp   x29, x30, [sp], #16
+    msr   ttbr0_el1, x28
 
     eret
 
@@ -243,7 +255,15 @@ irq_handler:
     msr   daifset, #2
     msr   daifclr, #1
 
-    mrs     x27, ttbr0_el1
+    mrs     x28, ttbr0_el1
+    mrs     x27, ttbr1_el1
+    msr     ttbr0_el1, x27
+
+    // if coming from level other than EL0 keep the current stack
+    mrs     x27, spsr_el1
+    and     x27, x27, #7
+    cmp     x27, #0
+    bne     keep_current_stack_irq
     
     mrs     x27, mpidr_el1
     and     x27, x27, #0x3
@@ -269,12 +289,19 @@ set_irq_stack_core3:
     ldr     x27, =__EL1_stack_core3
 set_chosen_stack:
     mov     sp, x27
+keep_current_stack_irq:
+    // save link and frame pointers
     stp     x29, x30, [sp, #-16]!
+    // save ttbr0
+    str     x28, [sp, #-16]!
     
+    mrs     x27, mpidr_el1
+    and     x27, x27, #0x3
+    mov   x28, #INTERRUPT_OLDAREA
+    mov     x26, #CORE_OFFSET
+    madd   x28, x26, x27, x28
     mov     x26, x29
     mov     x27, x30
-    mov   x28, #EXCEPTION_OLDAREA
-    //orr   x28, x28, #INTERRUPT_OFFSET
     bl    STST_asm
 
     /* save register values on the stack */
@@ -285,13 +312,25 @@ set_chosen_stack:
 
     /* Ideally the scheduler should manage returning */
     bl    popRegisters
+    // restore ttbr0
+    ldr   x28, [sp], #16
     ldp   x29, x30, [sp], #16
-    //msr   daifclr, #2
+    msr   ttbr0_el1, x28
     eret
 
 abort_handler:
     msr   daifset, #2
     msr   daifclr, #1
+
+    mrs     x28, ttbr0_el1
+    mrs     x27, ttbr1_el1
+    msr     ttbr0_el1, x27
+
+    // if coming from level other than EL0 keep the current stack
+    mrs     x27, spsr_el1
+    and     x27, x27, #7
+    cmp     x27, #0
+    bne     keep_current_stack_abort
 
     mrs     x27, ttbr0_el1
     
@@ -319,12 +358,16 @@ set_abt_stack_core3:
     ldr     x27, =__EL1_stack_core3
 set_chosen_abt_stack:
     mov     sp, x27
+keep_current_stack_abort:
+    // save link and frame pointers
     stp     x29, x30, [sp, #-16]!
+    // save ttbr0
+    str     x28, [sp, #-16]!
     
-    mov     x26, x29
-    mov     x27, x30
     mov   x28, #EXCEPTION_OLDAREA
     orr   x28, x28, #ABORT_OFFSET
+    mov     x26, x29
+    mov     x27, x30
     bl    STST_asm
 
     /* save register values on the stack */
@@ -335,7 +378,10 @@ set_chosen_abt_stack:
 
     /* Ideally the scheduler should manage returning */
     bl    popRegisters
+    // restore ttbr0
+    ldr   x28, [sp], #16
     ldp   x29, x30, [sp], #16
+    msr   ttbr0_el1, x28
     //msr   daifclr, #2
     eret
 
@@ -359,25 +405,6 @@ idle_core_spin:
     blr     x4
     b       start_idle_core_spin
 
-.globl CoreExecute
-CoreExecute:
-	ands x0, x0, #255
-	beq CoreExecuteFail
-	ldr x3, =CoresReady
-	ldr w2, [x3]							// Fetch cores ready count
-	cmp w0, w2
-	bcs	CoreExecuteFail
-	mov x6, #0
-	mov w6, w0
-	mov x5, #spin_cpu0						// Load address of spins
-	str x1, [x5, x6, lsl #3]				// Save caller address
-	dsb sy
-	sev
-	mov x0, #1
-	ret
-CoreExecuteFail:
-	mov x0, #0
-        ret
 
 .section ".data.init", "aw"
 .balign 4

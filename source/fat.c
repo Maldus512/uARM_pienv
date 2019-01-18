@@ -276,7 +276,7 @@ int fat_readfile(unsigned int cluster, unsigned char *data, unsigned int seek, u
         size = fat_transferfile(cluster, buffer, cluster_num, SD_READBLOCK);
         if (size <= 0) {
             LOG(WARN, "Empty read");
-            return -1;
+            return index;
         }
         /*LOG(INFO, "reading in process");
         itoa(size, string, 10);

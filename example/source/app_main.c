@@ -28,6 +28,9 @@
 #define READBLK 3
 #define WRITEBLK 5
 
+#define CORE1_MAILBOX0 (*(uint32_t*)0x40000090)
+#define CORE1_MAILBOX0_CLEAR (*(uint32_t*)0x400000D0)
+
 static void term_puts(const char *str);
 
 state_t  t1, t2;
@@ -133,10 +136,10 @@ void test1() {
     print("partenza 1\n");
 
     do {
-        semaforo       = 0;
+        semaforo         = 0;
         tape_reg.command = READ_REGISTERS;
         tape_reg.mailbox = 0;
-        CORE0_MAILBOX0 = (((uint32_t)(uint64_t)&tape_reg) & ~0xF) | 0x4;
+        CORE0_MAILBOX0   = (((uint32_t)(uint64_t)&tape_reg) & ~0xF) | 0x4;
         while (tape_reg.mailbox == 0)
             nop();
 
@@ -167,6 +170,7 @@ void test1() {
 void test2() {
     unsigned long timer;
     print("partenza 2\n");
+    CORE1_MAILBOX0 = 1;
     while (1) {
         timer = get_us();
         print("test2 vivo: ");
@@ -181,38 +185,56 @@ void test2() {
 void synchronous(unsigned int code, unsigned int x0, unsigned int x1, unsigned int x2) { print("system call!\n"); }
 
 void interrupt() {
-    state_t * oldarea         = (state_t *)INTERRUPT_OLDAREA;
-    uint8_t * interrupt_lines = (uint8_t *)INTERRUPT_LINES;
-    tapereg_t tape_reg        = {0, ACK, 0, 0, 0};
+    state_t *    oldarea;
+    uint8_t *    interrupt_lines = (uint8_t *)INTERRUPT_LINES;
+    tapereg_t    tape_reg        = {0, ACK, 0, 0, 0};
+    unsigned int core;
 
-    copy_state(current, oldarea);
+    core = GETCOREID();
 
-    if (interrupt_lines[IL_TIMER]) {
-        /* This also clears pending interrupts */
-        set_next_timer(10 * 1000);
+    if (core == 0) {
+        oldarea = (state_t *)INTERRUPT_OLDAREA;
+        copy_state(current, oldarea);
 
-        if (current == &t1) {
-            current = &t2;
-        } else if (current == &t2) {
-            current = &t1;
+        if (interrupt_lines[IL_TIMER]) {
+            /* This also clears pending interrupts */
+            set_next_timer(10 * 1000);
+
+            if (current == &t1) {
+                current = &t2;
+            } else if (current == &t2) {
+                current = &t1;
+            }
         }
+
+        if (interrupt_lines[IL_TAPE]) {
+            semaforo = 1;
+
+            CORE0_MAILBOX0 = (((uint32_t)(uint64_t)&tape_reg) & ~0xF) | 0x4;
+            while (tape_reg.mailbox == 0)
+                nop();
+        }
+
+        LDST(current);
+    } else {
+        oldarea = (state_t*)(INTERRUPT_OLDAREA + CORE_OFFSET*core);
+        nop();
+        nop();
+        nop();
+        print("multicore!");
+        CORE1_MAILBOX0_CLEAR = 0xFFFFFFFF;
+        LDST(oldarea);
     }
-
-    if (interrupt_lines[IL_TAPE]) {
-        semaforo = 1;
-
-        CORE0_MAILBOX0 = (((uint32_t)(uint64_t)&tape_reg) & ~0xF) | 0x4;
-        while (tape_reg.mailbox == 0)
-            nop();
-    }
-
-    LDST(current);
 }
 
 int main() {
     *((uint8_t *)INTERRUPT_MASK)       = 0xFC;     //&= ~((1 << IL_TIMER) | (1 << IL_TAPE));
     *((uint64_t *)INTERRUPT_HANDLER)   = (uint64_t)&interrupt;
     *((uint64_t *)SYNCHRONOUS_HANDLER) = (uint64_t)&synchronous;
+    *((uint64_t *)KERNEL_CORE0_SP)     = (uint64_t)0x1000000;
+    *((uint64_t *)KERNEL_CORE1_SP)     = (uint64_t)0x1002000;
+    *((uint64_t *)KERNEL_CORE2_SP)     = (uint64_t)0x1004000;
+    *((uint64_t *)KERNEL_CORE3_SP)     = (uint64_t)0x1006000;
 
     print("sono l'applicazione\n");
 
@@ -221,8 +243,8 @@ int main() {
 
     t1.exception_link_register = (uint64_t)test1;
     t2.exception_link_register = (uint64_t)test2;
-    t1.stack_pointer           = (uint64_t)0x1000000 + 0x2000;
-    t2.stack_pointer           = (uint64_t)0x1000000 + 0x4000;
+    t1.stack_pointer           = (uint64_t)0x1006000 + 0x2000;
+    t2.stack_pointer           = (uint64_t)0x1006000 + 0x4000;
     t1.status_register         = 0x300;
     t2.status_register         = 0x300;
     current                    = &t2;

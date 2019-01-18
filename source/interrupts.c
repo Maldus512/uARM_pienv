@@ -91,7 +91,7 @@ void c_irq_handler() {
     uint8_t         f_app_interrupt = 1;
     uint32_t        tmp;
     static uint64_t lastBlink = 0;
-    uint64_t        currentTime, handler_present;
+    uint64_t        currentTime, handler_present, stack_pointer;
     int             i, res;
     void (*interrupt_handler)();
     uint8_t *    interrupt_lines = (uint8_t *)INTERRUPT_LINES;
@@ -100,96 +100,63 @@ void c_irq_handler() {
     timer_t      next;
 
     handler_present = *((uint64_t *)INTERRUPT_HANDLER);
-
     currentTime = get_us();
-
-    /* Blink running led on real hardware */
-    if (currentTime / 1000 - lastBlink >= 1000) {
-        led(f_led);
-        f_led     = f_led == 0 ? 1 : 0;
-        lastBlink = currentTime / 1000;
-    }
-
     core_id = GETCOREID();
-    switch (core_id) {
-        case 0:
-            tmp = GIC->Core0_IRQ_Source;
-            break;
-        case 1:
-            tmp = GIC->Core1_IRQ_Source;
-            break;
-        case 2:
-            tmp = GIC->Core2_IRQ_Source;
-            break;
-        case 3:
-            tmp = GIC->Core3_IRQ_Source;
-            break;
-    }
 
-    if (tmp & (1 << 8)) {
-        // TODO: uart interrupt. to be managed
-        unsigned int temp = UART1->IIR;
+    /* Core 0 manages all interrupts */
+    if (core_id == 0) {
+        tmp = GIC->Core0_IRQ_Source;
 
-        if ((temp & 0x01) == 0) {
-            // MU_IIR = temp;
-            nop();
+        /* Blink running led on real hardware */
+        if (currentTime / 1000 - lastBlink >= 1000) {
+            led(f_led);
+            f_led     = f_led == 0 ? 1 : 0;
+            lastBlink = currentTime / 1000;
         }
 
-        // apparently not needed for real hw
-        //        if (IRQ_CONTROLLER->IRQ_basic_pending & (1 << 9)) {
-        if (IRQ_CONTROLLER->IRQ_pending_2 & (1 << 25)) {
-            if (UART0->MASKED_IRQ & (1 << 4)) {
-                nop();
-                // UART0->IRQ_CLEAR = 0xFFF;
+        if (tmp & 0x08) {
+            /* More precise timing */
+            currentTime = get_us();
+
+            while ((res = next_pending_timer(currentTime, &next)) > 0) {
+                switch (next.type) {
+                    /* Don't clear the timer interrupt on purpose; it's on the user to to that */
+                    case TIMER:
+                        interrupt_lines[IL_TIMER] = 1;
+                        break;
+                    case TAPE:
+                        manage_emulated_tape(next.code);
+                        break;
+                    case PRINTER:
+                        manage_emulated_printer(next.code);
+                        break;
+                    case DISK:
+                        break;
+                    case UNALLOCATED:
+                        break;
+                }
             }
-            if (UART0->MASKED_IRQ & (1 << 5)) {
-                nop();
-                // UART0->IRQ_CLEAR = 0xFFF;
-            }
-        }
-    }
 
-
-    if (tmp & 0x08) {
-        /* More precise timing */
-        currentTime = get_us();
-
-        while ((res = next_pending_timer(currentTime, &next)) > 0) {
-            switch (next.type) {
-                /* Don't clear the timer interrupt on purpose; it's on the user to to that */
-                case TIMER:
-                    interrupt_lines[IL_TIMER] = 1;
-                    break;
-                case TAPE:
-                    manage_emulated_tape(next.code);
-                    break;
-                case PRINTER:
-                    manage_emulated_printer(next.code);
-                    break;
-                case DISK:
-                    break;
-                case UNALLOCATED:
-                    break;
+            if (res == 0) {
+                setTimer(next.time - currentTime);
             }
         }
 
-        if (res == 0) {
-            setTimer(next.time - currentTime);
-        }
-    }
-
-    for (i = 0; i < IL_LINES; i++) {
-        if (interrupt_lines[i] && !(interrupt_mask & (1 << i))) {
-            /* Until there are interrupt lines pending fire interrupts immediately */
-            setTimer(0);
-            f_app_interrupt = 1;
-            break;
+        for (i = 0; i < IL_LINES; i++) {
+            if (interrupt_lines[i] && !(interrupt_mask & (1 << i))) {
+                /* Until there are interrupt lines pending fire interrupts immediately */
+                setTimer(0);
+                f_app_interrupt = 1;
+                break;
+            }
         }
     }
 
     if (f_app_interrupt && handler_present != 0) {
         wait_lock         = 1;
+        stack_pointer = *((uint64_t*)(KERNEL_CORE0_SP + 0x8*core_id));
         interrupt_handler = (void (*)(void *))handler_present;
+        asm volatile("mov sp, %0" : : "r"(stack_pointer));
         interrupt_handler();
     }
 }

@@ -28,6 +28,11 @@ char *itoa(long unsigned int value, char *result, int base) {
         return result;
     }
 
+    if (base == 16) {
+        *result++ = '0';
+        *result++ = 'x';
+    }
+
     char *            ptr = result, *ptr1 = result, tmp_char;
     long unsigned int tmp_value;
 

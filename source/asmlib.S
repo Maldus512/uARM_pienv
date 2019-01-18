@@ -1,13 +1,4 @@
-
-.globl PUT32
-PUT32:
-  str w1,[x0]
-  ret
-
-.globl GET32
-GET32:
-    ldr w0,[x0]
-    ret
+#include "bios_const.h"
 
 .globl GETEL
 GETEL:
@@ -31,17 +22,10 @@ GETTTBR0:
     mrs x0, ttbr0_el1
     ret
 
-
 .global wait_lock
 .global WAIT
 WAIT:
     dsb ish
-    //mrs     x1, mpidr_el1
-    //ands    x6, x6, #0x3
-    //beq     core0_WAIT
-    //wfi
-    //ret
-//core0_WAIT:
     mov  x1, 0
     ldr  x0, =wait_lock
     str  x1, [x0]
@@ -78,34 +62,6 @@ GETARMCOUNTER:
     ret
 
 
-.globl enable_irq
-enable_irq:
-    msr   daifclr, #2
-    ret
-
-.globl enable_irq_el0
-enable_irq_el0:
-    mrs   x0, spsr_el1
-    and   x0, x0, #0xFFFFFFFFFFFFFF7F //clear irq bit
-    msr   spsr_el1, x0
-    ret
-
-
-.globl disable_irq
-disable_irq:
-    msr   daifset, #2
-    ret
-
-.globl STELR
-STELR:
-    mrs     x0, elr_el1 
-    ret
-
-.globl LDELR
-LDELR:
-    msr     elr_el1, x0
-    ret
-
 .globl PANIC
 PANIC:
     wfe
@@ -122,10 +78,6 @@ GETCOREID:
     mrs     x0, mpidr_el1
     and     x0, x0, #0x3
     ret
-
-.globl BRANCHTO
-BRANCHTO:
-    br x0
 
 .globl STST
 STST:
@@ -226,7 +178,7 @@ LDST:
     ldr     x1, [x0, #8]!
     msr     spsr_el1, x1    /* Status Register */
 
-    ldr     x0, [sp, #-8]  /* Recover x0 and x1 */ //TODO: FIXME: ATTENZIONE: qui non sembra recuperare corretamente x0
+    ldr     x0, [sp, #-8]  /* Recover x0 and x1 */ 
 
     and     x1, x1, #7
     cmp     x1, #0
@@ -239,11 +191,6 @@ el1_sp:
     mov     sp, x1          /* Recover stack pointer */
 
 end:
-    /*change execution level to EL0? 
-    mov     x2, #0x340
-
-    mov     x2, #0x3c0
-    0x3c0 has the interrupt bit set, it has to be clear to enable ints*/
     ldr     x1, [x0, #8]
     ldr     x0, [x0]
     eret
@@ -288,47 +235,6 @@ popRegisters:
     ldp   x4,  x5,  [sp], #16
     ldp   x2,  x3,  [sp], #16
     ldp   x0,  x1,  [sp], #16
-    ret
-
-.global saveRegisters
-saveRegisters:
-    stp   x0, x1, [x28]
-    stp   x2, x3, [x28, #16]!
-    stp   x4, x5, [x28, #16]!
-    stp   x6, x7, [x28, #16]!
-    stp   x8, x9, [x28, #16]!
-    stp   x10, x11, [x28, #16]!
-    stp   x12, x13, [x28, #16]!
-    stp   x14, x15, [x28, #16]!
-    stp   x16, x17, [x28, #16]!
-    stp   x18, x19, [x28, #16]!
-    stp   x20, x21, [x28, #16]!
-    stp   x22, x23, [x28, #16]!
-    stp   x24, x25, [x28, #16]!
-    stp   x26, x27, [x28, #16]!
-    ret
-
-.global saveState
-saveState:
-    mrs   x27, spsr_el1
-    and   x27, x27, #7
-    cmp   x27, #0
-    bne   savesp_el1
-    mrs   x27, sp_el0
-    b     finish_saveState
-savesp_el1:
-    mov   x27, sp
-finish_saveState:
-    stp   x30, x27, [x28, #16]!
-    
-    mrs   x27, elr_el1
-    str   x27, [x28, #16]! // Note: the 16 immediate value refers to the previously saved pair
-
-    mrs   x27, ttbr0_el1
-    str   x27, [x28, #8]!
-
-    mrs   x27, spsr_el1
-    str   x27, [x28, #8]!
     ret
 
 .global vbarForMMU
@@ -395,3 +301,23 @@ finish_asm:
     mrs   x27, spsr_el1
     str   x27, [x28, #8]!
     ret
+
+.globl CoreExecute
+CoreExecute:
+	ands x0, x0, #255
+	beq CoreExecuteFail
+	ldr x3, =CoresReady
+	ldr w2, [x3]							// Fetch cores ready count
+	cmp w0, w2
+	bcs	CoreExecuteFail
+	mov x6, #0
+	mov w6, w0
+	mov x5, #spin_cpu0						// Load address of spins
+	str x1, [x5, x6, lsl #3]				// Save caller address
+	dsb sy
+	sev
+	mov x0, #1
+	ret
+CoreExecuteFail:
+	mov x0, #0
+        ret
