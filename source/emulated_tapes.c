@@ -165,10 +165,13 @@ void emulated_tape_mailbox(int i, tapereg_t *registers) {
     if (registers == NULL)
         return;
 
-    if (emulated_tapes[i].internal_registers.status == DEVICE_NOT_INSTALLED && registers->command != READ_REGISTERS)
-        return;
-
     emulated_tapes[i].internal_registers.mailbox = 1;
+
+    if (emulated_tapes[i].internal_registers.status == DEVICE_NOT_INSTALLED && registers->command != READ_REGISTERS) {
+        memcpy(registers, &emulated_tapes[i].internal_registers, sizeof(tapereg_t));
+        return;
+    }
+
 
     switch (registers->command) {
         case RESET:

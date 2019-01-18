@@ -14,6 +14,7 @@
 #define CHAR_OFFSET 8
 #define TERM_STATUS_MASK 0xFF
 
+#define DEVICE_NOT_INSTALLED 0
 #define DEVICE_READY 1
 #define DEVICE_BUSY 3
 #define CHAR_TRANSMIT 5
@@ -143,6 +144,11 @@ void test1() {
         while (tape_reg.mailbox == 0)
             nop();
 
+        if (tape_reg.status == DEVICE_NOT_INSTALLED) {
+            print("tape non trovata\n");
+            break;
+        }
+
         tape_reg.data0   = (unsigned int)(unsigned long)buffer;
         tape_reg.command = READBLK;
         CORE0_MAILBOX0   = (((uint32_t)(uint64_t)&tape_reg) & ~0xF) | 0x4;
@@ -248,9 +254,9 @@ int main() {
     t1.status_register         = 0x300;
     t2.status_register         = 0x300;
     current                    = &t2;
-    set_next_timer(1000);
 
     print("about to launch the first process\n");
+    set_next_timer(1000*1000);
     LDST(current);
     return 0;
 }
