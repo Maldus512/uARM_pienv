@@ -1,15 +1,6 @@
 #ifndef __BIOS_CONST_H__
 #define __BIOS_CONST_H__
 
-#define BIOS_SRV_SYS 8
-#define BIOS_SRV_BP 9
-#define BIOS_SRV_HALT 1
-#define BIOS_SRV_PANIC 2
-#define BIOS_SRV_LDST 3
-#define BIOS_SRV_WAIT 4
-
-#define BIOS_INT_SYS 10
-
 #define EXCEPTION_OLDAREA       0x70000
 #define SYNCHRONOUS_OFFSET      0x00800
 #define ABORT_OFFSET            0x01000

@@ -1,12 +1,6 @@
 #include <stdint.h>
-
 #include "gpio.h"
 
-
-void initGpio() {
-    // Activate gpio 4 as output
-    setupGpio(LED_RUN, GPIO_OUTPUT);
-}
 
 void setupGpio(uint_fast8_t gpio, GPIOMODE mode) {
     int reg = gpio / 10;

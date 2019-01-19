@@ -29,8 +29,8 @@
 #define READBLK 3
 #define WRITEBLK 5
 
-#define CORE1_MAILBOX0 (*(uint32_t*)0x40000090)
-#define CORE1_MAILBOX0_CLEAR (*(uint32_t*)0x400000D0)
+#define CORE1_MAILBOX0 (*(uint32_t *)0x40000090)
+#define CORE1_MAILBOX0_CLEAR (*(uint32_t *)0x400000D0)
 
 static void term_puts(const char *str);
 
@@ -188,7 +188,11 @@ void test2() {
     }
 }
 
-void synchronous(unsigned int code, unsigned int x0, unsigned int x1, unsigned int x2) { print("system call!\n"); }
+void synchronous(unsigned int code, unsigned int x0, unsigned int x1, unsigned int x2) {
+    state_t *oldarea = (state_t *)SYNCHRONOUS_OLDAREA;
+    print("system call!\n");
+    LDST(oldarea);
+}
 
 void interrupt() {
     state_t *    oldarea;
@@ -204,7 +208,7 @@ void interrupt() {
 
         if (interrupt_lines[IL_TIMER]) {
             /* This also clears pending interrupts */
-            set_next_timer(10 * 1000);
+            setTIMER(10 * 1000);
 
             if (current == &t1) {
                 current = &t2;
@@ -223,7 +227,7 @@ void interrupt() {
 
         LDST(current);
     } else {
-        oldarea = (state_t*)(INTERRUPT_OLDAREA + CORE_OFFSET*core);
+        oldarea = (state_t *)(INTERRUPT_OLDAREA + CORE_OFFSET * core);
         nop();
         nop();
         nop();
@@ -256,7 +260,7 @@ int main() {
     current                    = &t2;
 
     print("about to launch the first process\n");
-    set_next_timer(1000*1000);
+    setTIMER(1000);
     LDST(current);
     return 0;
 }

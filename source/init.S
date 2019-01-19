@@ -42,7 +42,6 @@ multicore_start:
     cmp     x6, #3	
     beq     set_stacks
 
-//TODO: check if I can be at some other level than EL2 here
 set_stacks:
     msr     sp_el1, x3
 
@@ -53,7 +52,7 @@ set_stacks:
     mrs     x0, hcr_el2
 
     /* change execution level to EL1 */
-    mov     x2, #0x305      // IRQ disabled, FIQ enabled
+    mov     x2, #0x305
     msr     spsr_el2, x2
     adr     x2, start_kernel
     msr     elr_el2, x2

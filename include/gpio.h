@@ -47,6 +47,8 @@ struct GPIOREG {
 
 #define GPIO ((struct GPIOREG *)GPIO_BASE)
 
+#define LED_RUN 21
+
 
 typedef enum {
     GPIO_INPUT    = 0x00,
@@ -66,7 +68,6 @@ typedef enum {
 } GPIOPUD;
 
 
-void initGpio();
 void setupGpio(uint_fast8_t num, GPIOMODE mode);
 void setPullUpDown(unsigned int gpio, GPIOPUD mode);
 void setHighDetect(unsigned int gpio);

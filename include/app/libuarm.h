@@ -20,12 +20,7 @@
 
 #ifndef UARM_LIBUARM_H
 #define UARM_LIBUARM_H
-
 #include <stdint.h>
-
-#define TIMER_INT_LINE 0x0001
-#define UART0_INT_LINE 0x0002
-#define UART1_INT_LINE 0x0003
 
 /* prints HALT message and terminates execution */
 void HALT();
@@ -44,13 +39,11 @@ void STST(void *addr);
 
 unsigned int GETCOREID();
 
-int CoreExecute(unsigned int core, void *task);
-
 /* call kernel system call handler */
 int SYSCALL(unsigned int sysNum, unsigned int arg1, unsigned int arg2, unsigned int arg3);
 
 unsigned long get_us();
-void         set_next_timer(uint64_t millis);
+void         setTIMER(uint64_t us);
 
 typedef struct _state_t {
     uint64_t general_purpose_registers[29];

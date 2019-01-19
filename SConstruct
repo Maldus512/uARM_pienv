@@ -33,8 +33,8 @@ AddOption(
     help='Alternative toolchain path')
 
 ELF = 'output.elf'
-HAL = 'hal.elf'
-LDSCRIPT = 'hal.ld'
+HAL = 'mal.elf'
+LDSCRIPT = 'mal.ld'
 KERNEL = 'kernel8.img'
 APP = GetOption('app')
 TOOLCHAIN = None
@@ -101,6 +101,8 @@ env_options = {
 
 sources = Glob("{}/*.S".format(BUILD))
 sources += Glob("{}/*.c".format(BUILD))
+sources += Glob("{}/emulated/*.c".format(BUILD))
+sources += Glob("{}/hal/*.c".format(BUILD))
 sources += ["res/font.bin"]
 
 

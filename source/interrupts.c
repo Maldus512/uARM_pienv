@@ -15,7 +15,7 @@
 uint64_t f_emulated_timer_interrupt = 0;
 uint64_t wait_lock                  = 0;
 
-void set_next_timer(uint64_t microseconds) {
+void setTIMER(uint64_t microseconds) {
     uint8_t *interrupt_lines = (uint8_t *)INTERRUPT_LINES;
     uint64_t currentTime     = get_us();
     uint64_t timer           = currentTime + microseconds;
@@ -74,12 +74,16 @@ void c_fiq_handler() {
 }
 
 uint32_t c_swi_handler(uint32_t code, uint32_t *registers) {
-    uint64_t handler_present;
+    uint64_t handler_present, stack_pointer;
     void (*synchronous_handler)(unsigned int, unsigned int, unsigned int, unsigned int);
+    uint32_t core_id;
     handler_present = *((uint64_t *)SYNCHRONOUS_HANDLER);
 
     if (handler_present != 0) {
+        core_id = GETCOREID();
+        stack_pointer = *((uint64_t*)(KERNEL_CORE0_SP + 0x8*core_id));
         synchronous_handler = (void (*)(unsigned int, unsigned int, unsigned int, unsigned int))handler_present;
+        asm volatile("mov sp, %0" : : "r"(stack_pointer));
         synchronous_handler(code, registers[0], registers[1], registers[2]);
     }
 
@@ -164,11 +168,14 @@ void c_irq_handler() {
 
 void c_abort_handler(uint64_t exception_code, uint64_t iss) {
     void (*interrupt_handler)();
-    uint64_t handler_present;
+    uint64_t handler_present, stack_pointer;
     handler_present = *((uint64_t *)ABORT_HANDLER);
+    uint32_t core_id = GETCOREID();
 
     if (handler_present) {
+        stack_pointer = *((uint64_t*)(KERNEL_CORE0_SP + 0x8*core_id));
         interrupt_handler = (void (*)(void *))handler_present;
+        asm volatile("mov sp, %0" : : "r"(stack_pointer));
         interrupt_handler();
     } else {
         switch (exception_code) {

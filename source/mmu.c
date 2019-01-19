@@ -43,7 +43,7 @@ void init_page_table(void) {
         // Each block descriptor (2 MB)
         Level1map1to1[base] = (VMSAv8_64_STAGE1_BLOCK_DESCRIPTOR){.Address   = (uintptr_t)base << (21 - 12),
                                                                   .AF        = 1,
-                                                                  .AP        = APBITS_NO_LIMIT,
+                                                                  //.AP        = APBITS_NO_LIMIT,
                                                                   .MemAttr   = MT_DEVICE_NGNRNE_INDEX,
                                                                   .EntryType = 1};
     }
@@ -89,7 +89,7 @@ void mmu_init(void) {
 
     // Bring both tables online and execute memory barrier
     asm volatile("msr ttbr0_el1, %0" : : "r"((uintptr_t)&Level0map1to1[0]));
-    asm volatile("msr ttbr1_el1, %0" : : "r"((uintptr_t)&Level0map1to1[0]));
+    //asm volatile("msr ttbr1_el1, %0" : : "r"((uintptr_t)&Level0map1to1[0]));
     asm volatile("isb");
 
     /* Specify mapping characteristics in translate control register

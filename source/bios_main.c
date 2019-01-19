@@ -29,7 +29,6 @@ void initSystem() {
         interrupt_lines[i] = 0;
     }
 
-    initGpio();
     initUart1();
     initUart0();
     startUart0Int();
@@ -92,13 +91,13 @@ void echo() {
 }
 
 int __attribute__((weak)) main() {
-    /*state_t state;
-    state.exception_link_register = (uint64_t)echo;
+    state_t state;
+    state.exception_link_register = (uint64_t)function1;
     state.stack_pointer           = (uint64_t)0x1000000 + 0x4000;
-    state.status_register         = 0x300;
+    state.status_register         = 0x305;
     //setTimer(1000*1000);*/
     uart0_puts("Echoing everything\n");
-    // LDST(&state);
+    LDST(&state);
     while (1) {
         uart0_putc(uart0_getc());
     }
@@ -117,5 +116,9 @@ void bios_main() {
     CoreExecute(2, idle);
     CoreExecute(3, idle);
 
+    //init_page_table();
+    //mmu_init();
+
+    asm volatile("msr daifset, #2");
     main();
 }

@@ -12,11 +12,6 @@ GETSAVEDEL:
     and x0, x0, #0x7
     ret
 
-.globl GETSAVEDSTATUS
-GETSAVEDSTATUS:
-    mrs x0,spsr_el1
-    ret
-
 .globl GETTTBR0
 GETTTBR0:
     mrs x0, ttbr0_el1
@@ -36,9 +31,6 @@ waitloop:
     b.ne  waitloop
 
     ret
-
-    
-
 
 .global HALT
 HALT:
@@ -66,12 +58,6 @@ GETARMCOUNTER:
 PANIC:
     wfe
     b PANIC
-
-
-.globl GETSP_EL0
-GETSP_EL0:
-    mrs    x0, sp_el0
-    ret
 
 .globl GETCOREID
 GETCOREID:

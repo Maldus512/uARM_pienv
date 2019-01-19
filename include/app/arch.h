@@ -29,8 +29,6 @@
 #define INTERRUPT_LINES     0x7F020
 #define INTERRUPT_MASK      0x7F040
 
-#define LED_RUN 21
-
 #define CORE0_MAILBOX0      (*(uint32_t*)0x40000080)
 
 
