@@ -14,6 +14,11 @@ _start:
 
 multicore_start:
 
+    mov x0, #1
+    msr ttbr0_el1, x0
+    mov x0, #2
+    msr ttbr1_el1, x0
+
     mrs	x0, cnthctl_el2
     orr	x0, x0, #0x3		/* Enable EL1 access to timers */
     msr	cnthctl_el2, x0
@@ -132,13 +137,13 @@ hang2:
 interrupt_vector:
 /* Current EL with SP0 */
     vector syncronousException
-    vector irq_handler
+    vector keep_current_stack_irq_handler
     vector fiq_handler
     stub 0x00000003
 
 /* Current EL with SPX */
     vector syncronousException
-    vector irq_handler
+    vector keep_current_stack_irq_handler
     vector fiq_handler
     stub 0x00000006
 
@@ -169,10 +174,6 @@ unrecognized:
 swi_handler:
     msr   daifset, #2
     msr   daifclr, #1
-
-    mrs     x28, ttbr0_el1
-    mrs     x27, ttbr1_el1
-    msr     ttbr0_el1, x27
 
     // if coming from level other than EL0 keep the current stack
     mrs     x27, spsr_el1
@@ -205,31 +206,28 @@ set_swi_stack_core3:
 set_chosen_swi_stack:
     mov     sp, x27
 keep_current_stack_swi:
-    // save link and frame pointers
-    stp     x29, x30, [sp, #-16]!
+    mrs     x28, ttbr0_el1
+    mrs     x27, ttbr1_el1
+    msr     ttbr0_el1, x27
     // save ttbr0
     str     x28, [sp, #-16]!
+    // save link register and stack pointer
+    stp     x29, x30, [sp, #-16]!
 
     // save state in oldarea
+    mrs     x27, mpidr_el1
+    and     x27, x27, #0x3
     mov   x28, #EXCEPTION_OLDAREA
-    orr   x28, x28, #SYNCHRONOUS_OFFSET
+    add   x28, x28, #SYNCHRONOUS_OFFSET
+    mov     x26, #CORE_OFFSET
+    madd   x28, x26, x27, x28
     //madd   x28, #CORE_OFFSET, x27, x28
-    mov     x26, x29
-    mov     x27, x30
     bl    STST_asm
-
-    bl    pushRegisters
 
     // call c handler.
     bl    c_swi_handler
-
-    bl    popRegisters
-    // restore ttbr0
-    ldr   x28, [sp], #16
-    ldp   x29, x30, [sp], #16
-    msr   ttbr0_el1, x28
-
-    eret
+    
+    b hang
 
 
 fiq_handler:
@@ -254,15 +252,11 @@ irq_handler:
     msr   daifset, #2
     msr   daifclr, #1
 
-    mrs     x28, ttbr0_el1
-    mrs     x27, ttbr1_el1
-    msr     ttbr0_el1, x27
-
     // if coming from level other than EL0 keep the current stack
     mrs     x27, spsr_el1
     and     x27, x27, #7
     cmp     x27, #0
-    bne     keep_current_stack_irq
+    bne     keep_current_stack_irq_handler
     
     mrs     x27, mpidr_el1
     and     x27, x27, #0x3
@@ -288,42 +282,32 @@ set_irq_stack_core3:
     ldr     x27, =__EL1_stack_core3
 set_chosen_stack:
     mov     sp, x27
-keep_current_stack_irq:
-    // save link and frame pointers
-    stp     x29, x30, [sp, #-16]!
+keep_current_stack_irq_handler:
+    mrs     x28, ttbr0_el1
+    mrs     x27, ttbr1_el1
+    msr     ttbr0_el1, x27
+
     // save ttbr0
     str     x28, [sp, #-16]!
+    // save link register and stack pointer
+    stp     x29, x30, [sp, #-16]!
     
     mrs     x27, mpidr_el1
     and     x27, x27, #0x3
     mov   x28, #INTERRUPT_OLDAREA
     mov     x26, #CORE_OFFSET
     madd   x28, x26, x27, x28
-    mov     x26, x29
-    mov     x27, x30
     bl    STST_asm
-
-    /* save register values on the stack */
-    bl    pushRegisters
 
     // call c handler.
     bl    c_irq_handler
+    /* The scheduler should manage returning */
+    b hang
 
-    /* Ideally the scheduler should manage returning */
-    bl    popRegisters
-    // restore ttbr0
-    ldr   x28, [sp], #16
-    ldp   x29, x30, [sp], #16
-    msr   ttbr0_el1, x28
-    eret
 
 abort_handler:
     msr   daifset, #2
     msr   daifclr, #1
-
-    mrs     x28, ttbr0_el1
-    mrs     x27, ttbr1_el1
-    msr     ttbr0_el1, x27
 
     // if coming from level other than EL0 keep the current stack
     mrs     x27, spsr_el1
@@ -358,6 +342,9 @@ set_abt_stack_core3:
 set_chosen_abt_stack:
     mov     sp, x27
 keep_current_stack_abort:
+    mrs     x28, ttbr0_el1
+    mrs     x27, ttbr1_el1
+    msr     ttbr0_el1, x27
     // save link and frame pointers
     stp     x29, x30, [sp, #-16]!
     // save ttbr0
@@ -369,20 +356,10 @@ keep_current_stack_abort:
     mov     x27, x30
     bl    STST_asm
 
-    /* save register values on the stack */
-    bl    pushRegisters
-
     // call c handler.
     bl    c_abort_handler
+    b hang
 
-    /* Ideally the scheduler should manage returning */
-    bl    popRegisters
-    // restore ttbr0
-    ldr   x28, [sp], #16
-    ldp   x29, x30, [sp], #16
-    msr   ttbr0_el1, x28
-    //msr   daifclr, #2
-    eret
 
 .balign 4
 start_idle_core_spin:

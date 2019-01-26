@@ -73,7 +73,7 @@ void c_fiq_handler() {
     }
 }
 
-uint32_t c_swi_handler(uint32_t code, uint32_t *registers) {
+void c_swi_handler(uint32_t code, uint32_t *registers) {
     uint64_t handler_present, stack_pointer;
     void (*synchronous_handler)(unsigned int, unsigned int, unsigned int, unsigned int);
     uint32_t core_id;
@@ -87,12 +87,12 @@ uint32_t c_swi_handler(uint32_t code, uint32_t *registers) {
         synchronous_handler(code, registers[0], registers[1], registers[2]);
     }
 
-    return 0;
+    /* If there is no user-defined handler simply start again the last process */
+    LDST((void*)(SYNCHRONOUS_OLDAREA+CORE_OFFSET*core_id));
 }
 
 void c_irq_handler() {
     static uint8_t  f_led           = 0;
-    uint8_t         f_app_interrupt = 1;
     uint32_t        tmp;
     static uint64_t lastBlink = 0;
     uint64_t        currentTime, handler_present, stack_pointer;
@@ -127,6 +127,7 @@ void c_irq_handler() {
                     /* Don't clear the timer interrupt on purpose; it's on the user to to that */
                     case TIMER:
                         interrupt_lines[IL_TIMER] = 1;
+                        //setTIMER(100);
                         break;
                     case TAPE:
                         manage_emulated_tape(next.code);
@@ -150,19 +151,20 @@ void c_irq_handler() {
             if (interrupt_lines[i] && !(interrupt_mask & (1 << i))) {
                 /* Until there are interrupt lines pending fire interrupts immediately */
                 setTimer(0);
-                f_app_interrupt = 1;
                 break;
             }
         }
     }
 
-    if (f_app_interrupt && handler_present != 0) {
+    if (handler_present != 0) {
         wait_lock         = 1;
         stack_pointer = *((uint64_t*)(KERNEL_CORE0_SP + 0x8*core_id));
         interrupt_handler = (void (*)(void *))handler_present;
         asm volatile("mov sp, %0" : : "r"(stack_pointer));
         interrupt_handler();
     }
+    /* If there is no user-defined handler simply start again the last process */
+    LDST((void*)(INTERRUPT_OLDAREA+CORE_OFFSET*core_id));
 }
 
 

@@ -234,36 +234,23 @@ vbarForMMU:
 .globl STST_asm
 STST_asm:
     /* General purpose registers */
-    str     x0, [x28]
-    str     x1, [x28, #8]!
-    str     x2, [x28, #8]!
-    str     x3, [x28, #8]!
-    str     x4, [x28, #8]!
-    str     x5, [x28, #8]!
-    str     x6, [x28, #8]!
-    str     x7, [x28, #8]!
-    str     x8, [x28, #8]!
-    str     x9, [x28, #8]!
-    str     x10, [x28, #8]!
-    str     x11, [x28, #8]!
-    str     x12, [x28, #8]!
-    str     x13, [x28, #8]!
-    str     x14, [x28, #8]!
-    str     x15, [x28, #8]!
-    str     x16, [x28, #8]!
-    str     x17, [x28, #8]!
-    str     x18, [x28, #8]!
-    str     x19, [x28, #8]!
-    str     x20, [x28, #8]!
-    str     x21, [x28, #8]!
-    str     x22, [x28, #8]!
-    str     x23, [x28, #8]!
-    str     x24, [x28, #8]!
-    str     x25, [x28, #8]!
-    str     x26, [x28, #8]!
-    str     x27, [x28, #8]!
-    str     x28, [x28, #8]!
+    stp     x0, x1, [x28]
+    stp     x2, x3, [x28, #16]!
+    stp     x4, x5, [x28, #16]!
+    stp     x6, x7, [x28, #16]!
+    stp     x8, x9, [x28, #16]!
+    stp     x10, x11, [x28, #16]!
+    stp     x12, x13, [x28, #16]!
+    stp     x14, x15, [x28, #16]!
+    stp     x16, x17, [x28, #16]!
+    stp     x18, x19, [x28, #16]!
+    stp     x20, x21, [x28, #16]!
+    stp     x22, x23, [x28, #16]!
+    stp     x24, x25, [x28, #16]!
+    stp     x26, x27, [x28, #16]!
+    str     x28, [x28, #16]!
 
+    ldp     x26, x27, [sp], #16
     str     x26, [x28, #8]! /* Frame Pointer */
     str     x27, [x28, #8]! /* Link Register */
 
@@ -275,13 +262,15 @@ STST_asm:
     b     finish_asm
 savesp_el1_asm:
     mov   x27, sp
+    add   x27, x27, #16
 finish_asm:
     str   x27, [x28, #8]!
     
     mrs   x27, elr_el1
     str   x27, [x28, #8]! // Note: the 16 immediate value refers to the previously saved pair
 
-    mrs   x27, ttbr0_el1
+    //mrs   x27, ttbr0_el1
+    ldr   x27, [sp], #16
     str   x27, [x28, #8]!
 
     mrs   x27, spsr_el1

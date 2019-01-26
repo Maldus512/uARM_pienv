@@ -189,7 +189,8 @@ void test2() {
 }
 
 void synchronous(unsigned int code, unsigned int x0, unsigned int x1, unsigned int x2) {
-    state_t *oldarea = (state_t *)SYNCHRONOUS_OLDAREA;
+    unsigned int core    = GETCOREID();
+    state_t *    oldarea = (state_t *)(SYNCHRONOUS_OLDAREA + CORE_OFFSET * core);
     print("system call!\n");
     LDST(oldarea);
 }
@@ -238,7 +239,7 @@ void interrupt() {
 }
 
 int main() {
-    *((uint8_t *)INTERRUPT_MASK)       = 0xFC;     //&= ~((1 << IL_TIMER) | (1 << IL_TAPE));
+    *((uint8_t *)INTERRUPT_MASK) = 0xFC;     //&= ~((1 << IL_TIMER) | (1 << IL_TAPE));
     *((uint64_t *)INTERRUPT_HANDLER)   = (uint64_t)&interrupt;
     *((uint64_t *)SYNCHRONOUS_HANDLER) = (uint64_t)&synchronous;
     *((uint64_t *)KERNEL_CORE0_SP)     = (uint64_t)0x1000000;

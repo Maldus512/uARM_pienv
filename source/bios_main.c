@@ -95,6 +95,7 @@ int __attribute__((weak)) main() {
     state.exception_link_register = (uint64_t)function1;
     state.stack_pointer           = (uint64_t)0x1000000 + 0x4000;
     state.status_register         = 0x305;
+    state.TTBR0                   = GETTTBR0();
     //setTimer(1000*1000);*/
     uart0_puts("Echoing everything\n");
     LDST(&state);

@@ -43,7 +43,7 @@ typedef union {
     /* Memory configuration is described from page D4-2149 of the ARM ARM */
     struct __attribute__((__packed__)) {
         uint64_t    EntryType : 2;     // @0-1		Always 1 for a block table
-        uint64_t    MemAttr : 3;       // @2-5
+        uint64_t    MemAttr : 3;       // @2-4
         uint64_t    NS : 1;
         APBITS_TYPE AP : 2;     // @6-7     Data Access permission bits
         enum {
