@@ -23,11 +23,6 @@ uint64_t readCounterCount(void) {
     return (val);
 }
 
-uint32_t readCounterValue(void) {
-    uint32_t val;
-    asm volatile("mrs %0, cntv_tval_el0" : "=r"(val));
-    return val;
-}
 
 void writeTimerValue(uint32_t val) {
     asm volatile("msr cntv_tval_el0, %0" ::"r"(val));

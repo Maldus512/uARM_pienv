@@ -232,6 +232,10 @@ keep_current_stack_swi:
 
 fiq_handler:
     msr   daifset, #3
+
+    mrs     x28, ttbr0_el1
+    mrs     x27, ttbr1_el1
+    msr     ttbr0_el1, x27
     /* save register values on the stack */
     stp   x29, x30, [sp, #-16]!
     bl    pushRegisters
@@ -242,6 +246,8 @@ fiq_handler:
     /* Ideally the scheduler should manage returning */
     bl    popRegisters
     ldp   x29, x30, [sp], #16
+
+    msr     ttbr0_el1, x28
 
     msr   daifclr, #1
     eret
@@ -352,8 +358,8 @@ keep_current_stack_abort:
     
     mov   x28, #EXCEPTION_OLDAREA
     orr   x28, x28, #ABORT_OFFSET
-    mov     x26, x29
-    mov     x27, x30
+    mov     x26, #CORE_OFFSET
+    madd   x28, x26, x27, x28
     bl    STST_asm
 
     // call c handler.

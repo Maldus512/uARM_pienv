@@ -62,6 +62,8 @@ void insertTimer(struct list_head *q, timer_t *p) {
     struct list_head *aux, *old;
     timer_t *         tmp;
 
+    q = (struct list_head*)((uint64_t)q & 0x0000ffffffffffff);
+
     old = q;
     aux = q->next;
     while (aux != q && aux != NULL) {
@@ -82,6 +84,7 @@ void insertTimer(struct list_head *q, timer_t *p) {
 
 // Rimuove il primo pcb dalla lista la cui list_head è puntata da q
 timer_t *removeTimer(struct list_head *q) {
+    q = (struct list_head*)((uint64_t)q & 0x0000ffffffffffff);
     if (q == NULL || list_empty(q))
         return NULL;
     timer_t *first;
@@ -93,6 +96,8 @@ timer_t *removeTimer(struct list_head *q) {
 void removeTimerType(struct list_head *q, TIMER_TYPE type, int code) {
     struct list_head *aux, *del;
     timer_t *         tmp;
+
+    q = (struct list_head*)((uint64_t)q & 0x0000ffffffffffff);
 
     if (q == NULL)
         return;
@@ -114,6 +119,7 @@ void removeTimerType(struct list_head *q, TIMER_TYPE type, int code) {
 
 // Restituisce il primo pcb dalla lista la cui list_head è puntata da q, senza rimuoverlo
 timer_t *headTimer(struct list_head *q) {
+    q = (struct list_head*)((uint64_t)q & 0x0000ffffffffffff);
     if (q == NULL || list_empty(q))
         return NULL;
     q = q->next;

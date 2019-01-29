@@ -11,7 +11,6 @@ void         delay_us(uint32_t delay);
 void         rawDelay();
 void         initArmTimer();
 uint64_t     readCounterCount(void);
-uint32_t     readCounterValue(void);
 void         disableCounter(void);
 unsigned int setTimer(unsigned int timer);
 uint64_t     get_us();

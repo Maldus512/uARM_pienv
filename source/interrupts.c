@@ -144,6 +144,8 @@ void c_irq_handler() {
 
             if (res == 0) {
                 setTimer(next.time - currentTime);
+            } else {
+                disableCounter();
             }
         }
 

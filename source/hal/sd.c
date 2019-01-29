@@ -339,6 +339,7 @@ int sd_init() {
     char string[128];
     unsigned long r;
     long cnt, ccs = 0;
+    // Setup the GPIOs that act as interface for the MMC
     // GPIO_CD
     setupGpio(47, GPIO_ALTFUNC3);
     setPullUpDown(47, GPIO_PULL_UP);
@@ -360,6 +361,7 @@ int sd_init() {
     setPullUpDown(52, GPIO_PULL_UP);
     setPullUpDown(53, GPIO_PULL_UP);
 
+    // Read host specification version number
     sd_hv = (*EMMC_SLOTISR_VER & HOST_SPEC_NUM) >> HOST_SPEC_NUM_SHIFT;
     LOG(INFO, "EMMC: GPIO set up");
     // Reset the card.
