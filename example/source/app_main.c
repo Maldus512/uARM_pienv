@@ -18,15 +18,16 @@
 #define DEVICE_READY 1
 #define DEVICE_BUSY 3
 #define CHAR_TRANSMIT 5
-#define READ_REGISTERS 6
 
 #define RESET 0
 #define ACK 1
-#define PRINT_CHAR 2
+#define READ_REGISTERS 2
+#define PRINT_CHAR 3
 
 #define RESET 0
 #define ACK 1
-#define READBLK 3
+#define SEEKCYL 3
+#define READBLK 4
 #define WRITEBLK 5
 
 #define CORE1_MAILBOX0 (*(uint32_t *)0x40000090)
@@ -128,14 +129,9 @@ static void uart_hex(unsigned int d) {
     }
 }
 
-void test1() {
-    int           numeri[100];
+void testTape() {
     unsigned char buffer[4096];
     tapereg_t     tape_reg = {0, READ_REGISTERS, 0, 0, 0};
-
-    int contatore = 0;
-    print("partenza 1\n");
-
     do {
         semaforo         = 0;
         tape_reg.command = READ_REGISTERS;
@@ -159,7 +155,59 @@ void test1() {
         print((char *)buffer);
         print("\n");
     } while (tape_reg.data1 != 0);
+}
 
+void testDisk() {
+    unsigned char buffer[4096];
+    diskreg_t     disk_reg = {0, READ_REGISTERS, 0, 0, 0};
+
+    semaforo         = 0;
+    disk_reg.command = READ_REGISTERS;
+    disk_reg.mailbox = 0;
+    CORE0_MAILBOX0   = (((uint32_t)(uint64_t)&disk_reg) & ~0xF) | 0x8;
+    while (disk_reg.mailbox == 0)
+        nop();
+
+    if (disk_reg.status == DEVICE_NOT_INSTALLED) {
+        print("disco non trovato");
+    }
+
+    disk_reg.command = SEEKCYL | (1 << 16);
+    semaforo         = 0;
+    CORE0_MAILBOX0   = (((uint32_t)(uint64_t)&disk_reg) & ~0xF) | 0x8;
+    while (semaforo == 0)
+        ;
+
+    disk_reg.data0   = (unsigned int)(unsigned long)buffer;
+    disk_reg.command = READBLK | (1 << 8);
+    semaforo         = 0;
+    CORE0_MAILBOX0   = (((uint32_t)(uint64_t)&disk_reg) & ~0xF) | 0x8;
+    while (semaforo == 0)
+        ;
+
+    print("\n\nletto disco: ");
+    print((char *)buffer);
+    print("\n");
+
+    buffer[0] = 'M';
+
+    disk_reg.data0   = (unsigned int)(unsigned long)buffer;
+    disk_reg.command = WRITEBLK | (1 << 8);
+    semaforo         = 0;
+    CORE0_MAILBOX0   = (((uint32_t)(uint64_t)&disk_reg) & ~0xF) | 0x8;
+    while (semaforo == 0)
+        ;
+
+    print("scritto disco\n");
+}
+
+void test1() {
+    int numeri[100];
+    int contatore = 0;
+    print("partenza 1\n");
+
+    testDisk();
+    testTape();
 
     while (1) {
         contatore         = (contatore + 1) % 100;
@@ -218,7 +266,7 @@ void interrupt() {
             }
         }
 
-        if (interrupt_lines[IL_TAPE]) {
+        if (interrupt_lines[IL_TAPE] || interrupt_lines[IL_DISK]) {
             semaforo = 1;
 
             CORE0_MAILBOX0 = (((uint32_t)(uint64_t)&tape_reg) & ~0xF) | 0x4;
@@ -239,7 +287,7 @@ void interrupt() {
 }
 
 int main() {
-    *((uint8_t *)INTERRUPT_MASK) = 0xFC;     //&= ~((1 << IL_TIMER) | (1 << IL_TAPE));
+    *((uint8_t *)INTERRUPT_MASK)       = 0xFA;     //&= ~((1 << IL_TIMER) | (1 << IL_TAPE));
     *((uint64_t *)INTERRUPT_HANDLER)   = (uint64_t)&interrupt;
     *((uint64_t *)SYNCHRONOUS_HANDLER) = (uint64_t)&synchronous;
     *((uint64_t *)KERNEL_CORE0_SP)     = (uint64_t)0x1000000;

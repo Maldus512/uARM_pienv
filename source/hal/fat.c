@@ -2,10 +2,12 @@
 #include "uart.h"
 #include "utils.h"
 
-//unsigned int FAT32[0x200000];
+// TODO: increase this if necessary
+#define CACHEDFATSIZE (512 / 4)
 
 static unsigned int partitionlba          = 0;
 static unsigned int root_directory_sector = 0;
+static unsigned int bytes_per_sector;
 
 // the BIOS Parameter Block (in Volume Boot Record)
 // FAT32 boot record information
@@ -48,6 +50,8 @@ typedef struct {
 
 unsigned char bios_partition_block[512];
 unsigned char root_dir[512 * 4];
+unsigned int  cachedFAT[CACHEDFATSIZE];
+unsigned int  last_entry_sector_offset = 0;
 
 static inline unsigned int get_lba_address(unsigned int cluster) {
     bpb_t *bpb = (bpb_t *)bios_partition_block;
@@ -99,6 +103,14 @@ int fat_getpartition(void) {
     // add partition LBA
     root_directory_sector += partitionlba;
 
+    bytes_per_sector = bpb->bps0 + (bpb->bps1 << 8);
+
+    if (bytes_per_sector != 512) {
+        // TODO: support other sizes
+        LOG(ERROR, "Wrong bytes per sector number");
+        return 0;
+    }
+
     // dump important properties
     strcpy(string, "FAT Bytes per Sector: ");
     itoa(bpb->bps0 + (bpb->bps1 << 8), &string[strlen(string)], 10);
@@ -119,11 +131,27 @@ int fat_getpartition(void) {
     itoa(root_directory_sector, &string[strlen(string)], 10);
     LOG(INFO, string);
 
-    //sd_transferblock(partitionlba + bpb->rsc, (unsigned char *)FAT32, bpb->spf32, SD_READBLOCK);
+    sd_transferblock(partitionlba + bpb->rsc, (unsigned char *)cachedFAT, (CACHEDFATSIZE * 4) / bytes_per_sector,
+                     SD_READBLOCK);
     return 1;
 }
 
 unsigned int fat_get_table_entry(unsigned int index) {
+    bpb_t *       bpb                 = (bpb_t *)bios_partition_block;
+    unsigned long entry_sector_offset = (index * 4) / bytes_per_sector;
+    unsigned long cached_blocks       = (CACHEDFATSIZE * 4) / bytes_per_sector;
+
+    // Keep a cached FAT table to avoid reading the SD multiple times for every file
+    if (entry_sector_offset < last_entry_sector_offset ||
+        entry_sector_offset >= last_entry_sector_offset + cached_blocks) {
+        sd_transferblock(partitionlba + bpb->rsc + entry_sector_offset, (unsigned char *)cachedFAT,
+                         (CACHEDFATSIZE * 4) / bytes_per_sector, SD_READBLOCK);
+    }
+    last_entry_sector_offset = entry_sector_offset;
+    return cachedFAT[index % CACHEDFATSIZE];
+}
+
+unsigned int raw_fat_get_table_entry(unsigned int index) {
     bpb_t *      bpb = (bpb_t *)bios_partition_block;
     unsigned int buffer[512 / 4];
     unsigned int entry_sector_offset = (index * 4) / 512;
@@ -143,7 +171,7 @@ unsigned int fat_getcluster(char *fn) {
     // This is only for FAT16
     s = (bpb->nr0 + (bpb->nr1 << 8)) * sizeof(fatdir_t);
     // load the root directory
-    if (sd_transferblock(root_directory_sector, (unsigned char *)dir, s / 512 + 1, SD_READBLOCK)) {
+    if (sd_transferblock(root_directory_sector, (unsigned char *)dir, s / bytes_per_sector + 1, SD_READBLOCK)) {
         // iterate on each entry and check if it's the one we're looking for
         for (; dir->name[0] != 0; dir++) {
             // is it a valid entry?
@@ -186,7 +214,7 @@ void fat_listdirectory(void) {
 
     s *= sizeof(fatdir_t);
     // load the root directory
-    if (sd_transferblock(root_directory_sector, (unsigned char *)dir, s / 512 + 1, SD_READBLOCK)) {
+    if (sd_transferblock(root_directory_sector, (unsigned char *)dir, s / bytes_per_sector + 1, SD_READBLOCK)) {
         LOG(INFO, "Attrib\tCluster\tSize\t\tName");
         // iterate on each entry and print out
         for (; dir->name[0] != 0; dir++) {
@@ -228,7 +256,7 @@ void fat_listdirectory(void) {
 int fat_transferfile(unsigned int cluster, unsigned char *data, unsigned int num, readwrite_t readwrite) {
     // BIOS Parameter Block
     bpb_t *bpb = (bpb_t *)bios_partition_block;
-    //unsigned int *  fat32 = (unsigned int *)FAT32;
+    // unsigned int *  fat32 = (unsigned int *)FAT32;
     // Data pointers
     unsigned int data_sec, counter;
     int          read = 0, tmp;
@@ -251,8 +279,7 @@ int fat_transferfile(unsigned int cluster, unsigned char *data, unsigned int num
             read += tmp;
         } else {
             // get the next cluster in chain
-            //cluster = fat32[cluster];
-            cluster = fat_get_table_entry(cluster);
+            cluster     = fat_get_table_entry(cluster);
         }
         counter++;
     }
@@ -268,9 +295,9 @@ int fat_readfile(unsigned int cluster, unsigned char *data, unsigned int seek, u
     unsigned int  cluster_num, start, index, effectiveLen;
     int           size;
 
-    cluster_num = seek / (512 * bpb->spc);
-    start = seek % (512 * bpb->spc);
-    index = 0;
+    cluster_num = seek / (bytes_per_sector * bpb->spc);
+    start       = seek % (bytes_per_sector * bpb->spc);
+    index       = 0;
 
     while (length > 0) {
         size = fat_transferfile(cluster, buffer, cluster_num, SD_READBLOCK);
@@ -278,19 +305,41 @@ int fat_readfile(unsigned int cluster, unsigned char *data, unsigned int seek, u
             LOG(WARN, "Empty read");
             return index;
         }
-        /*LOG(INFO, "reading in process");
-        itoa(size, string, 10);
-        LOG(INFO, string);*/
         effectiveLen = size < length ? size : length;
         memcpy(&data[index], &buffer[start], effectiveLen);
         start = 0;
         index += effectiveLen;
         length -= effectiveLen;
         cluster_num++;
-        /*itoa(index, string, 10);
-        LOG(INFO, string);
-        itoa(length, string, 10);
-        LOG(INFO, string);*/
+    }
+    return index;
+}
+
+int fat_writefile(unsigned int cluster, unsigned char *data, unsigned int seek, unsigned int length) {
+    bpb_t *       bpb = (bpb_t *)bios_partition_block;
+    unsigned char buffer[4096];
+    unsigned int  cluster_num, start, index, effectiveLen;
+    int           size;
+
+    cluster_num = seek / (bytes_per_sector * bpb->spc);
+    start       = seek % (bytes_per_sector * bpb->spc);
+    index       = 0;
+
+    while (length > 0) {
+        // Read the original content
+        size = fat_transferfile(cluster, buffer, cluster_num, SD_READBLOCK);
+        if (size <= 0) {
+            LOG(WARN, "Empty read");
+            return index;
+        }
+        effectiveLen = size < length ? size : length;
+        // Modify and then write again the changed content
+        memcpy(&buffer[start], &data[index], effectiveLen);
+        fat_transferfile(cluster, buffer, cluster_num, SD_WRITEBLOCK);
+        start = 0;
+        index += effectiveLen;
+        length -= effectiveLen;
+        cluster_num++;
     }
     return index;
 }

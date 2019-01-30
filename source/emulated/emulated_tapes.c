@@ -190,8 +190,8 @@ void emulated_tape_mailbox(int i, tapereg_t *registers) {
                 emulated_tapes[i].internal_registers.status  = DEVICE_READY;
                 intline                                      = interrupt_lines[IL_TAPE] & ((uint8_t)(~(1 << i)));
                 interrupt_lines[IL_TAPE]                     = intline;
-                memcpy(registers, &emulated_tapes[i].internal_registers, sizeof(tapereg_t));
             }
+            memcpy(registers, &emulated_tapes[i].internal_registers, sizeof(tapereg_t));
             break;
 
         case READ_REGISTERS:
@@ -227,6 +227,7 @@ void emulated_tape_mailbox(int i, tapereg_t *registers) {
                 if (emulated_tapes[i].internal_registers.data1 == EOT) {
                     emulated_tapes[i].internal_registers.status = READ_ERROR;
                     registers->mailbox                          = 2;
+                    memcpy(registers, &emulated_tapes[i].internal_registers, sizeof(tapereg_t));
                 } else {
                     emulated_tapes[i].internal_registers.command = READBLK;
                     emulated_tapes[i].internal_registers.data0   = registers->data0;

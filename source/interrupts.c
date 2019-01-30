@@ -10,6 +10,7 @@
 #include "mmu.h"
 #include "emulated_printers.h"
 #include "emulated_tapes.h"
+#include "emulated_disks.h"
 #include "emulated_timers.h"
 
 uint64_t f_emulated_timer_interrupt = 0;
@@ -60,6 +61,9 @@ void c_fiq_handler() {
         device_num   = data & 0x00000003;
 
         switch (device_class >> 2) {
+            case DEVICE_CLASS_DISK:
+                emulated_disk_mailbox(device_num, (diskreg_t *) address);
+                break;
             case DEVICE_CLASS_PRINTER:
                 emulated_printer_mailbox(device_num, (printreg_t *)address);
                 break;
@@ -136,6 +140,7 @@ void c_irq_handler() {
                         manage_emulated_printer(next.code);
                         break;
                     case DISK:
+                        manage_emulated_disk(next.code);
                         break;
                     case UNALLOCATED:
                         break;

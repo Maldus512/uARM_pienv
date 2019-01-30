@@ -19,10 +19,8 @@
 
 #define RESET                   0
 #define ACK                     1
-#define PRINT_CHAR              2
-#define TRANSMIT_CHAR           2
-#define RECEIVE_CHAR            2
-#define READ_REGISTERS          6
+#define READ_REGISTERS          2
+#define PRINT_CHAR              3
 
 typedef struct {
     unsigned int executing_command;

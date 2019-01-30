@@ -13,6 +13,7 @@
 #include "fat.h"
 #include "emulated_printers.h"
 #include "emulated_tapes.h"
+#include "emulated_disks.h"
 #include "utils.h"
 
 extern unsigned char *_kernel_memory_end;
@@ -38,6 +39,7 @@ void initSystem() {
         fat_getpartition();
         fat_listdirectory();
         init_emulated_tapes();
+        init_emulated_disks();
     }
     init_emulated_printers();
     init_emulated_timers();

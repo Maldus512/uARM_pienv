@@ -11,10 +11,10 @@
 
 #define RESET   0
 #define ACK     1
-#define SKIPBLK 2
-#define READBLK 3
-#define BACKBLK 4
-#define READ_REGISTERS 6
+#define READ_REGISTERS 2
+#define SKIPBLK 3
+#define READBLK 4
+#define BACKBLK 5
 
 #define DEVICE_NOT_INSTALLED    0
 #define DEVICE_READY            1

@@ -20,8 +20,8 @@
 #define DEVICE_CLASS_DISK       2
 
 #define IL_LINES            4
-#define IL_DISK             3
-#define IL_PRINTER         2
+#define IL_PRINTER         3
+#define IL_DISK             2
 #define IL_TAPE             1
 #define IL_TIMER            0
 
