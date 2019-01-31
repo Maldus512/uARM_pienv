@@ -13,8 +13,20 @@
 #include "emulated_disks.h"
 #include "emulated_timers.h"
 
-uint64_t f_emulated_timer_interrupt = 0;
-uint64_t wait_lock                  = 0;
+uint64_t wait_lock = 0;
+
+int pending_emulated_interrupt() {
+    uint8_t *interrupt_lines = (uint8_t *)INTERRUPT_LINES;
+    uint8_t  interrupt_mask  = *((uint8_t *)INTERRUPT_MASK);
+    int      i;
+    for (i = 0; i < IL_LINES; i++) {
+        if (interrupt_lines[i] && !(interrupt_mask & (1 << i))) {
+            /* Until there are interrupt lines pending fire interrupts immediately */
+            return 1;
+        }
+    }
+    return 0;
+}
 
 void setTIMER(uint64_t microseconds) {
     uint8_t *interrupt_lines = (uint8_t *)INTERRUPT_LINES;
@@ -26,10 +38,12 @@ void setTIMER(uint64_t microseconds) {
 
     add_timer(timer, TIMER, 0);
     if (next_timer(&next) == 0) {
-        if (currentTime < next.time)
+        // Only set the next timer if there are no pending interrupt lines
+        if (currentTime < next.time && !pending_emulated_interrupt()) {
             setTimer(next.time - currentTime);
-        else
+        } else {
             setTimer(0);
+        }
     }
 }
 
@@ -62,7 +76,7 @@ void c_fiq_handler() {
 
         switch (device_class >> 2) {
             case DEVICE_CLASS_DISK:
-                emulated_disk_mailbox(device_num, (diskreg_t *) address);
+                emulated_disk_mailbox(device_num, (diskreg_t *)address);
                 break;
             case DEVICE_CLASS_PRINTER:
                 emulated_printer_mailbox(device_num, (printreg_t *)address);
@@ -84,32 +98,31 @@ void c_swi_handler(uint32_t code, uint32_t *registers) {
     handler_present = *((uint64_t *)SYNCHRONOUS_HANDLER);
 
     if (handler_present != 0) {
-        core_id = GETCOREID();
-        stack_pointer = *((uint64_t*)(KERNEL_CORE0_SP + 0x8*core_id));
+        core_id             = GETCOREID();
+        stack_pointer       = *((uint64_t *)(KERNEL_CORE0_SP + 0x8 * core_id));
         synchronous_handler = (void (*)(unsigned int, unsigned int, unsigned int, unsigned int))handler_present;
         asm volatile("mov sp, %0" : : "r"(stack_pointer));
         synchronous_handler(code, registers[0], registers[1], registers[2]);
     }
 
     /* If there is no user-defined handler simply start again the last process */
-    LDST((void*)(SYNCHRONOUS_OLDAREA+CORE_OFFSET*core_id));
+    LDST((void *)(SYNCHRONOUS_OLDAREA + CORE_OFFSET * core_id));
 }
 
 void c_irq_handler() {
-    static uint8_t  f_led           = 0;
+    static uint8_t  f_led = 0;
     uint32_t        tmp;
     static uint64_t lastBlink = 0;
     uint64_t        currentTime, handler_present, stack_pointer;
-    int             i, res;
+    int             res;
     void (*interrupt_handler)();
     uint8_t *    interrupt_lines = (uint8_t *)INTERRUPT_LINES;
-    uint8_t      interrupt_mask  = *((uint8_t *)INTERRUPT_MASK);
     unsigned int core_id;
     timer_t      next;
 
     handler_present = *((uint64_t *)INTERRUPT_HANDLER);
-    currentTime = get_us();
-    core_id = GETCOREID();
+    currentTime     = get_us();
+    core_id         = GETCOREID();
 
     /* Core 0 manages all interrupts */
     if (core_id == 0) {
@@ -131,7 +144,7 @@ void c_irq_handler() {
                     /* Don't clear the timer interrupt on purpose; it's on the user to to that */
                     case TIMER:
                         interrupt_lines[IL_TIMER] = 1;
-                        //setTIMER(100);
+                        // setTIMER(100);
                         break;
                     case TAPE:
                         manage_emulated_tape(next.code);
@@ -154,35 +167,32 @@ void c_irq_handler() {
             }
         }
 
-        for (i = 0; i < IL_LINES; i++) {
-            if (interrupt_lines[i] && !(interrupt_mask & (1 << i))) {
-                /* Until there are interrupt lines pending fire interrupts immediately */
-                setTimer(0);
-                break;
-            }
+        if (pending_emulated_interrupt()) {
+            /* Until there are interrupt lines pending fire interrupts immediately */
+            setTimer(0);
         }
     }
 
     if (handler_present != 0) {
         wait_lock         = 1;
-        stack_pointer = *((uint64_t*)(KERNEL_CORE0_SP + 0x8*core_id));
+        stack_pointer     = *((uint64_t *)(KERNEL_CORE0_SP + 0x8 * core_id));
         interrupt_handler = (void (*)(void *))handler_present;
         asm volatile("mov sp, %0" : : "r"(stack_pointer));
         interrupt_handler();
     }
     /* If there is no user-defined handler simply start again the last process */
-    LDST((void*)(INTERRUPT_OLDAREA+CORE_OFFSET*core_id));
+    LDST((void *)(INTERRUPT_OLDAREA + CORE_OFFSET * core_id));
 }
 
 
 void c_abort_handler(uint64_t exception_code, uint64_t iss) {
     void (*interrupt_handler)();
     uint64_t handler_present, stack_pointer;
-    handler_present = *((uint64_t *)ABORT_HANDLER);
+    handler_present  = *((uint64_t *)ABORT_HANDLER);
     uint32_t core_id = GETCOREID();
 
     if (handler_present) {
-        stack_pointer = *((uint64_t*)(KERNEL_CORE0_SP + 0x8*core_id));
+        stack_pointer     = *((uint64_t *)(KERNEL_CORE0_SP + 0x8 * core_id));
         interrupt_handler = (void (*)(void *))handler_present;
         asm volatile("mov sp, %0" : : "r"(stack_pointer));
         interrupt_handler();

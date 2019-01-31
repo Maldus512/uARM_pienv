@@ -206,8 +206,8 @@ void test1() {
     int contatore = 0;
     print("partenza 1\n");
 
-    testDisk();
     testTape();
+    testDisk();
 
     while (1) {
         contatore         = (contatore + 1) % 100;
@@ -270,9 +270,9 @@ void interrupt() {
         if (interrupt_lines[IL_DISK]) {
             semaforo = 1;
 
-            /*CORE0_MAILBOX0 = (((uint32_t)(uint64_t)&disk_reg) & ~0xF) | 0x8;
+            CORE0_MAILBOX0 = (((uint32_t)(uint64_t)&disk_reg) & ~0xF) | 0x8;
             while (disk_reg.mailbox == 0)
-                nop();*/
+                nop();
         } else if (interrupt_lines[IL_TAPE]) {
             semaforo = 1;
 
