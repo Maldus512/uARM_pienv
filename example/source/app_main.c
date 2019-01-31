@@ -170,6 +170,7 @@ void testDisk() {
 
     if (disk_reg.status == DEVICE_NOT_INSTALLED) {
         print("disco non trovato");
+        return;
     }
 
     disk_reg.command = SEEKCYL | (1 << 16);

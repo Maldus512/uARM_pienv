@@ -9,9 +9,6 @@
 #define UART1_BASE (IO_BASE + 0x00215000)
 #define UART0_BASE (IO_BASE + 0x00201000)
 
-// TODO: mini uart register is not regular, having two 3-bit field at the beginning (shared with SPI)
-//      does it make sense to have a structure or is it better to keep single defines?
-
 #define AUX_IRQ (*(volatile uint32_t *)(UART1_BASE + 0x00))     // auxiliary interrupts
 #define AUX_EN (*(volatile uint32_t *)(UART1_BASE + 0x04))      // auxiliary enables
 
@@ -65,12 +62,12 @@ typedef enum {
 #endif
 
 
-void initUart1();
+void init_uart1();
 void uart1_puts(char *s);
 void uart1_putc(char c);
 char uart1_getc();
 
-void initUart0();
+void init_uart0();
 void uart0_puts(char *s);
 void uart0_putc(char c);
 char uart0_getc();

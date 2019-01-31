@@ -30,8 +30,8 @@ void initSystem() {
         interrupt_lines[i] = 0;
     }
 
-    initUart1();
-    initUart0();
+    init_uart1();
+    init_uart0();
     startUart0Int();
     initIPI();
     lfb_init();
@@ -55,22 +55,14 @@ void initSystem() {
     uart0_puts("************************************\n");
     uart0_puts("\n");
 
-    lfb_print(1, 1, "*******************************");
-    lfb_print(1, 2, "*      MaldOS running...      *");
-    lfb_print(1, 3, "*******************************");
-
     initArmTimer();
-    // setTimer(1);
 }
 
 
 void function1() {
     uart0_puts("ciao");
     while (1) {
-        // initUart1();
-        // uart1_puts("ciao uart1\n");
         delay_us(500 * 1000);
-        // initUart0();
         uart0_puts("ciao uart0\n");
         delay_us(500 * 1000);
     }

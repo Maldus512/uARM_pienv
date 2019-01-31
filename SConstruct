@@ -42,7 +42,7 @@ DEBUGGER = None
 QEMU = None
 BUILD = "build"
 FLAGS = [
-    '-Wall', '-ffreestanding', '-nostdlib', '-nostartfiles', '-O0', '-g',
+    '-Wall', '-ffreestanding', '-nostdlib', '-nostartfiles', '-O0', '-g', '-fPIE', 
     '-march=armv8.1-a', '-mtune=cortex-a53'
 ],
 
@@ -94,7 +94,7 @@ env_options = {
     "CCFLAGS":
     FLAGS,
     "LINKFLAGS": [
-        '-nostdlib', '-nostartfiles', '-r', '-T{}'.format(LDSCRIPT),
+        '-nostdlib', '-nostartfiles', '-r', '-T{}'.format(LDSCRIPT), #'-pie',
         '-o{}'.format(HAL)
     ],
 }
@@ -116,9 +116,9 @@ env_options['LINKFLAGS'] = [
 ]
 
 if APP:
-    env.Command(ELF, HAL, '{}ld -nostdlib -nostartfiles -T{} -o{} {} {}'.format(TOOLCHAIN, LDSCRIPT, ELF, HAL, APP))
+    env.Command(ELF, HAL, '{}ld -nostdlib -nostartfiles -pie -T{} -o{} {} {}'.format(TOOLCHAIN, LDSCRIPT, ELF, HAL, APP))
 else:
-    env.Command(ELF, HAL, '{}ld -nostdlib -nostartfiles -T{} -o{} {}'.format(TOOLCHAIN, LDSCRIPT, ELF, HAL))
+    env.Command(ELF, HAL, '{}ld -nostdlib -nostartfiles -pie -T{} -o{} {}'.format(TOOLCHAIN, LDSCRIPT, ELF, HAL))
 
 kernel = env.Command(
     KERNEL, ELF, '{}objcopy {} -O binary {}'.format(TOOLCHAIN, ELF, KERNEL))

@@ -127,10 +127,10 @@ void mmu_init(void) {
            (1 << 24) |     // clear E0E
            (1 << 23) |     // Clear SPAN (no Privileged Access Never on exceptions)
            (1 << 19) |     // clear WXN
-           (1 << 12) |     // clear I, no instruction cache TODO: remove
+           (1 << 12) |     // clear I, no instruction cache 
            (1 << 4) |      // clear SA0
            (1 << 3) |      // clear SA
-           (1 << 2) |      // clear C, no cache at all TODO: Remove
+           (1 << 2) |      // clear C, no cache at all 
            (1 << 1));      // clear A, no aligment check
     r |= (1 << 0);         // set M, enable MMU
 

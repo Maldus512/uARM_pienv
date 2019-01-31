@@ -1,3 +1,27 @@
+/*
+ * Hardware Abstraction Layer for Raspberry Pi 3
+ *
+ * Copyright (C) 2018 Mattia Maldini
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
+/******************************************************************************
+ * This module contains a small FAT32 filesystem library
+ ******************************************************************************/
+
 #include "sd.h"
 #include "uart.h"
 #include "utils.h"
@@ -136,6 +160,12 @@ int fat_getpartition(void) {
     return 1;
 }
 
+/*
+ * This function returns the next cluster pointed by index in the file allocation
+ * table. I can't read the whole FAT in ram because it can get arbitrarily big,
+ * but if I read it every time bigger files take forever to access. I partially
+ * cache the table as a result
+ */
 unsigned int fat_get_table_entry(unsigned int index) {
     bpb_t *       bpb                 = (bpb_t *)bios_partition_block;
     unsigned long entry_sector_offset = (index * 4) / bytes_per_sector;
@@ -149,14 +179,6 @@ unsigned int fat_get_table_entry(unsigned int index) {
     }
     last_entry_sector_offset = entry_sector_offset;
     return cachedFAT[index % CACHEDFATSIZE];
-}
-
-unsigned int raw_fat_get_table_entry(unsigned int index) {
-    bpb_t *      bpb = (bpb_t *)bios_partition_block;
-    unsigned int buffer[512 / 4];
-    unsigned int entry_sector_offset = (index * 4) / 512;
-    sd_transferblock(partitionlba + bpb->rsc + entry_sector_offset, (unsigned char *)buffer, 1, SD_READBLOCK);
-    return buffer[index % (512 / 4)];
 }
 
 /**
@@ -289,6 +311,10 @@ int fat_transferfile(unsigned int cluster, unsigned char *data, unsigned int num
     return read;
 }
 
+/*
+ * Read a specified amount of bytes from a given offset in a file. Handles
+ * reading in clusters and returns only the requested data.
+ */
 int fat_readfile(unsigned int cluster, unsigned char *data, unsigned int seek, unsigned int length) {
     bpb_t *       bpb = (bpb_t *)bios_partition_block;
     unsigned char buffer[4096];
@@ -315,6 +341,10 @@ int fat_readfile(unsigned int cluster, unsigned char *data, unsigned int seek, u
     return index;
 }
 
+/*
+ * Writes a specified amount of bytes at a given offset in a file. Handles
+ * reading the file first and modifying only the needed data.
+ */
 int fat_writefile(unsigned int cluster, unsigned char *data, unsigned int seek, unsigned int length) {
     bpb_t *       bpb = (bpb_t *)bios_partition_block;
     unsigned char buffer[4096];

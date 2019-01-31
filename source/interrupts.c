@@ -15,6 +15,7 @@
 
 uint64_t wait_lock = 0;
 
+//TODO: clean up 
 int pending_emulated_interrupt() {
     uint8_t *interrupt_lines = (uint8_t *)INTERRUPT_LINES;
     uint8_t  interrupt_mask  = *((uint8_t *)INTERRUPT_MASK);

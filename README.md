@@ -81,9 +81,7 @@ A qemu-running kernel can be debugged using the options '-s' (run a gdb server a
 
 ## TODO
 
-- Properly implement emulated tapes and disks
-- Make some order around the various stack pointers
-- Decide a naming convention (probably underscore_separated_names)
+- registers x26, x27 and x28 are corrupted during interrupt handling. Avoid that or update the documentation accordingly
 
 ## Acknowledgements
 

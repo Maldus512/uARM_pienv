@@ -1,3 +1,27 @@
+/*
+ * Hardware Abstraction Layer for Raspberry Pi 3
+ *
+ * Copyright (C) 2018 Mattia Maldini
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
+/******************************************************************************
+ * This module contains functions to use the two serial interfaces on the BCM2837
+ ******************************************************************************/
+
 #include "gpio.h"
 #include "uart.h"
 #include "mailbox.h"
@@ -5,15 +29,14 @@
 #include "utils.h"
 #include "timers.h"
 
-volatile int  rx_tail = 0;
-volatile int  rx_head = 0;
-volatile char RxBuffer[MU_RX_BUFFER_SIZE];
-
 /**********************
  * Mini UART (UART 1) *
  **********************/
 
-void initUart1(void) {
+/*
+ * Initializes mini UART (aka UART1)
+ */
+void init_uart1(void) {
     // IRQ_CONTROLLER->Disable_IRQs_1 = 1 << 29;
 
     AUX_EN |= 1; /* Enable mini-uart */
@@ -39,6 +62,9 @@ void initUart1(void) {
     IRQ_CONTROLLER->Enable_IRQs_1 |= 1<<29;
 }
 
+/*
+ * Receives 1 character from UART1 (blocking)
+ */
 char uart1_getc() {
     char r;
     /* wait until something is in the buffer */
@@ -51,7 +77,9 @@ char uart1_getc() {
     return r == '\r' ? '\n' : r;
 }
 
-
+/*
+ * Sends 1 character to UART1
+ */
 void uart1_send(char c) {
     while (!(UART1->LSR & 0x20))
         nop();
@@ -59,6 +87,9 @@ void uart1_send(char c) {
     UART1->IO = c;
 }
 
+/*
+ * Wrapper around uart1_send, adds a \r character for every \n
+ */
 void uart1_putc(char c) {
     if (c == '\n') {
         uart1_send('\r');
@@ -66,6 +97,9 @@ void uart1_putc(char c) {
     uart1_send(c);
 }
 
+/*
+ * Writes a null terminated string to UART1
+ */
 void uart1_puts(char *s) {
     int i = 0;
     while (*s) {
@@ -78,7 +112,10 @@ void uart1_puts(char *s) {
  *  UART 0  *
  ************/
 
-void initUart0() {
+/*
+ * Initializes UART0
+ */
+void init_uart0() {
     /* initialize UART */
     UART0->CTRL = 0;
 
@@ -99,6 +136,9 @@ void initUart0() {
     UART0->CTRL      = 0x301;
 }
 
+/*
+ * Sends 1 character to UART0
+ */
 void uart0_putc(char c) {
     /* wait until we can send */
     do {
@@ -108,6 +148,9 @@ void uart0_putc(char c) {
     UART0->DATA = c;
 }
 
+/*
+ * Receives 1 character from UART0 (blocking)
+ */
 char uart0_getc() {
     char r;
     /* wait until something is in the buffer */
@@ -120,24 +163,15 @@ char uart0_getc() {
     return r == '\r' ? '\n' : r;
 }
 
+/*
+ * Writes a null terminated string to UART0
+ */
 void uart0_puts(char *s) {
     while (*s) {
         /* convert newline to carrige return + newline */
         if (*s == '\n')
             uart0_putc('\r');
         uart0_putc(*s++);
-    }
-}
-
-void uart_hex(unsigned int d) {
-    unsigned int n;
-    int          c;
-    for (c = 28; c >= 0; c -= 4) {
-        // get highest tetrad
-        n = (d >> c) & 0xF;
-        // 0-9 => '0'-'9', 10-15 => 'A'-'F'
-        n += n > 9 ? 0x37 : 0x30;
-        uart0_putc(n);
     }
 }
 
@@ -165,36 +199,6 @@ void hexstring(unsigned int d) {
     hexstrings(d);
     uart0_putc(0x0D);
     uart0_putc(0x0A);
-}
-
-void uart_dump(void *ptr) {
-    unsigned long a, b, d;
-    unsigned char c;
-    for (a = (unsigned long)ptr; a < (unsigned long)ptr + 1024; a += 16) {
-        hexstrings(a);
-        uart0_puts(": ");
-        for (b = 0; b < 16; b++) {
-            c = *((unsigned char *)(a + b));
-            d = (unsigned int)c;
-            d >>= 4;
-            d &= 0xF;
-            d += d > 9 ? 0x37 : 0x30;
-            uart0_putc(d);
-            d = (unsigned int)c;
-            d &= 0xF;
-            d += d > 9 ? 0x37 : 0x30;
-            uart0_putc(d);
-            uart0_putc(' ');
-            if (b % 4 == 3)
-                uart0_putc(' ');
-        }
-        for (b = 0; b < 16; b++) {
-            c = *((unsigned char *)(a + b));
-            uart0_putc(c < 32 || c >= 127 ? '.' : c);
-        }
-        uart0_putc('\r');
-        uart0_putc('\n');
-    }
 }
 
 void startUart0Int() {

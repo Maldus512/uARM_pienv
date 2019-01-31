@@ -1,3 +1,27 @@
+/*
+ * Hardware Abstraction Layer for Raspberry Pi 3
+ *
+ * Copyright (C) 2018 Mattia Maldini
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
+/******************************************************************************
+ * This module contains framebuffer helper functions
+ ******************************************************************************/
+
 #include "uart.h"
 #include "utils.h"
 #include "mailbox.h"
@@ -20,6 +44,9 @@ extern volatile unsigned char _binary_font_psf_start;
 unsigned int   width, height, pitch;
 unsigned char *lfb;
 
+/*
+ * Draws an horizontal line at height y
+ */
 void horizontal_line(int y) {
     int offs = (y * pitch);
     int i;
@@ -29,6 +56,9 @@ void horizontal_line(int y) {
     }
 }
 
+/*
+ * Draws a vertical line at position x
+ */
 void vertical_line(int x) {
     int offs = x * 4;
     int i;
@@ -39,19 +69,24 @@ void vertical_line(int x) {
     }
 }
 
+/*
+ * Draws a 4 window grid
+ */
 void terminal_grid() {
     horizontal_line(height / 2);
     vertical_line(width / 2);
 }
 
+/*
+ * Returns the three components of screen resolution: width, height and pitch
+ */
 void screen_resolution(int *w, int *h, int *p) {
     *w = width;
     *h = height;
     *p = pitch;
 }
 
-
-/**
+/*
  * Set screen resolution to 1024x768
  */
 void lfb_init() {
@@ -107,7 +142,7 @@ void lfb_init() {
         pitch  = mbox[33];     // 5120
         lfb    = (void *)((unsigned long)mbox[28]);
         strcpy(string, "Framebuffer address: ");
-        itoa((long unsigned) lfb, &string[strlen(string)], 16);
+        itoa((long unsigned)lfb, &string[strlen(string)], 16);
         LOG(INFO, string);
         terminal_grid();
     } else {

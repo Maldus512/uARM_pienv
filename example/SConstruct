@@ -45,7 +45,7 @@ ELF = 'app.elf'
 BIN = 'app.bin'
 TOOLCHAIN = None
 BUILD = "build"
-FLAGS = ['-Wall', '-ffreestanding', '-nostdlib', '-nostartfiles', '-O0', '-g', '-march=armv8-a', '-mtune=cortex-a53'],
+FLAGS = ['-Wall', '-ffreestanding', '-nostdlib', '-nostartfiles', '-O0', '-g', '-march=armv8-a', '-mtune=cortex-a53', '-fPIE'],
 
 VariantDir(BUILD, "source", duplicate=0)
 
