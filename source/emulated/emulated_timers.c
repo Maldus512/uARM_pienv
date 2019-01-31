@@ -1,8 +1,3 @@
-#include "listx.h"
-#include "utils.h"
-#include "emulated_timers.h"
-#include "uart.h"
-
 /*  Copyright (C) 2015  Carlo Stomeo, Stefano Mazza, Alessandro Zini, Mattia Maldini
 
     This program is free software: you can redistribute it and/or modify
@@ -18,43 +13,52 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 
+#include "listx.h"
+#include "utils.h"
+#include "emulated_timers.h"
+#include "uart.h"
 
-struct list_head pendingTimers = LIST_HEAD_INIT(pendingTimers);
-struct list_head freeTimers    = LIST_HEAD_INIT(freeTimers);
+
+struct list_head pending_timers = LIST_HEAD_INIT(pending_timers);
+struct list_head free_timers    = LIST_HEAD_INIT(free_timers);
 
 
-// inizializza la lista pcbFree
+/* 
+ * Initializes the free_timers list
+ */
 void init_emulated_timers() {
-    static timer_t timer_array[MAX_TIMERS];
+    static timer_t timerarray[MAX_TIMERS];
     int            i;
     for (i = 0; i < MAX_TIMERS; i++) {
-        list_add_tail(&timer_array[i].list, &freeTimers);
+        list_add_tail(&timerarray[i].list, &free_timers);
     }
 }
 
-// Alloca un pcb dalla lista pcbFree
+/* 
+ * Allocates a timer struct from the free_timers list
+ */
 timer_t *allocTimer() {
-    if (list_empty(&freeTimers)) {
+    if (list_empty(&free_timers)) {
         LOG(ERROR, "Fatal: unable to allocate timer");
         return NULL;
     }
     else {
         timer_t *block;
-        block = container_of(freeTimers.next, timer_t, list);
-        list_del(freeTimers.next);
+        block = container_of(free_timers.next, timer_t, list);
+        list_del(free_timers.next);
         memset(block, 0, sizeof(block)); /*setta tutti i campi di pcb a 0 (NULL) */
         return (block);
     }
 }
 
+/* 
+ * Adds p to the list of free_timers
+ */
+void freeTimer(timer_t *p) { list_add_tail(&p->list, &free_timers); }
 
-// Aggiungi p alla lista di pcb liberi
-void freeTimer(timer_t *p) { list_add_tail(&p->list, &freeTimers); }
-
-
-/*PROCESS QUEUE MAINTENANCE*/
-
-// Inserisce p nella lista la cui list_head è q
+/* 
+ * Adds a new timer to the list pointed by q
+ */
 void insertTimer(struct list_head *q, timer_t *p) {
     if (q == NULL || p == NULL)
         return;
@@ -81,8 +85,9 @@ void insertTimer(struct list_head *q, timer_t *p) {
         list_add(&(p->list), old);
 }
 
-
-// Rimuove il primo pcb dalla lista la cui list_head è puntata da q
+/* 
+ * Removes the first timer from the list pointed by q
+ */
 timer_t *removeTimer(struct list_head *q) {
     q = (struct list_head*)((uint64_t)q & 0x0000ffffffffffff);
     if (q == NULL || list_empty(q))
@@ -93,6 +98,9 @@ timer_t *removeTimer(struct list_head *q) {
     return first;
 }
 
+/* 
+ * Removes any timer of the specified type from the list pointed by q
+ */
 void removeTimerType(struct list_head *q, TIMER_TYPE type, int code) {
     struct list_head *aux, *del;
     timer_t *         tmp;
@@ -116,8 +124,9 @@ void removeTimerType(struct list_head *q, TIMER_TYPE type, int code) {
     }
 }
 
-
-// Restituisce il primo pcb dalla lista la cui list_head è puntata da q, senza rimuoverlo
+/* 
+ * Returns the first timer from the list pointed by q, without removing it
+ */
 timer_t *headTimer(struct list_head *q) {
     q = (struct list_head*)((uint64_t)q & 0x0000ffffffffffff);
     if (q == NULL || list_empty(q))
@@ -126,11 +135,13 @@ timer_t *headTimer(struct list_head *q) {
     return container_of(q, timer_t, list);
 }
 
-
+/* 
+ * Adds a new timer of the specified type
+ */
 void add_timer(uint64_t time, TIMER_TYPE type, int code) {
     timer_t *timer;
     
-    removeTimerType(&pendingTimers, type, code);
+    removeTimerType(&pending_timers, type, code);
     timer = allocTimer();
 
     if (timer == NULL) {
@@ -142,11 +153,14 @@ void add_timer(uint64_t time, TIMER_TYPE type, int code) {
     timer->type = type;
     timer->code = code;
 
-    insertTimer(&pendingTimers, timer);
+    insertTimer(&pending_timers, timer);
 }
 
+/* 
+ * Initializes next with the first timer on the list
+ */
 int next_timer(timer_t *next) {
-    timer_t *timer = headTimer(&pendingTimers);
+    timer_t *timer = headTimer(&pending_timers);
     if (timer == NULL)
         return -1;
 
@@ -154,14 +168,17 @@ int next_timer(timer_t *next) {
     return 0; 
 }
 
+/* 
+ * Initializes next with the first timer that has yet to expire
+ */
 int next_pending_timer(uint64_t currentTime, timer_t *next) {
-    timer_t *timer = headTimer(&pendingTimers);
+    timer_t *timer = headTimer(&pending_timers);
     if (timer == NULL)
         return -1;
 
     memcpy(next, timer, sizeof(timer_t));
     if (timer->time < currentTime) {
-        removeTimer(&pendingTimers);
+        removeTimer(&pending_timers);
         freeTimer(timer);
         return 1;
     }

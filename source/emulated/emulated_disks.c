@@ -1,3 +1,27 @@
+/*
+ * Hardware Abstraction Layer for Raspberry Pi 3
+ *
+ * Copyright (C) 2018 Mattia Maldini
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
+/******************************************************************************
+ * This module contains uMPS2 DISK emulation routines
+ ******************************************************************************/
+
 #include "uart.h"
 #include "utils.h"
 #include "emulated_disks.h"
@@ -8,6 +32,9 @@
 
 disk_internal_state_t emulated_disks[MAX_DISKS];
 
+/* 
+ *  Initializes emulated disks internal structures
+ */
 void init_emulated_disks() {
     int           i;
     char          nome[] = "DISKn      ";
@@ -15,10 +42,10 @@ void init_emulated_disks() {
     unsigned int  buffer[8];
     unsigned int  diskfileid;
     unsigned int *diskinfo;
-    uint8_t *     device_installed = (uint8_t *)DEVICE_INSTALLED;
+    uint8_t *     deviceinstalled = (uint8_t *)DEVICE_INSTALLED;
     uint8_t       tmp;
 
-    device_installed[IL_DISK] = 0x00;
+    deviceinstalled[IL_DISK] = 0x00;
     for (i = 0; i < MAX_DISKS; i++) {
         nome[4]                         = '0' + i;
         emulated_disks[i].fat32_cluster = fat_getcluster(nome);
@@ -51,8 +78,8 @@ void init_emulated_disks() {
                 itoa(diskinfo[5], &string[strlen(string)], 10);
                 strcpy(&string[strlen(string)], "% occupation");
                 LOG(INFO, string);
-                tmp                                         = device_installed[IL_DISK] | ((uint8_t)(1 << i));
-                device_installed[IL_DISK]                   = tmp;
+                tmp                                         = deviceinstalled[IL_DISK] | ((uint8_t)(1 << i));
+                deviceinstalled[IL_DISK]                    = tmp;
                 emulated_disks[i].internal_registers.status = DEVICE_READY;
                 emulated_disks[i].cylinders                 = diskinfo[0];
                 emulated_disks[i].heads                     = diskinfo[1];
@@ -74,13 +101,16 @@ void init_emulated_disks() {
     }
 }
 
+/* 
+ *  Calculates the fabricated delay to wait for when moving a disk head
+ */
 unsigned long time_to_destination(int disk, int cyl, int head, int sect) {
-    unsigned int currentcyl, currentsect, rotationspeed;
+    unsigned int  currentcyl, currentsect, rotationspeed;
     unsigned long sectortime, cylindertime;
     // Sectors in 1 second
     rotationspeed = (emulated_disks[disk].rpm / 60) * emulated_disks[disk].sectors;
     // us to move 1 sector
-    rotationspeed = 1000000UL/rotationspeed;
+    rotationspeed = 1000000UL / rotationspeed;
 
     currentcyl   = emulated_disks[disk].current_cylinder;
     currentsect  = emulated_disks[disk].current_sector;
@@ -91,9 +121,12 @@ unsigned long time_to_destination(int disk, int cyl, int head, int sect) {
     sectortime = currentsect > sect ? currentsect - sect : sect - currentsect;
     sectortime *= rotationspeed;
 
-    return sectortime+cylindertime;
+    return sectortime + cylindertime;
 }
 
+/* 
+ *  Calculates the offset from the beginning of the disk file to the desired block
+ */
 unsigned int seek_disk_block(int disk) {
     return 7 * 4 + ((emulated_disks[disk].current_head * emulated_disks[disk].cylinders) +
                     (emulated_disks[disk].current_cylinder * emulated_disks[disk].sectors) +
@@ -101,29 +134,34 @@ unsigned int seek_disk_block(int disk) {
                        DISK_BLOCKSIZE;
 }
 
+/* 
+ *  Reads a 4KiB block from the location the disk is currently reading (head, sector, cylinder)
+ */
 int read_disk_block(int disk, unsigned char *buffer) {
-    unsigned int disk_start;
+    unsigned int diskstart;
     if (emulated_disks[disk].fat32_cluster == 0)
         return 0;
 
-    disk_start = seek_disk_block(disk);
+    diskstart = seek_disk_block(disk);
 
-    return fat_readfile(emulated_disks[disk].fat32_cluster, buffer, disk_start, DISK_BLOCKSIZE);
+    return fat_readfile(emulated_disks[disk].fat32_cluster, buffer, diskstart, DISK_BLOCKSIZE);
 }
 
 unsigned int write_disk_block(int disk, unsigned char *buffer) {
-    unsigned int disk_start;
+    unsigned int diskstart;
     if (emulated_disks[disk].fat32_cluster == 0)
         return 0;
 
-    disk_start = seek_disk_block(disk);
+    diskstart = seek_disk_block(disk);
 
-    return fat_writefile(emulated_disks[disk].fat32_cluster, buffer, disk_start, DISK_BLOCKSIZE);
+    return fat_writefile(emulated_disks[disk].fat32_cluster, buffer, diskstart, DISK_BLOCKSIZE);
 }
 
-
+/* 
+ *  Routine executing commands found in registers for disk i. To be called at an interval
+ */
 void manage_emulated_disk(int i) {
-    uint8_t *interrupt_lines = (uint8_t *)INTERRUPT_LINES;
+    uint8_t *interruptlines = (uint8_t *)INTERRUPT_LINES;
     uint8_t  intline;
 
     if (emulated_disks[i].internal_registers.status == DEVICE_NOT_INSTALLED)
@@ -134,8 +172,8 @@ void manage_emulated_disk(int i) {
             case SEEKCYL:
                 emulated_disks[i].current_cylinder = GET_COMMAND_CYLNUM(emulated_disks[i].internal_registers.command);
                 emulated_disks[i].internal_registers.status = DEVICE_READY;
-                intline                                     = interrupt_lines[IL_DISK] | ((uint8_t)(1 << i));
-                interrupt_lines[IL_DISK]                    = intline;
+                intline                                     = interruptlines[IL_DISK] | ((uint8_t)(1 << i));
+                interruptlines[IL_DISK]                     = intline;
                 memcpy(emulated_disks[i].mailbox_registers, &emulated_disks[i].internal_registers, sizeof(diskreg_t));
                 emulated_disks[i].mailbox_registers = NULL;
                 break;
@@ -147,8 +185,8 @@ void manage_emulated_disk(int i) {
                     emulated_disks[i].internal_registers.status = READ_ERROR;
                 } else {
                     emulated_disks[i].internal_registers.status = DEVICE_READY;
-                    intline                                     = interrupt_lines[IL_DISK] | ((uint8_t)(1 << i));
-                    interrupt_lines[IL_DISK]                    = intline;
+                    intline                                     = interruptlines[IL_DISK] | ((uint8_t)(1 << i));
+                    interruptlines[IL_DISK]                     = intline;
                 }
                 memcpy(emulated_disks[i].mailbox_registers, &emulated_disks[i].internal_registers, sizeof(diskreg_t));
                 emulated_disks[i].mailbox_registers = NULL;
@@ -161,8 +199,8 @@ void manage_emulated_disk(int i) {
                     emulated_disks[i].internal_registers.status = WRITE_ERROR;
                 } else {
                     emulated_disks[i].internal_registers.status = DEVICE_READY;
-                    intline                                     = interrupt_lines[IL_DISK] | ((uint8_t)(1 << i));
-                    interrupt_lines[IL_DISK]                    = intline;
+                    intline                                     = interruptlines[IL_DISK] | ((uint8_t)(1 << i));
+                    interruptlines[IL_DISK]                     = intline;
                 }
                 memcpy(emulated_disks[i].mailbox_registers, &emulated_disks[i].internal_registers, sizeof(diskreg_t));
                 emulated_disks[i].mailbox_registers = NULL;
@@ -175,12 +213,13 @@ void manage_emulated_disk(int i) {
     }
 }
 
-
-
+/* 
+ *  Routine managing the immediate command sent to a disk through a mailbox
+ */
 void emulated_disk_mailbox(int i, diskreg_t *registers) {
-    uint8_t *interrupt_lines = (uint8_t *)INTERRUPT_LINES;
-    uint8_t  intline, head, sect;
-    uint16_t cyl;
+    uint8_t *     interruptlines = (uint8_t *)INTERRUPT_LINES;
+    uint8_t       intline, head, sect;
+    uint16_t      cyl;
     unsigned long timetodest;
 
     if (registers == NULL)
@@ -200,8 +239,8 @@ void emulated_disk_mailbox(int i, diskreg_t *registers) {
             emulated_disks[i].current_cylinder           = 0;
             emulated_disks[i].current_head               = 0;
             emulated_disks[i].current_sector             = 0;
-            intline                                      = interrupt_lines[IL_DISK] | ((uint8_t)(1 << i));
-            interrupt_lines[IL_DISK]                     = intline;
+            intline                                      = interruptlines[IL_DISK] | ((uint8_t)(1 << i));
+            interruptlines[IL_DISK]                      = intline;
             memcpy(registers, &emulated_disks[i].internal_registers, sizeof(diskreg_t));
             break;
 
@@ -209,8 +248,8 @@ void emulated_disk_mailbox(int i, diskreg_t *registers) {
             if (emulated_disks[i].internal_registers.status != DEVICE_BUSY) {
                 emulated_disks[i].internal_registers.command = ACK;
                 emulated_disks[i].internal_registers.status  = DEVICE_READY;
-                intline                                      = interrupt_lines[IL_DISK] & ((uint8_t)(~(1 << i)));
-                interrupt_lines[IL_DISK]                     = intline;
+                intline                                      = interruptlines[IL_DISK] & ((uint8_t)(~(1 << i)));
+                interruptlines[IL_DISK]                      = intline;
                 memcpy(registers, &emulated_disks[i].internal_registers, sizeof(diskreg_t));
             }
             break;
@@ -248,7 +287,8 @@ void emulated_disk_mailbox(int i, diskreg_t *registers) {
                     emulated_disks[i].internal_registers.data0   = registers->data0;
                     emulated_disks[i].internal_registers.status  = DEVICE_BUSY;
                     emulated_disks[i].mailbox_registers          = registers;
-                    timetodest = time_to_destination(i, cyl, emulated_disks[i].current_head, emulated_disks[i].current_sector);
+                    timetodest =
+                        time_to_destination(i, cyl, emulated_disks[i].current_head, emulated_disks[i].current_sector);
                     set_device_timer(timetodest, DISK, i);
                 }
             }

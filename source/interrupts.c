@@ -72,7 +72,7 @@ void c_fiq_handler() {
                 break;
         }
 
-
+        // clear interrupt
         GIC->Core0_MailBox0_ClearSet = data;
     }
 }

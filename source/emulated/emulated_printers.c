@@ -1,3 +1,27 @@
+/*
+ * Hardware Abstraction Layer for Raspberry Pi 3
+ *
+ * Copyright (C) 2018 Mattia Maldini
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
+/******************************************************************************
+ * This module contains uMPS2 PRINTER emulation routines
+ ******************************************************************************/
+
 #include <stdint.h>
 #include "arch.h"
 #include "emulated_printers.h"
@@ -13,19 +37,6 @@ static int terminal_coordinates[MAX_PRINTERS][2];
 
 static printer_internal_state_t printers[MAX_PRINTERS] = {0};
 
-
-void init_emulated_printers() {
-    int      i;
-    uint8_t *device_installed = (uint8_t *)DEVICE_INSTALLED;
-
-    device_installed[IL_PRINTER] = 0x00;
-
-    for (i = 0; i < MAX_PRINTERS; i++) {
-        printers[i].internal_registers.command = RESET;
-        printers[i].internal_registers.status  = DEVICE_READY;
-    }
-}
-
 const int terminal_starting_coordinates[MAX_PRINTERS][2] = {
     {0, 0},
     {WIDTH / 9 + 1, 0},
@@ -33,7 +44,25 @@ const int terminal_starting_coordinates[MAX_PRINTERS][2] = {
     {WIDTH / 9 + 1, HEIGHT / 16 + 1},
 };
 
-void terminal_send(int num, char c) {
+/*
+ * Initializes emulated printers internal data structures
+ */
+void init_emulated_printers() {
+    int      i;
+    uint8_t *deviceinstalled = (uint8_t *)DEVICE_INSTALLED;
+
+    deviceinstalled[IL_PRINTER] = 0x00;
+
+    for (i = 0; i < MAX_PRINTERS; i++) {
+        printers[i].internal_registers.command = RESET;
+        printers[i].internal_registers.status  = DEVICE_READY;
+    }
+}
+
+/*
+ * Sends a character to the specified printer
+ */
+void printer_send(int num, char c) {
     int width, height, pitch;
     int x      = terminal_coordinates[num][0] + terminal_starting_coordinates[num][0];
     int y      = terminal_coordinates[num][1] + terminal_starting_coordinates[num][1];
@@ -68,8 +97,11 @@ void terminal_send(int num, char c) {
     terminal_coordinates[num][1] = y - terminal_starting_coordinates[num][1];
 }
 
+/*
+ *  Routine managing the immediate command sent to a printer through a mailbox
+ */
 void emulated_printer_mailbox(int i, printreg_t *registers) {
-    uint8_t *interrupt_lines = (uint8_t *)INTERRUPT_LINES;
+    uint8_t *interruptlines = (uint8_t *)INTERRUPT_LINES;
 
     if (registers == NULL)
         return;
@@ -84,14 +116,14 @@ void emulated_printer_mailbox(int i, printreg_t *registers) {
             printers[i].internal_registers.status  = DEVICE_READY;
             printers[i].internal_registers.command = RESET;
             /* Reset command also removes interrupt */
-            interrupt_lines[IL_PRINTER] &= ~(1 << i);
+            interruptlines[IL_PRINTER] &= ~(1 << i);
             memcpy(registers, &printers[i].internal_registers, sizeof(printreg_t));
             break;
         case ACK:
             if (printers[i].internal_registers.status != DEVICE_BUSY) {
                 printers[i].internal_registers.command = ACK;
                 printers[i].internal_registers.status  = DEVICE_READY;
-                interrupt_lines[IL_PRINTER] &= ~(1 << i);
+                interruptlines[IL_PRINTER] &= ~(1 << i);
                 memcpy(registers, &printers[i].internal_registers, sizeof(printreg_t));
             } else {
                 registers->mailbox = 2;
@@ -119,15 +151,18 @@ void emulated_printer_mailbox(int i, printreg_t *registers) {
     }
 }
 
+/*
+ *  Routine executing commands found in registers for printer i. To be called at an interval
+ */
 void manage_emulated_printer(int i) {
-    uint8_t *interrupt_lines = (uint8_t *)INTERRUPT_LINES;
+    uint8_t *interruptlines = (uint8_t *)INTERRUPT_LINES;
 
     if (printers[i].internal_registers.status == DEVICE_BUSY) {
         switch (printers[i].internal_registers.command) {
             case PRINT_CHAR:
-                terminal_send(i, printers[i].internal_registers.data0);
+                printer_send(i, printers[i].internal_registers.data0);
                 printers[i].internal_registers.status = DEVICE_READY;
-                interrupt_lines[IL_PRINTER] |= 1 << i;
+                interruptlines[IL_PRINTER] |= 1 << i;
                 printers[i].executing_command = RESET;
                 memcpy(printers[i].mailbox_registers, &printers[i].internal_registers, sizeof(printreg_t));
                 printers[i].mailbox_registers = NULL;

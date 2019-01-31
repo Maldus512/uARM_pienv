@@ -31,7 +31,6 @@ typedef struct {
 void lfb_init();
 void lfb_send(int x, int y, char c);
 void lfb_print(int x, int y, char *s);
-void terminal_send(int i, char c);
 void manage_emulated_printer(int i);
 void emulated_printer_mailbox(int i, printreg_t *registers);
 void init_emulated_printers();

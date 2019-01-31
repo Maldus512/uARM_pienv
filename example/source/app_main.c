@@ -247,6 +247,7 @@ void interrupt() {
     state_t *    oldarea;
     uint8_t *    interrupt_lines = (uint8_t *)INTERRUPT_LINES;
     tapereg_t    tape_reg        = {0, ACK, 0, 0, 0};
+    diskreg_t    disk_reg        = {0, ACK, 0, 0, 0};
     unsigned int core;
 
     core = GETCOREID();
@@ -266,7 +267,13 @@ void interrupt() {
             }
         }
 
-        if (interrupt_lines[IL_TAPE] || interrupt_lines[IL_DISK]) {
+        if (interrupt_lines[IL_DISK]) {
+            semaforo = 1;
+
+            /*CORE0_MAILBOX0 = (((uint32_t)(uint64_t)&disk_reg) & ~0xF) | 0x8;
+            while (disk_reg.mailbox == 0)
+                nop();*/
+        } else if (interrupt_lines[IL_TAPE]) {
             semaforo = 1;
 
             CORE0_MAILBOX0 = (((uint32_t)(uint64_t)&tape_reg) & ~0xF) | 0x4;
