@@ -158,8 +158,8 @@ LDST:
     ldr     x1, [x0, #8]!
     msr     elr_el1, x1   /* Exception Link Register */
 
-    ldr     x1, [x0, #8]!
-    msr     ttbr0_el1, x1 
+    ldr     x2, [x0, #8]!
+    /*msr     ttbr0_el1, x1 Cannot set TTBR0 now, I still need the previous page table */
 
     ldr     x1, [x0, #8]!
     msr     spsr_el1, x1    /* Status Register */
@@ -179,6 +179,7 @@ el1_sp:
 end:
     ldr     x1, [x0, #8]
     ldr     x0, [x0]
+    msr     ttbr0_el1, x2
     eret
 
 

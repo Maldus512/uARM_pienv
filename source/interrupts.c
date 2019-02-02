@@ -199,6 +199,10 @@ void c_abort_handler(uint64_t exception_code, uint64_t iss) {
         interrupt_handler();
     } else {
         switch (exception_code) {
+            case 0x20:
+            case 0x21:
+                LOG(WARN, "Instruction Abort");
+                break;
             case 0x24:     // Data abort (MMU)
                 uart0_puts("Data abort (lower exception level) caused by ");
                 if (iss & 0x40)
@@ -214,6 +218,7 @@ void c_abort_handler(uint64_t exception_code, uint64_t iss) {
                     uart0_puts("read\n");
                 break;
             default:
+        LOG(WARN, "Data abort:");
                 break;
         }
 

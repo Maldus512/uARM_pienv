@@ -3,6 +3,7 @@
 #include "bios_const.h"
 #include "libuarm.h"
 #include "types.h"
+#include "mmu.h"
 
 #define ST_READY 1
 #define ST_BUSY 3
@@ -38,6 +39,13 @@ static void term_puts(const char *str);
 state_t  t1, t2;
 state_t *current;
 int      semaforo = 0;
+
+
+/* Level0 1:1 mapping to Level1 */
+static __attribute__((aligned(4096))) VMSAv8_64_NEXTLEVEL_DESCRIPTOR app0map1to1[512] = {0};
+
+/* This will have 1024 entries x 2M so a full range of 2GB */
+static __attribute__((aligned(4096))) VMSAv8_64_STAGE1_BLOCK_DESCRIPTOR app1map1to1[1024] = {0};
 
 
 void delay(unsigned int us) {
@@ -110,7 +118,7 @@ static void uart0_putc(char c) {
     *DATA = c;
 }
 
-static void print(char *s) {
+void print(char *s) {
     while (*s) {
         /* convert newline to carrige return + newline */
         if (*s == '\n')
@@ -295,6 +303,7 @@ void interrupt() {
 }
 
 int main() {
+    char string[128];
     *((uint8_t *)INTERRUPT_MASK)       = 0xFA;     //&= ~((1 << IL_TIMER) | (1 << IL_TAPE));
     *((uint64_t *)INTERRUPT_HANDLER)   = (uint64_t)&interrupt;
     *((uint64_t *)SYNCHRONOUS_HANDLER) = (uint64_t)&synchronous;
@@ -314,7 +323,12 @@ int main() {
     t2.stack_pointer           = (uint64_t)0x1006000 + 0x4000;
     t1.status_register         = 0x300;
     t2.status_register         = 0x300;
+    t1.TTBR0                   = ((uint64_t)((uint64_t)app0map1to1) | 1UL << 48);
+    t2.TTBR0                   = ((uint64_t)((uint64_t)app0map1to1) | 2UL << 48);
     current                    = &t2;
+
+    init_page_tables(app0map1to1, app1map1to1, APBITS_NO_LIMIT);
+    mmu_init();
 
     print("about to launch the first process\n");
     setTIMER(1000);

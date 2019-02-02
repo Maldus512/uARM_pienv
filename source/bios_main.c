@@ -64,7 +64,6 @@ void function1() {
     while (1) {
         delay_us(500 * 1000);
         uart0_puts("ciao uart0\n");
-        delay_us(500 * 1000);
     }
 }
 
@@ -85,12 +84,21 @@ void echo() {
 }
 
 int __attribute__((weak)) main() {
+    char string[128];
     state_t state;
+    uint64_t ttbr0;
     state.exception_link_register = (uint64_t)function1;
-    state.stack_pointer           = (uint64_t)0x1000000 + 0x4000;
-    state.status_register         = 0x305;
-    state.TTBR0                   = GETTTBR0();
+    state.stack_pointer           = (uint64_t)0x2000000 + 0x4000;
+    state.status_register         = 0x300;
+    ttbr0 = init_page_table_el0();
+    ttbr0 |= (1UL << 48);
+    state.TTBR0                   =ttbr0;
     //setTimer(1000*1000);*/
+
+    itoa(ttbr0, string, 16);
+    LOG(INFO, string);
+
+    mmu_init();
     uart0_puts("Echoing everything\n");
     LDST(&state);
     while (1) {
@@ -111,8 +119,8 @@ void bios_main() {
     CoreExecute(2, idle);
     CoreExecute(3, idle);
 
-    //init_page_table();
-    //mmu_init();
+    //init_page_table_el0();
+    init_page_table();
 
     asm volatile("msr daifset, #2");
     main();
