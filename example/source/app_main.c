@@ -190,7 +190,7 @@ void testDisk() {
     print((char *)buffer);
     print("\n");
 
-    buffer[0] = 'M';
+    buffer[0] = buffer[0] == 'M' ? 'P' : 'M';
 
     disk_reg.data0   = (unsigned int)(unsigned long)buffer;
     disk_reg.command = WRITEBLK | (1 << 8);

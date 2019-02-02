@@ -4,24 +4,6 @@
 #include "timers.h"
 #include "utils.h"
 
-#define EMMC_ARG2 ((volatile unsigned int *)(MMIO_BASE + 0x00300000))
-#define EMMC_BLKSIZECNT ((volatile unsigned int *)(MMIO_BASE + 0x00300004))
-#define EMMC_ARG1 ((volatile unsigned int *)(MMIO_BASE + 0x00300008))
-#define EMMC_CMDTM ((volatile unsigned int *)(MMIO_BASE + 0x0030000C))
-#define EMMC_RESP0 ((volatile unsigned int *)(MMIO_BASE + 0x00300010))
-#define EMMC_RESP1 ((volatile unsigned int *)(MMIO_BASE + 0x00300014))
-#define EMMC_RESP2 ((volatile unsigned int *)(MMIO_BASE + 0x00300018))
-#define EMMC_RESP3 ((volatile unsigned int *)(MMIO_BASE + 0x0030001C))
-#define EMMC_DATA ((volatile unsigned int *)(MMIO_BASE + 0x00300020))
-#define EMMC_STATUS ((volatile unsigned int *)(MMIO_BASE + 0x00300024))
-#define EMMC_CONTROL0 ((volatile unsigned int *)(MMIO_BASE + 0x00300028))
-#define EMMC_CONTROL1 ((volatile unsigned int *)(MMIO_BASE + 0x0030002C))
-#define EMMC_INTERRUPT ((volatile unsigned int *)(MMIO_BASE + 0x00300030))
-#define EMMC_INT_MASK ((volatile unsigned int *)(MMIO_BASE + 0x00300034))
-#define EMMC_INT_EN ((volatile unsigned int *)(MMIO_BASE + 0x00300038))
-#define EMMC_CONTROL2 ((volatile unsigned int *)(MMIO_BASE + 0x0030003C))
-#define EMMC_SLOTISR_VER ((volatile unsigned int *)(MMIO_BASE + 0x003000FC))
-
 // command flags
 #define CMD_NEED_APP 0x80000000
 #define CMD_RSPNS_48 0x00020000
@@ -109,9 +91,9 @@ void wait_cycles(unsigned int n) {
  */
 int sd_status(unsigned int mask) {
     int cnt = 500000;
-    while ((*EMMC_STATUS & mask) && !(*EMMC_INTERRUPT & INT_ERROR_MASK) && cnt--)
+    while ((EMMC->STATUS & mask) && !(EMMC->INTERRUPT & INT_ERROR_MASK) && cnt--)
         wait_msec(1);
-    return (cnt <= 0 || (*EMMC_INTERRUPT & INT_ERROR_MASK)) ? SD_ERROR : SD_OK;
+    return (cnt <= 0 || (EMMC->INTERRUPT & INT_ERROR_MASK)) ? SD_ERROR : SD_OK;
 }
 
 /**
@@ -119,20 +101,20 @@ int sd_status(unsigned int mask) {
  */
 int sd_int(unsigned int mask) {
     unsigned int r, m = mask | INT_ERROR_MASK;
-    int          cnt = 10000;
-    while (!(*EMMC_INTERRUPT & m) && cnt--)
+    int          cnt = 2000;
+    while (!(EMMC->INTERRUPT & m) && cnt--)
         wait_msec(1);
-    r = *EMMC_INTERRUPT;
+    r = EMMC->INTERRUPT;
     if (cnt <= 0 || (r & INT_CMD_TIMEOUT) || (r & INT_DATA_TIMEOUT)) {
         LOG(ERROR, "sd command timeout");
-        *EMMC_INTERRUPT = r;
+        EMMC->INTERRUPT = r;
         return SD_TIMEOUT;
     } else if (r & INT_ERROR_MASK) {
-        *EMMC_INTERRUPT = r;
+        EMMC->INTERRUPT = r;
         LOG(ERROR, "sd command error");
         return SD_ERROR;
     }
-    *EMMC_INTERRUPT = mask;
+    EMMC->INTERRUPT = mask;
     return 0;
 }
 
@@ -156,14 +138,9 @@ int sd_cmd(unsigned int code, unsigned int arg) {
         sd_err = SD_TIMEOUT;
         return 0;
     }
-    /*uart0_puts("EMMC: Sending command ");
-    hexstrings(code);
-    uart0_puts(" arg ");
-    hexstrings(arg);
-    uart0_puts("\n");*/
-    *EMMC_INTERRUPT = *EMMC_INTERRUPT;
-    *EMMC_ARG1      = arg;
-    *EMMC_CMDTM     = code;
+    EMMC->INTERRUPT = EMMC->INTERRUPT;
+    EMMC->ARG1      = arg;
+    EMMC->CMDTM     = code;
     if (code == CMD_SEND_OP_COND)
         wait_msec(1000);
     else if (code == CMD_SEND_IF_COND || code == CMD_APP_CMD)
@@ -173,7 +150,7 @@ int sd_cmd(unsigned int code, unsigned int arg) {
         sd_err = r;
         return 0;
     }
-    r = *EMMC_RESP0;
+    r = EMMC->RESP0;
     if (code == CMD_GO_IDLE || code == CMD_APP_CMD)
         return 0;
     else if (code == (CMD_APP_CMD | CMD_RSPNS_48))
@@ -183,9 +160,9 @@ int sd_cmd(unsigned int code, unsigned int arg) {
     else if (code == CMD_SEND_IF_COND)
         return r == arg ? SD_OK : SD_ERROR;
     else if (code == CMD_ALL_SEND_CID) {
-        r |= *EMMC_RESP3;
-        r |= *EMMC_RESP2;
-        r |= *EMMC_RESP1;
+        r |= EMMC->RESP3;
+        r |= EMMC->RESP2;
+        r |= EMMC->RESP1;
         return r;
     } else if (code == CMD_SEND_REL_ADDR) {
         sd_err = (((r & 0x1fff)) | ((r & 0x2000) << 6) | ((r & 0x4000) << 8) | ((r & 0x8000) << 8)) & CMD_ERRORS_MASK;
@@ -217,14 +194,14 @@ int sd_transferblock(unsigned int lba, unsigned char *buffer, unsigned int num, 
                 return 0;
             }
         }
-        *EMMC_BLKSIZECNT = (num << 16) | 512;
+        EMMC->BLKSIZECNT = (num << 16) | 512;
         sd_cmd(num == 1 ? cmd_single : cmd_multi, lba);
         if (sd_err) {
             LOG(ERROR, "Unable to start operation");
             return 0;
         }
     } else {
-        *EMMC_BLKSIZECNT = (1 << 16) | 512;
+        EMMC->BLKSIZECNT = (1 << 16) | 512;
     }
     while (c < num) {
         if (!(sd_scr[0] & SCR_SUPP_CCS)) {
@@ -245,9 +222,9 @@ int sd_transferblock(unsigned int lba, unsigned char *buffer, unsigned int num, 
         }
         for (d = 0; d < 128; d++) {
             if (readwrite == SD_READBLOCK)
-                buf[d] = *EMMC_DATA;
+                buf[d] = EMMC->DATA;
             else
-                *EMMC_DATA = buf[d];
+                EMMC->DATA = buf[d];
         }
         c++;
         buf += 128;
@@ -264,14 +241,14 @@ int sd_clk(unsigned int f) {
     char string[128];
     unsigned int d, c = 41666666 / f, x, s = 32, h = 0;
     int          cnt = 100000;
-    while ((*EMMC_STATUS & (SR_CMD_INHIBIT | SR_DAT_INHIBIT)) && cnt--)
+    while ((EMMC->STATUS & (SR_CMD_INHIBIT | SR_DAT_INHIBIT)) && cnt--)
         wait_msec(1);
     if (cnt <= 0) {
         LOG(ERROR, "timeout waiting for inhibit flag\n");
         return SD_ERROR;
     }
 
-    *EMMC_CONTROL1 &= ~C1_CLK_EN;
+    EMMC->CONTROL1 &= ~C1_CLK_EN;
     wait_msec(10);
     x = c - 1;
     if (!x)
@@ -318,12 +295,12 @@ int sd_clk(unsigned int f) {
     if (sd_hv > HOST_SPEC_V2)
         h = (d & 0x300) >> 2;
     d              = (((d & 0x0ff) << 8) | h);
-    *EMMC_CONTROL1 = (*EMMC_CONTROL1 & 0xffff003f) | d;
+    EMMC->CONTROL1 = (EMMC->CONTROL1 & 0xffff003f) | d;
     wait_msec(10);
-    *EMMC_CONTROL1 |= C1_CLK_EN;
+    EMMC->CONTROL1 |= C1_CLK_EN;
     wait_msec(10);
     cnt = 10000;
-    while (!(*EMMC_CONTROL1 & C1_CLK_STABLE) && cnt--)
+    while (!(EMMC->CONTROL1 & C1_CLK_STABLE) && cnt--)
         wait_msec(10);
     if (cnt <= 0) {
         LOG(ERROR, "failed to get stable clock");
@@ -362,27 +339,27 @@ int sd_init() {
     setPullUpDown(53, GPIO_PULL_UP);
 
     // Read host specification version number
-    sd_hv = (*EMMC_SLOTISR_VER & HOST_SPEC_NUM) >> HOST_SPEC_NUM_SHIFT;
+    sd_hv = (EMMC->SLOTISR_VER & HOST_SPEC_NUM) >> HOST_SPEC_NUM_SHIFT;
     LOG(INFO, "EMMC: GPIO set up");
     // Reset the card.
-    *EMMC_CONTROL0 = 0;
-    *EMMC_CONTROL1 |= C1_SRST_HC;
+    EMMC->CONTROL0 = 0;
+    EMMC->CONTROL1 |= C1_SRST_HC;
     cnt = 10000;
     do {
         wait_msec(10);
-    } while ((*EMMC_CONTROL1 & C1_SRST_HC) && cnt--);
+    } while ((EMMC->CONTROL1 & C1_SRST_HC) && cnt--);
     if (cnt <= 0) {
         LOG(ERROR, "failed to reset EMMC");
         return SD_ERROR;
     }
     LOG(INFO, "EMMC: reset OK");
-    *EMMC_CONTROL1 |= C1_CLK_INTLEN | C1_TOUNIT_MAX;
+    EMMC->CONTROL1 |= C1_CLK_INTLEN | C1_TOUNIT_MAX;
     wait_msec(10);
     // Set clock to setup frequency.
     if ((r = sd_clk(400000)))
         return r;
-    *EMMC_INT_EN   = 0xffffffff;
-    *EMMC_INT_MASK = 0xffffffff;
+    EMMC->IRPT_EN   = 0xffffffff;
+    EMMC->IRPT_MASK = 0xffffffff;
     sd_scr[0] = sd_scr[1] = sd_rca = sd_err = 0;
     sd_cmd(CMD_GO_IDLE, 0);
     if (sd_err)
@@ -436,7 +413,7 @@ int sd_init() {
 
     if (sd_status(SR_DAT_INHIBIT))
         return SD_TIMEOUT;
-    *EMMC_BLKSIZECNT = (1 << 16) | 8;
+    EMMC->BLKSIZECNT = (1 << 16) | 8;
     sd_cmd(CMD_SEND_SCR, 0);
     if (sd_err)
         return sd_err;
@@ -446,8 +423,8 @@ int sd_init() {
     r   = 0;
     cnt = 100000;
     while (r < 2 && cnt) {
-        if (*EMMC_STATUS & SR_READ_AVAILABLE)
-            sd_scr[r++] = *EMMC_DATA;
+        if (EMMC->STATUS & SR_READ_AVAILABLE)
+            sd_scr[r++] = EMMC->DATA;
         else
             wait_msec(1);
     }
@@ -457,7 +434,7 @@ int sd_init() {
         sd_cmd(CMD_SET_BUS_WIDTH, sd_rca | 2);
         if (sd_err)
             return sd_err;
-        *EMMC_CONTROL0 |= C0_HCTL_DWITDH;
+        EMMC->CONTROL0 |= C0_HCTL_DWITDH;
     }
     // add software flag
     strcpy(string, "EMMC: supports ");
