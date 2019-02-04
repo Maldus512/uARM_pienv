@@ -47,9 +47,9 @@ typedef union {
         uint64_t    NS : 1;
         APBITS_TYPE AP : 2;     // @6-7     Data Access permission bits
         enum {
-            SH_OUTER_SHAREABLE = 2,     //			Outter shareable
-            SH_INNER_SHAREABLE = 3,     //			Inner shareable
-        } SH : 2;                              // @8-9 Shareability field
+            SH_OUTER_SHAREABLE = 2,      //			Outter shareable
+            SH_INNER_SHAREABLE = 3,      //			Inner shareable
+        } SH : 2;                        // @8-9 Shareability field
         uint64_t AF : 1;                 // @10 Access flag; if 0 an access to this page leads to an TLB Access fault
         uint64_t nG : 1;                 // @11 not Global bit (ASID management for TLB)
         uint64_t Address : 36;           // @12-47 36 Bits of address
@@ -80,8 +80,9 @@ extern uint32_t table_loaded;
 
 extern uint32_t table_loaded;
 
-void init_page_table(void);
+void init_page_tables(VMSAv8_64_NEXTLEVEL_DESCRIPTOR *level0, VMSAv8_64_STAGE1_BLOCK_DESCRIPTOR *level1,
+                      APBITS_TYPE permission);
 
-void     mmu_init(void);
+void initMMU(uint64_t *page_table);
 
 #endif

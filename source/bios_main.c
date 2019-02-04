@@ -18,6 +18,12 @@
 
 extern unsigned char *_kernel_memory_end;
 
+__attribute__((aligned(4096))) VMSAv8_64_NEXTLEVEL_DESCRIPTOR    Level0map1to1_el0[512]  = {0};
+__attribute__((aligned(4096))) VMSAv8_64_STAGE1_BLOCK_DESCRIPTOR Level1map1to1_el0[1024] = {0};
+
+__attribute__((aligned(4096))) VMSAv8_64_NEXTLEVEL_DESCRIPTOR    Level0map1to1_el1[512]  = {0};
+__attribute__((aligned(4096))) VMSAv8_64_STAGE1_BLOCK_DESCRIPTOR Level1map1to1_el1[1024] = {0};
+
 void initSystem() {
     int  i = 0;
     char string[64];
@@ -96,15 +102,13 @@ int __attribute__((weak)) main() {
     state.exception_link_register = (uint64_t)function1;
     state.stack_pointer           = (uint64_t)0x2000000 + 0x4000;
     state.status_register         = 0x300;
-    ttbr0 = init_page_table_el0();
+    ttbr0 = (uint64_t)&Level0map1to1_el0[0];
     ttbr0 |= (1UL << 48);
     state.TTBR0                   =ttbr0;
-    //setTimer(1000*1000);*/
 
     itoa(ttbr0, string, 16);
     LOG(INFO, string);
 
-    mmu_init();
     uart0_puts("Echoing everything\n");
     LDST(&state);
     while (1) {
@@ -125,9 +129,9 @@ void bios_main() {
     CoreExecute(2, idle);
     CoreExecute(3, idle);
 
-    //init_page_table_el0();
-    init_page_table();
-    //mmu_init();
+    init_page_tables(Level0map1to1_el1, Level1map1to1_el1, APBITS_NO_EL0);
+    init_page_tables(Level0map1to1_el0, Level1map1to1_el0, APBITS_NO_LIMIT);
+    initMMU((uint64_t*)&Level0map1to1_el1[0]);
 
     asm volatile("msr daifset, #2");
     main();
