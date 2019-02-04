@@ -49,11 +49,11 @@ static __attribute__((aligned(4096))) VMSAv8_64_STAGE1_BLOCK_DESCRIPTOR app1map1
 
 
 void delay(unsigned int us) {
-    volatile unsigned long timestamp = get_us();
+    volatile unsigned long timestamp = getTOD();
     volatile unsigned long end       = timestamp + us;
 
     while ((unsigned long)timestamp < (unsigned long)(end)) {
-        timestamp = get_us();
+        timestamp = getTOD();
     }
 }
 
@@ -235,7 +235,7 @@ void test2() {
     print("partenza 2\n");
     CORE1_MAILBOX0 = 1;
     while (1) {
-        timer = get_us();
+        timer = getTOD();
         print("test2 vivo: ");
         SYSCALL(5, 0, 0, 0);
         term_puts("test2 vivo\n");
@@ -246,7 +246,7 @@ void test2() {
 }
 
 void synchronous(unsigned int code, unsigned int x0, unsigned int x1, unsigned int x2) {
-    unsigned int core    = GETCOREID();
+    unsigned int core    = getCORE();
     state_t *    oldarea = (state_t *)(SYNCHRONOUS_OLDAREA + CORE_OFFSET * core);
     print("system call!\n");
     LDST(oldarea);
@@ -259,7 +259,7 @@ void interrupt() {
     diskreg_t    disk_reg        = {0, ACK, 0, 0, 0};
     unsigned int core;
 
-    core = GETCOREID();
+    core = getCORE();
 
     if (core == 0) {
         oldarea = (state_t *)INTERRUPT_OLDAREA;
@@ -304,7 +304,7 @@ void interrupt() {
 
 int main() {
     char string[128];
-    *((uint8_t *)INTERRUPT_MASK)       = 0xFA;     //&= ~((1 << IL_TIMER) | (1 << IL_TAPE));
+    *((uint8_t *)INTERRUPT_MASK)       = 0xFA;
     *((uint64_t *)INTERRUPT_HANDLER)   = (uint64_t)&interrupt;
     *((uint64_t *)SYNCHRONOUS_HANDLER) = (uint64_t)&synchronous;
     *((uint64_t *)KERNEL_CORE0_SP)     = (uint64_t)0x1000000;
@@ -323,12 +323,12 @@ int main() {
     t2.stack_pointer           = (uint64_t)0x1006000 + 0x4000;
     t1.status_register         = 0x300;
     t2.status_register         = 0x300;
-    t1.TTBR0                   = ((uint64_t)((uint64_t)app0map1to1) | 1UL << 48);
-    t2.TTBR0                   = ((uint64_t)((uint64_t)app0map1to1) | 2UL << 48);
+    t1.TTBR0                   = ((uint64_t)((uint64_t)app0map1to1) | 0UL << 48);
+    t2.TTBR0                   = ((uint64_t)((uint64_t)app0map1to1) | 0UL << 48);
     current                    = &t2;
 
     init_page_tables(app0map1to1, app1map1to1, APBITS_NO_LIMIT);
-    mmu_init();
+    //mmu_init();
 
     print("about to launch the first process\n");
     setTIMER(1000);

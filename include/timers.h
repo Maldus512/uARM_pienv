@@ -13,8 +13,7 @@ void         initArmTimer();
 uint64_t     readCounterCount(void);
 void         disableCounter(void);
 unsigned int setTimer(unsigned int timer);
-uint64_t     get_us();
-uint64_t     get_ms();
+uint64_t     getTOD();
 void         wait_msec(unsigned int t);
 
 #endif

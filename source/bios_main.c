@@ -20,7 +20,7 @@ extern unsigned char *_kernel_memory_end;
 
 void initSystem() {
     int  i = 0;
-    char string[32];
+    char string[64];
     *((uint64_t *)INTERRUPT_HANDLER)   = 0;
     *((uint64_t *)SYNCHRONOUS_HANDLER) = 0;
     *((uint8_t *)INTERRUPT_MASK)       = 0xFF;
@@ -43,6 +43,12 @@ void initSystem() {
     }
     init_emulated_printers();
     init_emulated_timers();
+
+    strcpy(string, "System timers runs at ");
+    itoa(GETARMCLKFRQ(), &string[strlen(string)], 10);
+    strcpy(&string[strlen(string)], " Hz");
+    LOG(INFO, string);
+
     strcpy(string, "CPU-GPU memory split: ");
     itoa(getMemorySplit(), &string[strlen(string)], 16);
     LOG(INFO, string);
@@ -121,6 +127,7 @@ void bios_main() {
 
     //init_page_table_el0();
     init_page_table();
+    //mmu_init();
 
     asm volatile("msr daifset, #2");
     main();

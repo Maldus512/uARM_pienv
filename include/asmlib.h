@@ -5,7 +5,6 @@
 
 uint32_t GETEL();
 uint32_t GETARMCLKFRQ();
-uint32_t GETARMCOUNTER();
 
 uint64_t GETTTBR0();
 uint64_t STELR();

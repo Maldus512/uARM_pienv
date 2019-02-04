@@ -37,13 +37,13 @@ void LDST(void *addr);
 /* stores current processor state at address *addr */
 void STST(void *addr);
 
-unsigned int GETCOREID();
+unsigned int getCORE();
 
 /* call kernel system call handler */
 int SYSCALL(unsigned int sysNum, unsigned int arg1, unsigned int arg2, unsigned int arg3);
 
-unsigned long get_us();
-void         setTIMER(uint64_t us);
+unsigned long getTOD();
+void         setTIMER(unsigned long us);
 
 typedef struct _state_t {
     uint64_t general_purpose_registers[29];

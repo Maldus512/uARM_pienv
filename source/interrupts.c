@@ -31,7 +31,7 @@ int pending_emulated_interrupt() {
 
 void setTIMER(uint64_t microseconds) {
     uint8_t *interrupt_lines = (uint8_t *)INTERRUPT_LINES;
-    uint64_t currentTime     = get_us();
+    uint64_t currentTime     = getTOD();
     uint64_t timer           = currentTime + microseconds;
     timer_t  next;
 
@@ -49,7 +49,7 @@ void setTIMER(uint64_t microseconds) {
 }
 
 void set_device_timer(uint64_t microseconds, TIMER_TYPE type, int device_num) {
-    uint64_t currentTime = get_us();
+    uint64_t currentTime = getTOD();
     uint64_t timer       = currentTime + microseconds;
     timer_t  next;
 
@@ -99,7 +99,7 @@ void c_swi_handler(uint32_t code, uint32_t *registers) {
     handler_present = *((uint64_t *)SYNCHRONOUS_HANDLER);
 
     if (handler_present != 0) {
-        core_id             = GETCOREID();
+        core_id             = getCORE();
         stack_pointer       = *((uint64_t *)(KERNEL_CORE0_SP + 0x8 * core_id));
         synchronous_handler = (void (*)(unsigned int, unsigned int, unsigned int, unsigned int))handler_present;
         asm volatile("mov sp, %0" : : "r"(stack_pointer));
@@ -122,8 +122,8 @@ void c_irq_handler() {
     timer_t      next;
 
     handler_present = *((uint64_t *)INTERRUPT_HANDLER);
-    currentTime     = get_us();
-    core_id         = GETCOREID();
+    currentTime     = getTOD();
+    core_id         = getCORE();
 
     /* Core 0 manages all interrupts */
     if (core_id == 0) {
@@ -136,9 +136,9 @@ void c_irq_handler() {
             lastBlink = currentTime / 1000;
         }
 
-        if (tmp & 0x08) {
+        if (tmp & 0x02) {
             /* More precise timing */
-            currentTime = get_us();
+            currentTime = getTOD();
 
             while ((res = next_pending_timer(currentTime, &next)) > 0) {
                 switch (next.type) {
@@ -190,7 +190,7 @@ void c_abort_handler(uint64_t exception_code, uint64_t iss) {
     void (*interrupt_handler)();
     uint64_t handler_present, stack_pointer;
     handler_present  = *((uint64_t *)ABORT_HANDLER);
-    uint32_t core_id = GETCOREID();
+    uint32_t core_id = getCORE();
 
     if (handler_present) {
         stack_pointer     = *((uint64_t *)(KERNEL_CORE0_SP + 0x8 * core_id));

@@ -217,7 +217,7 @@ void startUart0Int() {
 
 //TODO: check for overflowing
 void logprint(LOGLEVEL lvl, char *msg) {
-    uint64_t timer = get_us();
+    uint64_t timer = getTOD();
     int      len = 0, i = 1;
     char     string[256];
     char     tmp[32];

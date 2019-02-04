@@ -1,3 +1,27 @@
+/*
+ * Hardware Abstraction Layer for Raspberry Pi 3
+ *
+ * Copyright (C) 2018 Mattia Maldini
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
+/******************************************************************************
+ * This module is the EMMC control library
+ ******************************************************************************/
+
 #include "gpio.h"
 #include "uart.h"
 #include "sd.h"
@@ -79,11 +103,9 @@
 
 unsigned long sd_scr[2], sd_ocr, sd_rca, sd_err, sd_hv;
 
-void wait_cycles(unsigned int n) {
-    if (n)
-        while (n--) {
-            asm volatile("nop");
-        }
+static inline void wait_cycles(unsigned int n) {
+    while (n-- > 0)
+        nop();
 }
 
 /**
@@ -173,9 +195,12 @@ int sd_cmd(unsigned int code, unsigned int arg) {
     return 0;
 }
 
+/*
+ * Reads or writes a block of memory to the sd card
+ */
 int sd_transferblock(unsigned int lba, unsigned char *buffer, unsigned int num, readwrite_t readwrite) {
     int          r, c = 0, d;
-    char string[64];
+    char         string[64];
     unsigned int cmd_single = readwrite == SD_READBLOCK ? CMD_READ_SINGLE : CMD_WRITE_SINGLE;
     unsigned int cmd_multi  = readwrite == SD_READBLOCK ? CMD_READ_MULTI : CMD_WRITE_MULTI;
     unsigned int mask       = readwrite == SD_READBLOCK ? INT_READ_RDY : INT_WRITE_RDY;
@@ -238,7 +263,7 @@ int sd_transferblock(unsigned int lba, unsigned char *buffer, unsigned int num, 
  * set SD clock to frequency in Hz
  */
 int sd_clk(unsigned int f) {
-    char string[128];
+    char         string[128];
     unsigned int d, c = 41666666 / f, x, s = 32, h = 0;
     int          cnt = 100000;
     while ((EMMC->STATUS & (SR_CMD_INHIBIT | SR_DAT_INHIBIT)) && cnt--)
@@ -313,9 +338,9 @@ int sd_clk(unsigned int f) {
  * initialize EMMC to read SDHC card
  */
 int sd_init() {
-    char string[128];
+    char          string[128];
     unsigned long r;
-    long cnt, ccs = 0;
+    long          cnt, ccs = 0;
     // Setup the GPIOs that act as interface for the MMC
     // GPIO_CD
     setupGpio(47, GPIO_ALTFUNC3);

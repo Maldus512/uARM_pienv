@@ -47,20 +47,13 @@ GETARMCLKFRQ:
     mrs x0, cntfrq_el0
     ret
 
-.global GETARMCOUNTER
-GETARMCOUNTER:
-    //mrs x0, cntpct_el0
-    mrs x0, cntvct_el0
-    ret
-
-
 .globl PANIC
 PANIC:
     wfe
     b PANIC
 
-.globl GETCOREID
-GETCOREID:
+.globl getCORE
+getCORE:
     mrs     x0, mpidr_el1
     and     x0, x0, #0x3
     ret

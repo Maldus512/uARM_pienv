@@ -3,7 +3,7 @@
 #include "mmu.h"
 #include "uart.h"
 
-#define NONGLOBAL 1
+#define NONGLOBAL 0
 
 __attribute__((aligned(4096))) VMSAv8_64_NEXTLEVEL_DESCRIPTOR    Level0map1to1_el0[512]  = {0};
 __attribute__((aligned(4096))) VMSAv8_64_STAGE1_BLOCK_DESCRIPTOR Level1map1to1_el0[1024] = {0};
@@ -88,6 +88,7 @@ void vbarForMMU();     // TODO:remove
  */
 void mmu_init() {
     uint64_t r;
+    uint64_t ttbr0;
 
     /* Set the memattrs values into mair_el1*/
     asm volatile("dsb sy");
@@ -96,9 +97,11 @@ void mmu_init() {
          (MT_NORMAL << (MT_NORMAL_INDEX * 8)));
     asm volatile("msr mair_el1, %0" : : "r"(r));
 
+    ttbr0 = (uint64_t) ((uint64_t)&Level0map1to1[0] | (1UL << 48));
+
     // Bring both tables online and execute memory barrier
-    asm volatile("msr ttbr0_el1, %0" : : "r"((uintptr_t)&Level0map1to1[0]));
-    asm volatile("msr ttbr1_el1, %0" : : "r"((uintptr_t)&Level0map1to1[0]));
+    asm volatile("msr ttbr0_el1, %0" : : "r"((uintptr_t)ttbr0));
+    asm volatile("msr ttbr1_el1, %0" : : "r"((uintptr_t)ttbr0));
     asm volatile("isb");
 
     /* Specify mapping characteristics in translate control register
