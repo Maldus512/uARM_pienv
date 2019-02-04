@@ -249,7 +249,7 @@ fiq_handler:
 
     msr     ttbr0_el1, x28
 
-    msr   daifclr, #1
+    //msr   daifclr, #1
     eret
     
 /* Interrupts run at level EL1; they are enabled only at level EL0, so there are

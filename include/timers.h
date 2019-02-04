@@ -8,11 +8,10 @@
 #define CORE1_TIMER_IRQCNTL 0x40000044
 
 void         delay_us(uint32_t delay);
-void         rawDelay();
-void         initArmTimer();
-uint64_t     readCounterCount(void);
-void         disableCounter(void);
-unsigned int setTimer(unsigned int timer);
+void         raw_delay();
+void         init_arm_timer_interrupt();
+void         disable_physical_counter(void);
+unsigned int set_physical_timer(unsigned int timer);
 uint64_t     getTOD();
 void         wait_msec(unsigned int t);
 

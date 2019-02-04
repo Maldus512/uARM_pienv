@@ -15,7 +15,7 @@
 
 uint64_t wait_lock = 0;
 
-//TODO: clean up 
+// TODO: clean up
 int pending_emulated_interrupt() {
     uint8_t *interrupt_lines = (uint8_t *)INTERRUPT_LINES;
     uint8_t  interrupt_mask  = *((uint8_t *)INTERRUPT_MASK);
@@ -41,9 +41,9 @@ void setTIMER(uint64_t microseconds) {
     if (next_timer(&next) == 0) {
         // Only set the next timer if there are no pending interrupt lines
         if (currentTime < next.time && !pending_emulated_interrupt()) {
-            setTimer(next.time - currentTime);
+            set_physical_timer(next.time - currentTime);
         } else {
-            setTimer(0);
+            set_physical_timer(0);
         }
     }
 }
@@ -56,9 +56,9 @@ void set_device_timer(uint64_t microseconds, TIMER_TYPE type, int device_num) {
     add_timer(timer, type, device_num);
     if (next_timer(&next) == 0) {
         if (currentTime < next.time)
-            setTimer(next.time - currentTime);
+            set_physical_timer(next.time - currentTime);
         else
-            setTimer(0);
+            set_physical_timer(0);
     }
 }
 
@@ -162,18 +162,19 @@ void c_irq_handler() {
             }
 
             if (res == 0) {
-                setTimer(next.time - currentTime);
+                set_physical_timer(next.time - currentTime);
             } else {
-                disableCounter();
+                disable_physical_counter();
             }
         }
 
         if (pending_emulated_interrupt()) {
             /* Until there are interrupt lines pending fire interrupts immediately */
-            setTimer(0);
+            set_physical_timer(0);
         }
     }
 
+    /* TODO: check if I really have to call this */
     if (handler_present != 0) {
         wait_lock         = 1;
         stack_pointer     = *((uint64_t *)(KERNEL_CORE0_SP + 0x8 * core_id));
@@ -218,7 +219,7 @@ void c_abort_handler(uint64_t exception_code, uint64_t iss) {
                     uart0_puts("read\n");
                 break;
             default:
-        LOG(WARN, "Data abort:");
+                LOG(WARN, "Data abort:");
                 break;
         }
 

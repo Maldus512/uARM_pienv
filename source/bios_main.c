@@ -67,7 +67,7 @@ void initSystem() {
     uart0_puts("************************************\n");
     uart0_puts("\n");
 
-    initArmTimer();
+    init_arm_timer_interrupt();
 }
 
 
@@ -84,7 +84,6 @@ void idle2() {
     state.exception_link_register = (uint64_t)function1;
     state.stack_pointer           = (uint64_t)0x1000000 + 0x2000;
     state.status_register         = 0x300;
-    setTimer(1000 * 1000);
     LDST(&state);
 }
 
@@ -99,6 +98,7 @@ int __attribute__((weak)) main() {
     char string[128];
     state_t state;
     uint64_t ttbr0;
+    void (*LDST_MMU)(void* addr);
     state.exception_link_register = (uint64_t)function1;
     state.stack_pointer           = (uint64_t)0x2000000 + 0x4000;
     state.status_register         = 0x300;
@@ -110,7 +110,8 @@ int __attribute__((weak)) main() {
     LOG(INFO, string);
 
     uart0_puts("Echoing everything\n");
-    LDST(&state);
+    LDST_MMU = ((uint64_t)&LDST | 0xFFFF000000000000);
+    LDST_MMU(&state);
     while (1) {
         uart0_putc(uart0_getc());
     }
@@ -131,7 +132,7 @@ void bios_main() {
 
     init_page_tables(Level0map1to1_el1, Level1map1to1_el1, APBITS_NO_EL0);
     init_page_tables(Level0map1to1_el0, Level1map1to1_el0, APBITS_NO_LIMIT);
-    initMMU((uint64_t*)&Level0map1to1_el1[0]);
+    //initMMU((uint64_t*)&Level0map1to1_el1[0]);
 
     asm volatile("msr daifset, #2");
     main();

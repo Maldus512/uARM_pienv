@@ -304,7 +304,7 @@ void interrupt() {
 
 int main() {
     char string[128];
-    *((uint8_t *)INTERRUPT_MASK)       = 0xFA;
+    *((uint8_t *)INTERRUPT_MASK)       = 0xF9;
     *((uint64_t *)INTERRUPT_HANDLER)   = (uint64_t)&interrupt;
     *((uint64_t *)SYNCHRONOUS_HANDLER) = (uint64_t)&synchronous;
     *((uint64_t *)KERNEL_CORE0_SP)     = (uint64_t)0x1000000;
@@ -328,7 +328,6 @@ int main() {
     current                    = &t2;
 
     init_page_tables(app0map1to1, app1map1to1, APBITS_NO_LIMIT);
-    //mmu_init();
 
     print("about to launch the first process\n");
     setTIMER(1000);
