@@ -51,7 +51,7 @@ void init_emulated_printers() {
     int      i;
     uint8_t *deviceinstalled = (uint8_t *)DEVICE_INSTALLED;
 
-    deviceinstalled[IL_PRINTER] = 0x00;
+    deviceinstalled[IL_PRINTER] = 0x0F;
 
     for (i = 0; i < MAX_PRINTERS; i++) {
         printers[i].internal_registers.command = RESET;

@@ -31,9 +31,11 @@ void initSystem() {
     *((uint64_t *)SYNCHRONOUS_HANDLER) = 0;
     *((uint8_t *)INTERRUPT_MASK)       = 0xFF;
     uint8_t *interrupt_lines           = (uint8_t *)INTERRUPT_LINES;
+    uint8_t *deviceinstalled           = (uint8_t *)DEVICE_INSTALLED;
 
     for (i = 0; i < IL_LINES; i++) {
         interrupt_lines[i] = 0;
+        deviceinstalled[i] = 0;
     }
 
     init_uart1();
@@ -95,16 +97,16 @@ void echo() {
 }
 
 int __attribute__((weak)) main() {
-    char string[128];
-    state_t state;
+    char     string[128];
+    state_t  state;
     uint64_t ttbr0;
-    void (*LDST_MMU)(void* addr);
+    void (*LDST_MMU)(void *addr);
     state.exception_link_register = (uint64_t)function1;
     state.stack_pointer           = (uint64_t)0x2000000 + 0x4000;
     state.status_register         = 0x300;
-    ttbr0 = (uint64_t)&Level0map1to1_el0[0];
+    ttbr0                         = (uint64_t)&Level0map1to1_el0[0];
     ttbr0 |= (1UL << 48);
-    state.TTBR0                   =ttbr0;
+    state.TTBR0 = ttbr0;
 
     itoa(ttbr0, string, 16);
     LOG(INFO, string);
@@ -132,7 +134,7 @@ void bios_main() {
 
     init_page_tables(Level0map1to1_el1, Level1map1to1_el1, APBITS_NO_EL0);
     init_page_tables(Level0map1to1_el0, Level1map1to1_el0, APBITS_NO_LIMIT);
-    //initMMU((uint64_t*)&Level0map1to1_el1[0]);
+    // initMMU((uint64_t*)&Level0map1to1_el1[0]);
 
     asm volatile("msr daifset, #2");
     main();

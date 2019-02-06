@@ -52,6 +52,15 @@ int pending_real_interrupt(int core) {
     }
 }
 
+void clean_interrupt_lines() {
+    uint8_t *interrupt_lines   = (uint8_t *)INTERRUPT_LINES;
+    uint8_t *installed_devices = (uint8_t *)DEVICE_INSTALLED;
+    int      i;
+    for (i = 0; i < IL_LINES; i++) {
+        interrupt_lines[i] = interrupt_lines[i] & installed_devices[i];
+    }
+}
+
 void setTIMER(uint64_t microseconds) {
     uint8_t *    interrupt_lines = (uint8_t *)INTERRUPT_LINES;
     uint64_t     currentTime     = getTOD();
@@ -146,6 +155,7 @@ void c_fiq_handler() {
             set_physical_timer(0);
         }
     }
+    clean_interrupt_lines();
 }
 
 void c_swi_handler(uint32_t code, uint32_t *registers) {
@@ -186,8 +196,8 @@ void c_irq_handler() {
     else
         handler_present = *((uint64_t *)INTERRUPT_HANDLER);
 
-    currentTime     = getTOD();
-    core_id         = getCORE();
+    currentTime = getTOD();
+    core_id     = getCORE();
 
     /* Core 0 manages all interrupts */
     if (core_id == 0) {
@@ -223,6 +233,8 @@ void c_irq_handler() {
         set_physical_timer(0);
     }
 
+    clean_interrupt_lines();
+
     if (handler_present != 0 && (pending_emulated_interrupt() || pending_real_interrupt(core_id))) {
         wait_lock         = 1;
         stack_pointer     = *((uint64_t *)(KERNEL_CORE0_SP + 0x8 * core_id));
@@ -242,7 +254,7 @@ void c_abort_handler(uint64_t exception_code, uint64_t iss) {
     if (ISMMUACTIVE())
         handler_present = *((uint64_t *)ABORT_HANDLER) | 0xFFFF000000000000;
     else
-        handler_present  = *((uint64_t *)ABORT_HANDLER);
+        handler_present = *((uint64_t *)ABORT_HANDLER);
     uint32_t core_id = getCORE();
 
     if (handler_present) {

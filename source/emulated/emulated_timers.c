@@ -17,32 +17,35 @@
 #include "utils.h"
 #include "emulated_timers.h"
 #include "uart.h"
-
+#include "arch.h"
 
 struct list_head pending_timers = LIST_HEAD_INIT(pending_timers);
 struct list_head free_timers    = LIST_HEAD_INIT(free_timers);
 
 
-/* 
+/*
  * Initializes the free_timers list
  */
 void init_emulated_timers() {
     static timer_t timerarray[MAX_TIMERS];
     int            i;
+    uint8_t *      deviceinstalled = (uint8_t *)DEVICE_INSTALLED;
+
+    deviceinstalled[IL_TIMER] = 0x01;
+
     for (i = 0; i < MAX_TIMERS; i++) {
         list_add_tail(&timerarray[i].list, &free_timers);
     }
 }
 
-/* 
+/*
  * Allocates a timer struct from the free_timers list
  */
 timer_t *allocTimer() {
     if (list_empty(&free_timers)) {
         LOG(ERROR, "Fatal: unable to allocate timer");
         return NULL;
-    }
-    else {
+    } else {
         timer_t *block;
         block = container_of(free_timers.next, timer_t, list);
         list_del(free_timers.next);
@@ -51,12 +54,12 @@ timer_t *allocTimer() {
     }
 }
 
-/* 
+/*
  * Adds p to the list of free_timers
  */
 void freeTimer(timer_t *p) { list_add_tail(&p->list, &free_timers); }
 
-/* 
+/*
  * Adds a new timer to the list pointed by q
  */
 void insertTimer(struct list_head *q, timer_t *p) {
@@ -66,7 +69,7 @@ void insertTimer(struct list_head *q, timer_t *p) {
     struct list_head *aux, *old;
     timer_t *         tmp;
 
-    q = (struct list_head*)((uint64_t)q & 0x0000ffffffffffff);
+    q = (struct list_head *)((uint64_t)q & 0x0000ffffffffffff);
 
     old = q;
     aux = q->next;
@@ -85,11 +88,11 @@ void insertTimer(struct list_head *q, timer_t *p) {
         list_add(&(p->list), old);
 }
 
-/* 
+/*
  * Removes the first timer from the list pointed by q
  */
 timer_t *removeTimer(struct list_head *q) {
-    q = (struct list_head*)((uint64_t)q & 0x0000ffffffffffff);
+    q = (struct list_head *)((uint64_t)q & 0x0000ffffffffffff);
     if (q == NULL || list_empty(q))
         return NULL;
     timer_t *first;
@@ -98,14 +101,14 @@ timer_t *removeTimer(struct list_head *q) {
     return first;
 }
 
-/* 
+/*
  * Removes any timer of the specified type from the list pointed by q
  */
 void removeTimerType(struct list_head *q, TIMER_TYPE type, int code) {
     struct list_head *aux, *del;
     timer_t *         tmp;
 
-    q = (struct list_head*)((uint64_t)q & 0x0000ffffffffffff);
+    q = (struct list_head *)((uint64_t)q & 0x0000ffffffffffff);
 
     if (q == NULL)
         return;
@@ -124,23 +127,23 @@ void removeTimerType(struct list_head *q, TIMER_TYPE type, int code) {
     }
 }
 
-/* 
+/*
  * Returns the first timer from the list pointed by q, without removing it
  */
 timer_t *headTimer(struct list_head *q) {
-    q = (struct list_head*)((uint64_t)q & 0x0000ffffffffffff);
+    q = (struct list_head *)((uint64_t)q & 0x0000ffffffffffff);
     if (q == NULL || list_empty(q))
         return NULL;
     q = q->next;
     return container_of(q, timer_t, list);
 }
 
-/* 
+/*
  * Adds a new timer of the specified type
  */
 void add_timer(uint64_t time, TIMER_TYPE type, int code) {
     timer_t *timer;
-    
+
     removeTimerType(&pending_timers, type, code);
     timer = allocTimer();
 
@@ -156,7 +159,7 @@ void add_timer(uint64_t time, TIMER_TYPE type, int code) {
     insertTimer(&pending_timers, timer);
 }
 
-/* 
+/*
  * Initializes next with the first timer on the list
  */
 int next_timer(timer_t *next) {
@@ -165,10 +168,10 @@ int next_timer(timer_t *next) {
         return -1;
 
     memcpy(next, timer, sizeof(timer_t));
-    return 0; 
+    return 0;
 }
 
-/* 
+/*
  * Initializes next with the first timer that has yet to expire
  */
 int next_pending_timer(uint64_t currentTime, timer_t *next) {
