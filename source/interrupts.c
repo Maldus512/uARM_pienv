@@ -13,7 +13,8 @@
 #include "emulated_disks.h"
 #include "emulated_timers.h"
 
-uint64_t wait_lock = 0;
+uint64_t wait_lock                = 0;
+uint64_t scheduled_physical_timer = 0;
 
 // TODO: clean up
 int pending_emulated_interrupt() {
@@ -33,18 +34,15 @@ void setTIMER(uint64_t microseconds) {
     uint8_t *interrupt_lines = (uint8_t *)INTERRUPT_LINES;
     uint64_t currentTime     = getTOD();
     uint64_t timer           = currentTime + microseconds;
-    timer_t  next;
 
     interrupt_lines[IL_TIMER] = 0;
+    scheduled_physical_timer  = timer;
 
-    add_timer(timer, TIMER, 0);
-    if (next_timer(&next) == 0) {
-        // Only set the next timer if there are no pending interrupt lines
-        if (currentTime < next.time && !pending_emulated_interrupt()) {
-            set_physical_timer(next.time - currentTime);
-        } else {
-            set_physical_timer(0);
-        }
+    // Only set the next timer if there are no pending interrupt lines
+    if (currentTime < scheduled_physical_timer && !pending_emulated_interrupt()) {
+        set_physical_timer(scheduled_physical_timer - currentTime);
+    } else {
+        set_physical_timer(0);
     }
 }
 
@@ -56,9 +54,9 @@ void set_device_timer(uint64_t microseconds, TIMER_TYPE type, int device_num) {
     add_timer(timer, type, device_num);
     if (next_timer(&next) == 0) {
         if (currentTime < next.time)
-            set_physical_timer(next.time - currentTime);
+            set_virtual_timer(next.time - currentTime);
         else
-            set_physical_timer(0);
+            set_virtual_timer(0);
     }
 }
 
@@ -66,7 +64,10 @@ void set_device_timer(uint64_t microseconds, TIMER_TYPE type, int device_num) {
 
 void c_fiq_handler() {
     uint32_t tmp, data, device_num, device_class;
-    uint64_t address;
+    uint64_t address, currentTime;
+    int      res;
+    timer_t  next;
+
     tmp = GIC->Core0_FIQ_Source;
 
     if (tmp & 0x10) {
@@ -89,6 +90,38 @@ void c_fiq_handler() {
 
         // clear interrupt
         GIC->Core0_MailBox0_ClearSet = data;
+    }
+
+    if (tmp & 0x08) {
+        currentTime = getTOD();
+
+        while ((res = next_pending_timer(currentTime, &next)) > 0) {
+            switch (next.type) {
+                case TAPE:
+                    manage_emulated_tape(next.code);
+                    break;
+                case PRINTER:
+                    manage_emulated_printer(next.code);
+                    break;
+                case DISK:
+                    manage_emulated_disk(next.code);
+                    break;
+                case UNALLOCATED:
+                    break;
+            }
+        }
+
+        // If there are more pending timers, set the first one
+        if (res == 0) {
+            set_virtual_timer(next.time - currentTime);
+        } else {
+            disable_virtual_counter();
+        }
+        
+        if (pending_emulated_interrupt()) {
+            /* Until there are interrupt lines pending fire interrupts immediately */
+            set_physical_timer(0);
+        }
     }
 }
 
@@ -115,11 +148,9 @@ void c_irq_handler() {
     uint32_t        tmp;
     static uint64_t lastBlink = 0;
     uint64_t        currentTime, handler_present, stack_pointer;
-    int             res;
     void (*interrupt_handler)();
     uint8_t *    interrupt_lines = (uint8_t *)INTERRUPT_LINES;
     unsigned int core_id;
-    timer_t      next;
 
     handler_present = *((uint64_t *)INTERRUPT_HANDLER);
     currentTime     = getTOD();
@@ -136,35 +167,20 @@ void c_irq_handler() {
             lastBlink = currentTime / 1000;
         }
 
+        /* A timer interrupt means one of two things: either a timer interrupt
+        reached its condition or there are emulated interrupt lines pending
+        and I want to make sure they are managed */
         if (tmp & 0x02) {
             /* More precise timing */
             currentTime = getTOD();
 
-            while ((res = next_pending_timer(currentTime, &next)) > 0) {
-                switch (next.type) {
-                    /* Don't clear the timer interrupt on purpose; it's on the user to to that */
-                    case TIMER:
-                        interrupt_lines[IL_TIMER] = 1;
-                        // setTIMER(100);
-                        break;
-                    case TAPE:
-                        manage_emulated_tape(next.code);
-                        break;
-                    case PRINTER:
-                        manage_emulated_printer(next.code);
-                        break;
-                    case DISK:
-                        manage_emulated_disk(next.code);
-                        break;
-                    case UNALLOCATED:
-                        break;
-                }
-            }
-
-            if (res == 0) {
-                set_physical_timer(next.time - currentTime);
-            } else {
+            if (currentTime >= scheduled_physical_timer) {
+                /* Don't clear the timer interrupt on purpose; it's on the user to to that */
+                interrupt_lines[IL_TIMER] = 1;
+                scheduled_physical_timer  = 0;
                 disable_physical_counter();
+            } else {
+                set_physical_timer(scheduled_physical_timer - currentTime);
             }
         }
 
@@ -180,6 +196,7 @@ void c_irq_handler() {
         stack_pointer     = *((uint64_t *)(KERNEL_CORE0_SP + 0x8 * core_id));
         interrupt_handler = (void (*)(void *))handler_present;
         asm volatile("mov sp, %0" : : "r"(stack_pointer));
+        asm volatile("msr   daifclr, #1");
         interrupt_handler();
     }
     /* If there is no user-defined handler simply start again the last process */

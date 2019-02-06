@@ -255,8 +255,8 @@ fiq_handler:
 /* Interrupts run at level EL1; they are enabled only at level EL0, so there are
     no nested interrupts */
 irq_handler:
-    msr   daifset, #2
-    msr   daifclr, #1
+    msr   daifset, #3
+    //msr   daifclr, #1
 
     // if coming from level other than EL0 keep the current stack
     mrs     x27, spsr_el1
