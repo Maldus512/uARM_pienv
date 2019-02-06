@@ -13,12 +13,6 @@ _start:
     str     w0, [x1]
 
 multicore_start:
-
-    mov x0, #1
-    msr ttbr0_el1, x0
-    mov x0, #2
-    msr ttbr1_el1, x0
-
     mrs	x0, cnthctl_el2
     orr	x0, x0, #0x3		/* Enable EL1 access to timers */
     msr	cnthctl_el2, x0
@@ -136,31 +130,31 @@ hang2:
 .global interrupt_vector
 interrupt_vector:
 /* Current EL with SP0 */
-    vector syncronousException
+    vector keep_current_stack_syncronous_exception
     vector keep_current_stack_irq_handler
     vector fiq_handler
     stub 0x00000003
 
 /* Current EL with SPX */
-    vector syncronousException
+    vector keep_current_stack_syncronous_exception
     vector keep_current_stack_irq_handler
     vector fiq_handler
     stub 0x00000006
 
 /* Lower EL using AARCH64 */
-    vector syncronousException
+    vector syncronous_exception
     vector irq_handler
     vector fiq_handler
     stub 0x00000009
 
 /* Lower EL using AARCH32 */
-    vector syncronousException
+    vector syncronous_exception
     vector irq_handler
     vector fiq_handler
     stub 0x0C
 
 
-syncronousException:
+syncronous_exception:
     msr   daifset, #2
     mrs    x28, esr_el1                     // read the syndrome register
     lsr    x27, x28, #26      // exception class
@@ -171,6 +165,18 @@ unrecognized:
     and    x1, x28, #0x1FFFFFF
     b      abort_handler
 
+keep_current_stack_syncronous_exception:
+    msr   daifset, #2
+    mrs    x28, esr_el1                     // read the syndrome register
+    lsr    x27, x28, #26      // exception class
+    cmp    x27, #EC_SVC           // SVC in 64-bit state
+    beq    keep_current_stack_swi_handler
+keep_current_stack_unrecognized:
+    mov    x0, x27
+    and    x1, x28, #0x1FFFFFF
+    b      keep_current_stack_abort_handler
+
+
 swi_handler:
     msr   daifset, #2
     msr   daifclr, #1
@@ -179,7 +185,7 @@ swi_handler:
     mrs     x27, spsr_el1
     and     x27, x27, #7
     cmp     x27, #0
-    bne     keep_current_stack_swi
+    bne     keep_current_stack_swi_handler
 
     mrs     x27, mpidr_el1
     and     x27, x27, #0x3
@@ -205,10 +211,11 @@ set_swi_stack_core3:
     ldr     x27, =__EL1_stack_core3
 set_chosen_swi_stack:
     mov     sp, x27
-keep_current_stack_swi:
+keep_current_stack_swi_handler:
     mrs     x28, ttbr0_el1
     mrs     x27, ttbr1_el1
     msr     ttbr0_el1, x27
+    isb
     // save ttbr0
     str     x28, [sp, #-16]!
     // save link register and stack pointer
@@ -231,11 +238,12 @@ keep_current_stack_swi:
 
 
 fiq_handler:
-    msr   daifset, #3
+    msr   daifset, #7
 
     mrs     x28, ttbr0_el1
     mrs     x27, ttbr1_el1
     msr     ttbr0_el1, x27
+    isb
     /* save register values on the stack */
     stp   x29, x30, [sp, #-16]!
     bl    pushRegisters
@@ -249,7 +257,7 @@ fiq_handler:
 
     msr     ttbr0_el1, x28
 
-    //msr   daifclr, #1
+    msr   daifclr, #4
     eret
     
 /* Interrupts run at level EL1; they are enabled only at level EL0, so there are
@@ -292,6 +300,7 @@ keep_current_stack_irq_handler:
     mrs     x28, ttbr0_el1
     mrs     x27, ttbr1_el1
     msr     ttbr0_el1, x27
+    isb
 
     // save ttbr0
     str     x28, [sp, #-16]!
@@ -319,10 +328,8 @@ abort_handler:
     mrs     x27, spsr_el1
     and     x27, x27, #7
     cmp     x27, #0
-    bne     keep_current_stack_abort
+    bne     keep_current_stack_abort_handler
 
-    mrs     x27, ttbr0_el1
-    
     mrs     x27, mpidr_el1
     and     x27, x27, #0x3
     cmp     x27, #0
@@ -347,10 +354,11 @@ set_abt_stack_core3:
     ldr     x27, =__EL1_stack_core3
 set_chosen_abt_stack:
     mov     sp, x27
-keep_current_stack_abort:
+keep_current_stack_abort_handler:
     mrs     x28, ttbr0_el1
     mrs     x27, ttbr1_el1
     msr     ttbr0_el1, x27
+    isb
     // save link and frame pointers
     stp     x29, x30, [sp, #-16]!
     // save ttbr0

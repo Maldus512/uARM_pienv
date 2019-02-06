@@ -6,7 +6,6 @@
 
 typedef enum {
     UNALLOCATED = 0,
-    TIMER,
     PRINTER,
     TAPE,
     DISK,

@@ -116,8 +116,8 @@ int mbox_call(unsigned char ch) {
 }
 
 void initIPI() {
-    GIC->Core0_Mailbox_Interrupt_Control = 0x10;
-    GIC->Core1_Mailbox_Interrupt_Control = 1;
-    GIC->Core2_Mailbox_Interrupt_Control = 1;
-    GIC->Core3_Mailbox_Interrupt_Control = 1;
+    GIC->Core0_Mailbox_Interrupt_Control = 0x1E;
+    GIC->Core1_Mailbox_Interrupt_Control = 0x0F;
+    GIC->Core2_Mailbox_Interrupt_Control = 0x0F;
+    GIC->Core3_Mailbox_Interrupt_Control = 0x0F;
 }

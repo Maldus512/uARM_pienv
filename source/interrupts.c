@@ -13,8 +13,8 @@
 #include "emulated_disks.h"
 #include "emulated_timers.h"
 
-uint64_t wait_lock                = 0;
-uint64_t scheduled_physical_timer = 0;
+uint64_t wait_lock                    = 0;
+uint64_t scheduled_physical_timers[4] = {0};
 
 // TODO: clean up
 int pending_emulated_interrupt() {
@@ -30,17 +30,40 @@ int pending_emulated_interrupt() {
     return 0;
 }
 
-void setTIMER(uint64_t microseconds) {
-    uint8_t *interrupt_lines = (uint8_t *)INTERRUPT_LINES;
-    uint64_t currentTime     = getTOD();
-    uint64_t timer           = currentTime + microseconds;
+int pending_real_interrupt(int core) {
+    // Ignore physical timer interrupt, it is managed as an emulated device
+    switch (core) {
+        case 0:
+            return GIC->Core0_IRQ_Source & 0xFFFD ? 1 : 0;
+            break;
+        case 1:
+            return GIC->Core1_IRQ_Source & 0xFFFD ? 1 : 0;
+            break;
+        case 2:
+            return GIC->Core2_IRQ_Source & 0xFFFD ? 1 : 0;
+            break;
+        case 3:
+            return GIC->Core3_IRQ_Source & 0xFFFD ? 1 : 0;
+            break;
 
-    interrupt_lines[IL_TIMER] = 0;
-    scheduled_physical_timer  = timer;
+        default:
+            return 0;
+            break;
+    }
+}
+
+void setTIMER(uint64_t microseconds) {
+    uint8_t *    interrupt_lines = (uint8_t *)INTERRUPT_LINES;
+    uint64_t     currentTime     = getTOD();
+    uint64_t     timer           = currentTime + microseconds;
+    unsigned int core            = getCORE();
+
+    interrupt_lines[IL_TIMER]       = 0;
+    scheduled_physical_timers[core] = timer;
 
     // Only set the next timer if there are no pending interrupt lines
-    if (currentTime < scheduled_physical_timer && !pending_emulated_interrupt()) {
-        set_physical_timer(scheduled_physical_timer - currentTime);
+    if (currentTime < scheduled_physical_timers[core] && !pending_emulated_interrupt()) {
+        set_physical_timer(scheduled_physical_timers[core] - currentTime);
     } else {
         set_physical_timer(0);
     }
@@ -117,7 +140,7 @@ void c_fiq_handler() {
         } else {
             disable_virtual_counter();
         }
-        
+
         if (pending_emulated_interrupt()) {
             /* Until there are interrupt lines pending fire interrupts immediately */
             set_physical_timer(0);
@@ -129,13 +152,19 @@ void c_swi_handler(uint32_t code, uint32_t *registers) {
     uint64_t handler_present, stack_pointer;
     void (*synchronous_handler)(unsigned int, unsigned int, unsigned int, unsigned int);
     uint32_t core_id;
-    handler_present = *((uint64_t *)SYNCHRONOUS_HANDLER);
+    if (ISMMUACTIVE())
+        handler_present = *((uint64_t *)SYNCHRONOUS_HANDLER) | 0xFFFF000000000000;
+    else
+        handler_present = *((uint64_t *)SYNCHRONOUS_HANDLER);
 
     if (handler_present != 0) {
         core_id             = getCORE();
         stack_pointer       = *((uint64_t *)(KERNEL_CORE0_SP + 0x8 * core_id));
         synchronous_handler = (void (*)(unsigned int, unsigned int, unsigned int, unsigned int))handler_present;
-        asm volatile("mov sp, %0" : : "r"(stack_pointer));
+
+        // If we already were at EL1 do not change stack pointer
+        if (GETSAVEDEL() == 0)
+            asm volatile("mov sp, %0" : : "r"(stack_pointer));
         synchronous_handler(code, registers[0], registers[1], registers[2]);
     }
 
@@ -152,7 +181,11 @@ void c_irq_handler() {
     uint8_t *    interrupt_lines = (uint8_t *)INTERRUPT_LINES;
     unsigned int core_id;
 
-    handler_present = *((uint64_t *)INTERRUPT_HANDLER);
+    if (ISMMUACTIVE())
+        handler_present = *((uint64_t *)INTERRUPT_HANDLER) | 0xFFFF000000000000;
+    else
+        handler_present = *((uint64_t *)INTERRUPT_HANDLER);
+
     currentTime     = getTOD();
     core_id         = getCORE();
 
@@ -166,32 +199,31 @@ void c_irq_handler() {
             f_led     = f_led == 0 ? 1 : 0;
             lastBlink = currentTime / 1000;
         }
+    }
 
-        /* A timer interrupt means one of two things: either a timer interrupt
-        reached its condition or there are emulated interrupt lines pending
-        and I want to make sure they are managed */
-        if (tmp & 0x02) {
-            /* More precise timing */
-            currentTime = getTOD();
+    /* A timer interrupt means one of two things: either a timer interrupt
+    reached its condition or there are emulated interrupt lines pending
+    and I want to make sure they are managed */
+    if (tmp & 0x02) {
+        /* More precise timing */
+        currentTime = getTOD();
 
-            if (currentTime >= scheduled_physical_timer) {
-                /* Don't clear the timer interrupt on purpose; it's on the user to to that */
-                interrupt_lines[IL_TIMER] = 1;
-                scheduled_physical_timer  = 0;
-                disable_physical_counter();
-            } else {
-                set_physical_timer(scheduled_physical_timer - currentTime);
-            }
-        }
-
-        if (pending_emulated_interrupt()) {
-            /* Until there are interrupt lines pending fire interrupts immediately */
-            set_physical_timer(0);
+        if (currentTime >= scheduled_physical_timers[core_id]) {
+            /* Don't clear the timer interrupt on purpose; it's on the user to to that */
+            interrupt_lines[IL_TIMER]          = 1;
+            scheduled_physical_timers[core_id] = 0;
+            disable_physical_counter();
+        } else {
+            set_physical_timer(scheduled_physical_timers[core_id] - currentTime);
         }
     }
 
-    /* TODO: check if I really have to call this */
-    if (handler_present != 0) {
+    if (pending_emulated_interrupt()) {
+        /* Until there are interrupt lines pending fire interrupts immediately */
+        set_physical_timer(0);
+    }
+
+    if (handler_present != 0 && (pending_emulated_interrupt() || pending_real_interrupt(core_id))) {
         wait_lock         = 1;
         stack_pointer     = *((uint64_t *)(KERNEL_CORE0_SP + 0x8 * core_id));
         interrupt_handler = (void (*)(void *))handler_present;
@@ -207,13 +239,19 @@ void c_irq_handler() {
 void c_abort_handler(uint64_t exception_code, uint64_t iss) {
     void (*interrupt_handler)();
     uint64_t handler_present, stack_pointer;
-    handler_present  = *((uint64_t *)ABORT_HANDLER);
+    if (ISMMUACTIVE())
+        handler_present = *((uint64_t *)ABORT_HANDLER) | 0xFFFF000000000000;
+    else
+        handler_present  = *((uint64_t *)ABORT_HANDLER);
     uint32_t core_id = getCORE();
 
     if (handler_present) {
         stack_pointer     = *((uint64_t *)(KERNEL_CORE0_SP + 0x8 * core_id));
         interrupt_handler = (void (*)(void *))handler_present;
-        asm volatile("mov sp, %0" : : "r"(stack_pointer));
+
+        // If we already were at EL1 do not change stack pointer
+        if (GETSAVEDEL() == 0)
+            asm volatile("mov sp, %0" : : "r"(stack_pointer));
         interrupt_handler();
     } else {
         switch (exception_code) {

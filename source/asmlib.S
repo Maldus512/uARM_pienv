@@ -5,6 +5,12 @@ GETEL:
     mrs x0,CurrentEL
     ret
 
+.globl ISMMUACTIVE
+ISMMUACTIVE:
+    mrs x0, sctlr_el1
+    and x0, x0, #1
+    ret
+
 .globl GETSAVEDEL
 GETSAVEDEL:
     mov x0, #0
@@ -173,6 +179,7 @@ end:
     ldr     x1, [x0, #8]
     ldr     x0, [x0]
     msr     ttbr0_el1, x2
+    nop
     eret
 
 

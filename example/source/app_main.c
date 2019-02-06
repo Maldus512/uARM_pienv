@@ -41,11 +41,11 @@ state_t *current;
 int      semaforo = 0;
 
 
-/* Level0 1:1 mapping to Level1 */
 static __attribute__((aligned(4096))) VMSAv8_64_NEXTLEVEL_DESCRIPTOR app0map1to1[512] = {0};
-
-/* This will have 1024 entries x 2M so a full range of 2GB */
 static __attribute__((aligned(4096))) VMSAv8_64_STAGE1_BLOCK_DESCRIPTOR app1map1to1[1024] = {0};
+
+static __attribute__((aligned(4096))) VMSAv8_64_NEXTLEVEL_DESCRIPTOR kernel0map1to1[512] = {0};
+static __attribute__((aligned(4096))) VMSAv8_64_STAGE1_BLOCK_DESCRIPTOR kernel1map1to1[1024] = {0};
 
 
 void delay(unsigned int us) {
@@ -298,19 +298,22 @@ void interrupt() {
         nop();
         print("multicore!");
         CORE1_MAILBOX0_CLEAR = 0xFFFFFFFF;
+        SYSCALL(1,0,0,0);
         LDST(oldarea);
     }
 }
 
 int main() {
     char string[128];
-    *((uint8_t *)INTERRUPT_MASK)       = 0xF9;
+    *((uint8_t *)INTERRUPT_MASK)       = 0xF8;
     *((uint64_t *)INTERRUPT_HANDLER)   = (uint64_t)&interrupt;
     *((uint64_t *)SYNCHRONOUS_HANDLER) = (uint64_t)&synchronous;
     *((uint64_t *)KERNEL_CORE0_SP)     = (uint64_t)0x1000000;
     *((uint64_t *)KERNEL_CORE1_SP)     = (uint64_t)0x1002000;
     *((uint64_t *)KERNEL_CORE2_SP)     = (uint64_t)0x1004000;
     *((uint64_t *)KERNEL_CORE3_SP)     = (uint64_t)0x1006000;
+
+    void (*LDST_MMU)(void* addr);
 
     print("sono l'applicazione\n");
 
@@ -323,14 +326,19 @@ int main() {
     t2.stack_pointer           = (uint64_t)0x1006000 + 0x4000;
     t1.status_register         = 0x300;
     t2.status_register         = 0x300;
-    t1.TTBR0                   = ((uint64_t)((uint64_t)app0map1to1) | 0UL << 48);
-    t2.TTBR0                   = ((uint64_t)((uint64_t)app0map1to1) | 0UL << 48);
+    t1.TTBR0                   = ((uint64_t)((uint64_t)app0map1to1) | 3UL << 48);
+    t2.TTBR0                   = ((uint64_t)((uint64_t)app0map1to1) | 2UL << 48);
     current                    = &t2;
 
     init_page_tables(app0map1to1, app1map1to1, APBITS_NO_LIMIT);
+    init_page_tables(kernel0map1to1, kernel1map1to1, APBITS_NO_EL0);
 
     print("about to launch the first process\n");
     setTIMER(1000);
-    LDST(current);
+    initMMU((uint64_t*)&kernel0map1to1[0]);
+
+    LDST_MMU = ((uint64_t)&LDST | 0xFFFF000000000000);
+    LDST_MMU(current);
+    //LDST(current);
     return 0;
 }

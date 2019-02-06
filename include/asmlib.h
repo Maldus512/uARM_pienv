@@ -5,6 +5,7 @@
 
 uint32_t GETEL();
 uint32_t GETARMCLKFRQ();
+uint32_t ISMMUACTIVE();
 
 uint64_t GETTTBR0();
 uint64_t STELR();
