@@ -85,10 +85,10 @@ struct framebuffer_mailbox_msg {
 /* Functions */
 
 void led(uint32_t onoff);
-void serialNumber(uint32_t serial[2]);
-void setUart0Baud();
-void initIPI();
-unsigned int getMemorySplit();
+void serial_number(uint32_t serial[2]);
+void set_uart0_baud();
+void init_IPI();
+unsigned int get_memory_split();
 
 int mbox_call(unsigned char ch);
 

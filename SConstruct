@@ -42,8 +42,9 @@ DEBUGGER = None
 QEMU = None
 BUILD = "build"
 FLAGS = [
-    '-Wall', '-ffreestanding', '-nostdlib', '-nostartfiles', '-O0', '-g', '-fPIE', 
-    '-march=armv8.1-a', '-mtune=cortex-a53'
+    '-Wall', '-ffreestanding', '-nostdlib', '-nostartfiles', '-O0', '-g',
+    '-fPIE', '-ffixed-x27', '-ffixed-x28', '-march=armv8-a',
+    '-mtune=cortex-a53'
 ],
 
 VariantDir(BUILD, "source", duplicate=0)
@@ -88,13 +89,16 @@ env_options = {
     "{}ld".format(TOOLCHAIN),
     "ENV":
     externalEnvironment,
-    "CPPPATH": ['include', 'include/app'],
+    "CPPPATH": ['include', 'include/maldos'],
     "ASFLAGS":
     FLAGS,
     "CCFLAGS":
     FLAGS,
     "LINKFLAGS": [
-        '-nostdlib', '-nostartfiles', '-r', '-T{}'.format(LDSCRIPT), #'-pie',
+        '-nostdlib',
+        '-nostartfiles',
+        '-r',
+        '-T{}'.format(LDSCRIPT),  #'-pie',
         '-o{}'.format(HAL)
     ],
 }
@@ -105,20 +109,22 @@ sources += Glob("{}/emulated/*.c".format(BUILD))
 sources += Glob("{}/hal/*.c".format(BUILD))
 sources += ["res/font.bin"]
 
-
 env = Environment(**env_options)
 
 env.Program(HAL, sources)
 
 env_options['LINKFLAGS'] = [
-    '-nostdlib', '-nostartfiles', '-T{}'.format(LDSCRIPT),
-    '-o{}'.format(ELF)
+    '-nostdlib', '-nostartfiles', '-T{}'.format(LDSCRIPT), '-o{}'.format(ELF)
 ]
 
 if APP:
-    env.Command(ELF, HAL, '{}ld -nostdlib -nostartfiles -pie -T{} -o{} {} {}'.format(TOOLCHAIN, LDSCRIPT, ELF, HAL, APP))
+    env.Command(
+        ELF, HAL, '{}ld -nostdlib -nostartfiles -pie -T{} -o{} {} {}'.format(
+            TOOLCHAIN, LDSCRIPT, ELF, HAL, APP))
 else:
-    env.Command(ELF, HAL, '{}ld -nostdlib -nostartfiles -pie -T{} -o{} {}'.format(TOOLCHAIN, LDSCRIPT, ELF, HAL))
+    env.Command(
+        ELF, HAL, '{}ld -nostdlib -nostartfiles -pie -T{} -o{} {}'.format(
+            TOOLCHAIN, LDSCRIPT, ELF, HAL))
 
 kernel = env.Command(
     KERNEL, ELF, '{}objcopy {} -O binary {}'.format(TOOLCHAIN, ELF, KERNEL))
@@ -130,6 +136,11 @@ env.Default(boot)
 
 env.Alias("all", [boot, "example/app.elf"])
 env.Alias("hal", boot)
+
+PhonyTargets(env=env, target='install', depends=boot, action=
+    "cp -r include/maldos /usr/local/include && mkdir -p /usr/local/share/maldos/ && cp {} /usr/local/share/maldos".format(HAL))
+PhonyTargets(env=env, target='remove', depends=[], action=
+    "rm -r /usr/local/include/maldos/*.h && rm -r /usr/local/share/maldos/{}".format(HAL))
 
 if 'example' in COMMAND_LINE_TARGETS or 'all' in COMMAND_LINE_TARGETS:
     Export('alt_toolchain')

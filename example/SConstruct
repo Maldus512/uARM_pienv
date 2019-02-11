@@ -45,15 +45,25 @@ ELF = 'app.elf'
 BIN = 'app.bin'
 TOOLCHAIN = None
 BUILD = "build"
-FLAGS = ['-Wall', '-ffreestanding', '-nostdlib', '-nostartfiles', '-O0', '-g', '-march=armv8-a', '-mtune=cortex-a53', '-fPIE'],
+FLAGS = [
+    '-Wall',
+    '-ffreestanding',
+    '-nostdlib',
+    '-nostartfiles',
+    '-O0',
+    '-g',
+    '-march=armv8-a',
+    '-mtune=cortex-a53',
+    '-fPIE',
+    '-ffixed-x27',
+    '-ffixed-x28',
+],
 
 VariantDir(BUILD, "source", duplicate=0)
 
-Help(
-    """
+Help("""
 Type: 'scons' to build the application .elf,
-""",
-    append=False)
+""", append=False)
 
 num_cpu = multiprocessing.cpu_count()
 SetOption('num_jobs', num_cpu)
@@ -67,7 +77,7 @@ for toolchain in POSSIBLE_TOOLCHAINS:
 alt_toolchain = None
 Import('*')
 if alt_toolchain != None:
-    TOOLCHAIN=alt_toolchain
+    TOOLCHAIN = alt_toolchain
 
 if TOOLCHAIN == None:
     print("")
@@ -77,15 +87,13 @@ if TOOLCHAIN == None:
     Exit(1)
 
 env_options = {
-    "CC":
-    "{}gcc".format(TOOLCHAIN),
+    "CC": "{}gcc".format(TOOLCHAIN),
     "ENV": {
         'PATH': os.environ['PATH'],
     },
-    "CPPPATH": ['include', '../include/app'],
-    "CCFLAGS":
-    FLAGS,
-    'LINK' : "{}ld".format(TOOLCHAIN),
+    "CPPPATH": ['include', '../include/maldos'],
+    "CCFLAGS": FLAGS,
+    'LINK': "{}ld".format(TOOLCHAIN),
     "LINKFLAGS": ["-r"],
     #"LINKFLAGS": ["-Wl,-r", "-nostdlib", "-nostartfiles"],
 }

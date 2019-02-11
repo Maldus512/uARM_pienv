@@ -162,13 +162,14 @@ void c_swi_handler(uint32_t code, uint32_t *registers) {
     uint64_t handler_present, stack_pointer;
     void (*synchronous_handler)(unsigned int, unsigned int, unsigned int, unsigned int);
     uint32_t core_id;
+    core_id = getCORE();
+
     if (ISMMUACTIVE())
         handler_present = *((uint64_t *)SYNCHRONOUS_HANDLER) | 0xFFFF000000000000;
     else
         handler_present = *((uint64_t *)SYNCHRONOUS_HANDLER);
 
     if (handler_present != 0) {
-        core_id             = getCORE();
         stack_pointer       = *((uint64_t *)(KERNEL_CORE0_SP + 0x8 * core_id));
         synchronous_handler = (void (*)(unsigned int, unsigned int, unsigned int, unsigned int))handler_present;
 
@@ -250,12 +251,14 @@ void c_irq_handler() {
 
 void c_abort_handler(uint64_t exception_code, uint64_t iss) {
     void (*interrupt_handler)();
-    uint64_t handler_present, stack_pointer;
+    uint64_t     handler_present, stack_pointer;
+    unsigned int core_id;
+    core_id = getCORE();
+
     if (ISMMUACTIVE())
         handler_present = *((uint64_t *)ABORT_HANDLER) | 0xFFFF000000000000;
     else
         handler_present = *((uint64_t *)ABORT_HANDLER);
-    uint32_t core_id = getCORE();
 
     if (handler_present) {
         stack_pointer     = *((uint64_t *)(KERNEL_CORE0_SP + 0x8 * core_id));
@@ -265,6 +268,8 @@ void c_abort_handler(uint64_t exception_code, uint64_t iss) {
         if (GETSAVEDEL() == 0)
             asm volatile("mov sp, %0" : : "r"(stack_pointer));
         interrupt_handler();
+        /* If there is no user-defined handler simply start again the last process */
+        LDST((void *)(ABORT_OLDAREA + CORE_OFFSET * core_id));
     } else {
         switch (exception_code) {
             case 0x20:

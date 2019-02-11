@@ -1,3 +1,27 @@
+/*
+ * Hardware Abstraction Layer for Raspberry Pi 3
+ *
+ * Copyright (C) 2018 Mattia Maldini
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
+/******************************************************************************
+ * This module contains mailbox utility functions
+ ******************************************************************************/
+
 #include "arch.h"
 #include "mailbox.h"
 #include "interrupts.h"
@@ -15,13 +39,12 @@ void wait_mailbox_read(Mailbox *m) {
         nop();
 }
 
-
-void writeMailbox0(uint32_t *data, uint8_t channel) {
+void _write_mailbox0(uint32_t *data, uint8_t channel) {
     wait_mailbox_write(MAILBOX0);
     MAILBOX0->write = ((uint32_t)((uint64_t)data) & ~0xf) | (uint32_t)(channel & 0xf);
 }
 
-void readMailbox0(uint8_t channel) {
+void _read_mailbox0(uint8_t channel) {
     uint32_t res;
     uint8_t  read_channel;
     wait_mailbox_read(MAILBOX0);
@@ -43,11 +66,11 @@ void led(uint32_t onoff) {
     msg.tag.val         = onoff;
     msg.end_tag         = MBOX_TAG_LAST;
 
-    writeMailbox0((uint32_t *)&msg, MBOX_CH_PROP);
-    readMailbox0(MBOX_CH_PROP);
+    _write_mailbox0((uint32_t *)&msg, MBOX_CH_PROP);
+    _read_mailbox0(MBOX_CH_PROP);
 }
 
-void serialNumber(uint32_t serial[2]) {
+void serial_number(uint32_t serial[2]) {
     struct mailbox_msg msg;
     msg.msg_size        = sizeof(struct mailbox_msg);
     msg.request_code    = MBOX_REQUEST;
@@ -58,13 +81,13 @@ void serialNumber(uint32_t serial[2]) {
     msg.tag.val         = 0;
     msg.end_tag         = MBOX_TAG_LAST;
 
-    writeMailbox0((uint32_t *)&msg, MBOX_CH_PROP);
-    readMailbox0(MBOX_CH_PROP);
+    _write_mailbox0((uint32_t *)&msg, MBOX_CH_PROP);
+    _read_mailbox0(MBOX_CH_PROP);
     serial[0] = msg.tag.dev_id;
     serial[1] = msg.tag.val;
 }
 
-void setUart0Baud() {
+void set_uart0_baud() {
     struct mailbox_msg msg;
     /* set up clock for consistent divisor values */
     msg.msg_size        = sizeof(struct mailbox_msg);
@@ -76,11 +99,11 @@ void setUart0Baud() {
     msg.tag.val         = 4000000;
     msg.end_tag         = MBOX_TAG_LAST;
 
-    writeMailbox0((uint32_t *)&msg, MBOX_CH_PROP);
-    readMailbox0(MBOX_CH_PROP);
+    _write_mailbox0((uint32_t *)&msg, MBOX_CH_PROP);
+    _read_mailbox0(MBOX_CH_PROP);
 }
 
-unsigned int getMemorySplit() {
+unsigned int get_memory_split() {
     struct mailbox_msg msg;
     msg.msg_size        = sizeof(struct mailbox_msg);
     msg.request_code    = MBOX_REQUEST;
@@ -91,8 +114,8 @@ unsigned int getMemorySplit() {
     msg.tag.val         = 0;
     msg.end_tag         = MBOX_TAG_LAST;
 
-    writeMailbox0((uint32_t *)&msg, MBOX_CH_PROP);
-    readMailbox0(MBOX_CH_PROP);
+    _write_mailbox0((uint32_t *)&msg, MBOX_CH_PROP);
+    _read_mailbox0(MBOX_CH_PROP);
 
     return msg.tag.val;
 }
@@ -115,7 +138,7 @@ int mbox_call(unsigned char ch) {
     return 0;
 }
 
-void initIPI() {
+void init_IPI() {
     GIC->Core0_Mailbox_Interrupt_Control = 0x1E;
     GIC->Core1_Mailbox_Interrupt_Control = 0x0F;
     GIC->Core2_Mailbox_Interrupt_Control = 0x0F;

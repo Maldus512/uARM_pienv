@@ -224,8 +224,8 @@ popRegisters:
     ldp   x0,  x1,  [sp], #16
     ret
 
-.global vbarForMMU
-vbarForMMU:
+.global RIGVBAR
+RIGVBAR:
     mrs    x0, vbar_el1
     orr    x0, x0, 0xFFFF000000000000
     msr    vbar_el1, x0

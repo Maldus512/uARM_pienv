@@ -2,10 +2,9 @@
 #include "arch.h"
 #include "mmu.h"
 #include "uart.h"
+#include "asmlib.h"
 
 #define NONGLOBAL 1
-
-void vbarForMMU();     // TODO:remove
 
 void init_page_tables(VMSAv8_64_NEXTLEVEL_DESCRIPTOR *level0, VMSAv8_64_STAGE1_BLOCK_DESCRIPTOR *level1,
                       APBITS_TYPE permission) {
@@ -142,7 +141,7 @@ void initMMU(uint64_t *page_table) {
            (1 << 1));      // clear A, no aligment check
     r |= (1 << 0);         // set M, enable MMU
 
-    vbarForMMU();
+    RIGVBAR();
 
     asm volatile("msr sctlr_el1, %0; isb" : : "r"(r));
 }

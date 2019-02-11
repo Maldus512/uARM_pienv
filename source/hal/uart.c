@@ -120,7 +120,7 @@ void init_uart0() {
     UART0->CTRL = 0;
 
     /* set up clock for consistent divisor values */
-    setUart0Baud();
+    set_uart0_baud();
 
     /* map UART0 to GPIO pins */
     setupGpio(14, GPIO_ALTFUNC0);

@@ -26,6 +26,7 @@ __attribute__((aligned(4096))) VMSAv8_64_STAGE1_BLOCK_DESCRIPTOR Level1map1to1_e
 
 void initSystem() {
     int  i = 0;
+    unsigned int serial[2];
     char string[64];
     *((uint64_t *)INTERRUPT_HANDLER)   = 0;
     *((uint64_t *)SYNCHRONOUS_HANDLER) = 0;
@@ -41,7 +42,7 @@ void initSystem() {
     init_uart1();
     init_uart0();
     startUart0Int();
-    initIPI();
+    init_IPI();
     lfb_init();
     if (sd_init() == SD_OK) {
         fat_getpartition();
@@ -52,13 +53,18 @@ void initSystem() {
     init_emulated_printers();
     init_emulated_timers();
 
+    serial_number(serial);
+    strcpy(string, "Board serial number: ");
+    itoa((uint64_t)(serial[0] << 32 | serial[1]), &string[strlen(string)], 16);
+    LOG(INFO, string);
+
     strcpy(string, "System timers runs at ");
     itoa(GETARMCLKFRQ(), &string[strlen(string)], 10);
     strcpy(&string[strlen(string)], " Hz");
     LOG(INFO, string);
 
     strcpy(string, "CPU-GPU memory split: ");
-    itoa(getMemorySplit(), &string[strlen(string)], 16);
+    itoa(get_memory_split(), &string[strlen(string)], 16);
     LOG(INFO, string);
     strcpy(string, "Kernel occupies memory from 0x80000 to ");
     itoa((uint64_t)&_kernel_memory_end, &string[strlen(string)], 16);
@@ -101,7 +107,7 @@ int __attribute__((weak)) main() {
     state_t  state;
     uint64_t ttbr0;
     void (*LDST_MMU)(void *addr);
-    state.exception_link_register = (uint64_t)function1;
+    state.exception_link_register = (uint64_t)echo;
     state.stack_pointer           = (uint64_t)0x2000000 + 0x4000;
     state.status_register         = 0x300;
     ttbr0                         = (uint64_t)&Level0map1to1_el0[0];
@@ -111,8 +117,13 @@ int __attribute__((weak)) main() {
     itoa(ttbr0, string, 16);
     LOG(INFO, string);
 
+    init_page_tables(Level0map1to1_el1, Level1map1to1_el1, APBITS_NO_EL0);
+    init_page_tables(Level0map1to1_el0, Level1map1to1_el0, APBITS_NO_LIMIT);
+
     uart0_puts("Echoing everything\n");
-    LDST_MMU = ((uint64_t)&LDST | 0xFFFF000000000000);
+    initMMU((uint64_t*)Level0map1to1_el1);
+
+    LDST_MMU = (void (*)(void *))((uint64_t)&LDST | 0xFFFF000000000000);
     LDST_MMU(&state);
     while (1) {
         uart0_putc(uart0_getc());
@@ -132,9 +143,6 @@ void bios_main() {
     CoreExecute(2, idle);
     CoreExecute(3, idle);
 
-    init_page_tables(Level0map1to1_el1, Level1map1to1_el1, APBITS_NO_EL0);
-    init_page_tables(Level0map1to1_el0, Level1map1to1_el0, APBITS_NO_LIMIT);
-    // initMMU((uint64_t*)&Level0map1to1_el1[0]);
 
     asm volatile("msr daifset, #2");
     main();
