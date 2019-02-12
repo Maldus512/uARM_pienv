@@ -175,37 +175,14 @@ void uart0_puts(char *s) {
     }
 }
 
-void hexstrings(unsigned int d) {
-    // unsigned int ra;
-    unsigned int rb;
-    unsigned int rc;
-
-    rb = 32;
-    while (1) {
-        rb -= 4;
-        rc = (d >> rb) & 0xF;
-        if (rc > 9)
-            rc += 0x37;
-        else
-            rc += 0x30;
-        uart0_putc(rc);
-        if (rb == 0)
-            break;
-    }
-    uart0_putc(0x20);
-}
-
-void hexstring(unsigned int d) {
-    hexstrings(d);
-    uart0_putc(0x0D);
-    uart0_putc(0x0A);
-}
-
-void startUart0Int() {
+/*
+ * Enables uart interrupts
+ */
+void enable_uart_interrupts() {
     // enable UART RX interrupt.
-    //UART0->IRQ_MASK = 1 << 4;
+    UART0->IRQ_MASK = 1 << 4;
     // enable UART TX interrupt.
-    //UART0->IRQ_MASK |= 1 << 5;
+    UART0->IRQ_MASK |= 1 << 5;
 
     // UART interrupt routing.
     IRQ_CONTROLLER->Enable_IRQs_2 |= 1 << 25;
@@ -214,13 +191,18 @@ void startUart0Int() {
     GIC->GPU_Interrupts_Routing = 0x00;
 }
 
-
-//TODO: check for overflowing
+/*
+ * Prints a message with a specified loglevel and a timestamp
+ */
 void logprint(LOGLEVEL lvl, char *msg) {
     uint64_t timer = getTOD();
     int      len = 0, i = 1;
     char     string[256];
     char     tmp[32];
+
+    if (lvl < VERBOSITY)
+        return;
+
     string[0] = '[';
     itoa(timer, tmp, 10);
 

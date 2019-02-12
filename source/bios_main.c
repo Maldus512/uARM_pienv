@@ -41,7 +41,6 @@ void initSystem() {
 
     init_uart1();
     init_uart0();
-    startUart0Int();
     init_IPI();
     lfb_init();
     if (sd_init() == SD_OK) {
@@ -55,7 +54,6 @@ void initSystem() {
 
     serial_number(serial);
     strcpy(string, "Board serial number: ");
-    itoa((uint64_t)(serial[0] << 32 | serial[1]), &string[strlen(string)], 16);
     LOG(INFO, string);
 
     strcpy(string, "System timers runs at ");

@@ -46,20 +46,20 @@ struct UART0REG {
 typedef enum {
     INFO,
     WARN,
-    ERROR
+    ERROR,
+    NONE,
 } LOGLEVEL;
 
 
 #define UART0 ((struct UART0REG *)UART0_BASE)
 #define UART1 ((struct UART1REG *)(UART1_BASE+0x40))
 
-#define DEBUG
 
-#ifdef DEBUG
-    #define LOG(x, y)     logprint(x,y)
-#else
-    #define LOG(x, y)     asm volatile("nop")
+#ifndef VERBOSITY
+    #define VERBOSITY     INFO
 #endif
+
+#define LOG(x, y)     logprint(x,y)
 
 
 void init_uart1();
