@@ -8,6 +8,7 @@
 #include "uart.h"
 #include "asmlib.h"
 #include "mmu.h"
+#include "utils.h"
 #include "emulated_printers.h"
 #include "emulated_tapes.h"
 #include "emulated_disks.h"
@@ -250,6 +251,7 @@ void c_irq_handler() {
 
 
 void c_abort_handler(uint64_t exception_code, uint64_t iss) {
+    char string[64];
     void (*interrupt_handler)();
     uint64_t     handler_present, stack_pointer;
     unsigned int core_id;
@@ -295,8 +297,10 @@ void c_abort_handler(uint64_t exception_code, uint64_t iss) {
                 break;
         }
 
-        hexstring(exception_code);
-        hexstring(iss);
+        itoa(exception_code, string, 16);
+        LOG(INFO, string);
+        itoa(iss, string, 16);
+        LOG(INFO, string);
         while (1) {
             HALT();
         }

@@ -3,10 +3,8 @@
 
 .global hang
 hang:
-    bl hexstring
-hang2:
     wfi
-    b hang2
+    b hang
 
 .macro	vector handler
     .balign 0x80

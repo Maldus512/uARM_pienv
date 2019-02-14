@@ -299,6 +299,7 @@ int fat_transferfile(unsigned int cluster, unsigned char *data, unsigned int num
                 // continue;
             }
             read += tmp;
+            break;
         } else {
             // get the next cluster in chain
             cluster     = fat_get_table_entry(cluster);
@@ -331,7 +332,7 @@ int fat_readfile(unsigned int cluster, unsigned char *data, unsigned int seek, u
             LOG(WARN, "Empty read");
             return index;
         }
-        effectiveLen = size < length ? size : length;
+        effectiveLen = size-start < length ? size-start : length;
         memcpy(&data[index], &buffer[start], effectiveLen);
         start = 0;
         index += effectiveLen;

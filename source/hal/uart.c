@@ -227,6 +227,8 @@ void logprint(LOGLEVEL lvl, char *msg) {
         case ERROR:
             memcpy(&string[16], " [ERROR] ", 9);
             break;
+        case NONE:
+            return;
     }
     memcpy(&string[25], msg, len + 1);
     string[strlen(string)+1] = '\0';

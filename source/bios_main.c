@@ -110,7 +110,7 @@ int __attribute__((weak)) main() {
     state.status_register         = 0x300;
     ttbr0                         = (uint64_t)&Level0map1to1_el0[0];
     ttbr0 |= (1UL << 48);
-    state.TTBR0 = ttbr0;
+    //state.TTBR0 = ttbr0;
 
     itoa(ttbr0, string, 16);
     LOG(INFO, string);
@@ -119,10 +119,10 @@ int __attribute__((weak)) main() {
     init_page_tables(Level0map1to1_el0, Level1map1to1_el0, APBITS_NO_LIMIT);
 
     uart0_puts("Echoing everything\n");
-    initMMU((uint64_t*)Level0map1to1_el1);
+    //initMMU((uint64_t*)Level0map1to1_el1);
 
-    LDST_MMU = (void (*)(void *))((uint64_t)&LDST | 0xFFFF000000000000);
-    LDST_MMU(&state);
+    //LDST_MMU = (void (*)(void *))((uint64_t)&LDST | 0xFFFF000000000000);
+    LDST(&state);
     while (1) {
         uart0_putc(uart0_getc());
     }

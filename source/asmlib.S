@@ -151,35 +151,48 @@ LDST:
 
     ldr     x1, [x0, #8]!  /* Stack Pointer */
     str     x1, [sp, #-16]
-    //mov     sp, x1
-    //msr     sp_el0, x1
 
+    mrs     x1, CurrentEl
+    ands    x1, x1, #0xC
+    cmp     x1, #0x4
+    beq     system_el1
+
+system_el2:
+    ldr     x1, [x0, #8]!
+    msr     elr_el2, x1   /* Exception Link Register */
+
+    ldr     x1, [x0, #8]!
+    msr     ttbr0_el2, x1
+
+    ldr     x1, [x0, #8]!
+    msr     spsr_el2, x1    /* Status Register */
+    b system_end
+system_el1:
     ldr     x1, [x0, #8]!
     msr     elr_el1, x1   /* Exception Link Register */
 
-    ldr     x2, [x0, #8]!
-    /*msr     ttbr0_el1, x1 Cannot set TTBR0 now, I still need the previous page table */
+    ldr     x1, [x0, #8]!
+    msr     ttbr0_el1, x1
 
     ldr     x1, [x0, #8]!
     msr     spsr_el1, x1    /* Status Register */
+system_end:
 
     ldr     x0, [sp, #-8]  /* Recover x0 and x1 */ 
 
     and     x1, x1, #7
     cmp     x1, #0
-    bne     el1_sp
+    bne     eln_sp
     ldr     x1, [sp, #-16]
     msr     sp_el0, x1      /* Recover stack pointer */
     b       end
-el1_sp:
+eln_sp:
     ldr     x1, [sp, #-16]
     mov     sp, x1          /* Recover stack pointer */
 
 end:
     ldr     x1, [x0, #8]
     ldr     x0, [x0]
-    msr     ttbr0_el1, x2
-    nop
     eret
 
 
