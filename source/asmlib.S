@@ -18,6 +18,11 @@ GETSAVEDEL:
     and x0, x0, #0x7
     ret
 
+.globl GETSP
+GETSP:
+    mov x0, sp
+    ret
+
 .globl GETTTBR0
 GETTTBR0:
     mrs x0, ttbr0_el1

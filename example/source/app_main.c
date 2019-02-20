@@ -233,12 +233,12 @@ void test1() {
 void test2() {
     unsigned long timer;
     print("partenza 2\n");
-    //CORE1_MAILBOX0 = 1;
+    CORE1_MAILBOX0 = 1;
     while (1) {
         timer = getTOD();
         print("test2 vivo: ");
-        //SYSCALL(5, 0, 0, 0);
-        //term_puts("test2 vivo\n");
+        SYSCALL(5, 0, 0, 0);
+        term_puts("test2 vivo\n");
         uart_hex(timer);
         print("\n");
         delay(1000 * 1000);

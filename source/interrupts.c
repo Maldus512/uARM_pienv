@@ -160,6 +160,7 @@ void c_fiq_handler() {
 }
 
 void c_swi_handler(uint32_t code, uint32_t *registers) {
+    state_t  kernel;
     uint64_t handler_present, stack_pointer;
     void (*synchronous_handler)(unsigned int, unsigned int, unsigned int, unsigned int);
     uint32_t core_id;
@@ -171,13 +172,18 @@ void c_swi_handler(uint32_t code, uint32_t *registers) {
         handler_present = *((uint64_t *)SYNCHRONOUS_HANDLER);
 
     if (handler_present != 0) {
-        stack_pointer       = *((uint64_t *)(KERNEL_CORE0_SP + 0x8 * core_id));
-        synchronous_handler = (void (*)(unsigned int, unsigned int, unsigned int, unsigned int))handler_present;
-
         // If we already were at EL1 do not change stack pointer
         if (GETSAVEDEL() == 0)
-            asm volatile("mov sp, %0" : : "r"(stack_pointer));
-        synchronous_handler(code, registers[0], registers[1], registers[2]);
+            stack_pointer = *((uint64_t *)(KERNEL_CORE0_SP + 0x8 * core_id));
+        else
+            stack_pointer = GETSP();
+
+        synchronous_handler  = (void (*)(unsigned int, unsigned int, unsigned int, unsigned int))handler_present;
+        kernel.stack_pointer = stack_pointer;
+        kernel.exception_link_register = (uint64_t)synchronous_handler;
+        kernel.status_register         = 0x385;
+        kernel.TTBR0                   = GETTTBR0();
+        LDST(&kernel);
     }
 
     /* If there is no user-defined handler simply start again the last process */
@@ -245,7 +251,7 @@ void c_irq_handler() {
         stack_pointer                  = *((uint64_t *)(KERNEL_CORE0_SP + 0x8 * core_id));
         interrupt_handler              = (void (*)(void *))handler_present;
         kernel.stack_pointer           = stack_pointer;
-        kernel.exception_link_register = (uint64_t) interrupt_handler;
+        kernel.exception_link_register = (uint64_t)interrupt_handler;
         kernel.status_register         = 0x385;
         kernel.TTBR0                   = GETTTBR0();
         LDST(&kernel);
@@ -256,6 +262,7 @@ void c_irq_handler() {
 
 
 void c_abort_handler(uint64_t exception_code, uint64_t iss) {
+    state_t kernel;
     char string[64];
     void (*interrupt_handler)();
     uint64_t     handler_present, stack_pointer;
@@ -268,15 +275,18 @@ void c_abort_handler(uint64_t exception_code, uint64_t iss) {
         handler_present = *((uint64_t *)ABORT_HANDLER);
 
     if (handler_present) {
-        stack_pointer     = *((uint64_t *)(KERNEL_CORE0_SP + 0x8 * core_id));
-        interrupt_handler = (void (*)(void *))handler_present;
-
         // If we already were at EL1 do not change stack pointer
         if (GETSAVEDEL() == 0)
-            asm volatile("mov sp, %0" : : "r"(stack_pointer));
-        interrupt_handler();
-        /* If there is no user-defined handler simply start again the last process */
-        LDST((void *)(ABORT_OLDAREA + CORE_OFFSET * core_id));
+            stack_pointer = *((uint64_t *)(KERNEL_CORE0_SP + 0x8 * core_id));
+        else
+            stack_pointer = GETSP();
+
+        interrupt_handler              = (void (*)(void *))handler_present;
+        kernel.stack_pointer           = stack_pointer;
+        kernel.exception_link_register = (uint64_t)interrupt_handler;
+        kernel.status_register         = 0x385;
+        kernel.TTBR0                   = GETTTBR0();
+        LDST(&kernel);
     } else {
         switch (exception_code) {
             case 0x20:
