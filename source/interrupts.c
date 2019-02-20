@@ -185,13 +185,14 @@ void c_swi_handler(uint32_t code, uint32_t *registers) {
 }
 
 void c_irq_handler() {
-    static uint8_t  f_led = 0;
-    uint32_t        tmp;
+    static uint8_t  f_led     = 0;
     static uint64_t lastBlink = 0;
-    uint64_t        currentTime, handler_present, stack_pointer;
+
+    state_t  kernel, *oldarea;
+    uint64_t currentTime, handler_present, stack_pointer;
     void (*interrupt_handler)();
     uint8_t *    interrupt_lines = (uint8_t *)INTERRUPT_LINES;
-    unsigned int core_id;
+    unsigned int tmp, core_id;
 
     if (ISMMUACTIVE())
         handler_present = *((uint64_t *)INTERRUPT_HANDLER) | 0xFFFF000000000000;
@@ -237,16 +238,20 @@ void c_irq_handler() {
 
     clean_interrupt_lines();
 
+    oldarea = (state_t *)(INTERRUPT_OLDAREA + CORE_OFFSET * core_id);
+
     if (handler_present != 0 && (pending_emulated_interrupt() || pending_real_interrupt(core_id))) {
-        wait_lock         = 1;
-        stack_pointer     = *((uint64_t *)(KERNEL_CORE0_SP + 0x8 * core_id));
-        interrupt_handler = (void (*)(void *))handler_present;
-        asm volatile("mov sp, %0" : : "r"(stack_pointer));
-        asm volatile("msr   daifclr, #1");
-        interrupt_handler();
+        wait_lock                      = 1;
+        stack_pointer                  = *((uint64_t *)(KERNEL_CORE0_SP + 0x8 * core_id));
+        interrupt_handler              = (void (*)(void *))handler_present;
+        kernel.stack_pointer           = stack_pointer;
+        kernel.exception_link_register = (uint64_t) interrupt_handler;
+        kernel.status_register         = 0x385;
+        kernel.TTBR0                   = GETTTBR0();
+        LDST(&kernel);
     }
     /* If there is no user-defined handler simply start again the last process */
-    LDST((void *)(INTERRUPT_OLDAREA + CORE_OFFSET * core_id));
+    LDST(oldarea);
 }
 
 

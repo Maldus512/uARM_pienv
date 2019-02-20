@@ -1,3 +1,27 @@
+/*
+ * Hardware Abstraction Layer for Raspberry Pi 3
+ *
+ * Copyright (C) 2018 Mattia Maldini
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
+/******************************************************************************
+ * Entry point for the Hardware Abstraction Layer
+ ******************************************************************************/
+
 #include "arch.h"
 #include "bios_const.h"
 #include "uart.h"
@@ -112,7 +136,7 @@ int __attribute__((weak)) main() {
     ttbr0 |= (1UL << 48);
     //state.TTBR0 = ttbr0;
 
-    itoa(ttbr0, string, 16);
+    itoa(GETEL(), string, 10);
     LOG(INFO, string);
 
     init_page_tables(Level0map1to1_el1, Level1map1to1_el1, APBITS_NO_EL0);
@@ -123,9 +147,7 @@ int __attribute__((weak)) main() {
 
     //LDST_MMU = (void (*)(void *))((uint64_t)&LDST | 0xFFFF000000000000);
     LDST(&state);
-    while (1) {
-        uart0_putc(uart0_getc());
-    }
+    return 0;
 }
 
 void idle() {
@@ -136,12 +158,16 @@ void idle() {
 
 
 void bios_main() {
+    state_t kernel;
+
     initSystem();
     CoreExecute(1, idle);
     CoreExecute(2, idle);
     CoreExecute(3, idle);
 
+    STST(&kernel);
+    kernel.exception_link_register = (uint64_t)main;
+    kernel.status_register = 0x385;
 
-    asm volatile("msr daifset, #2");
-    main();
+    LDST(&kernel);
 }

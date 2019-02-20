@@ -24,6 +24,9 @@
 
 #include "arch.h"
 
+/*
+ *  Copies n bytes from src to dest
+ */
 void memcpy(void *dest, void *src, int n) {
     // Typecast src and dest addresses to (char *)
     char *csrc  = (char *)src;
@@ -34,6 +37,9 @@ void memcpy(void *dest, void *src, int n) {
         cdest[i] = csrc[i];
 }
 
+/*
+ *  Compares n bytes from the two pointers; if they are equal returns 0, otherwise 1 or -1
+ */
 int memcmp(unsigned char *str1, unsigned char *str2, int count) {
     register const unsigned char *s1 = (const unsigned char *)str1;
     register const unsigned char *s2 = (const unsigned char *)str2;
@@ -45,6 +51,9 @@ int memcmp(unsigned char *str1, unsigned char *str2, int count) {
     return 0;
 }
 
+/*
+ *  Converts the integer value into a string based on the provided base
+ */
 char *itoa(long unsigned int value, char *result, int base) {
     // check that the base if valid
     if (base < 2 || base > 36) {
@@ -76,6 +85,9 @@ char *itoa(long unsigned int value, char *result, int base) {
     return result;
 }
 
+/*
+ *  Returns the length of the provided string (number of characters before a \0)
+ */
 int strlen(char *str) {
     int len = 0;
     while (str[len] != '\0')
@@ -83,6 +95,9 @@ int strlen(char *str) {
     return len;
 }
 
+/*
+ *  Copies the string in src to the pointer dest
+ */
 int strcpy(char *dest, char *src) {
     int len = 0;
     while (src[len] != '\0') {
@@ -93,6 +108,9 @@ int strcpy(char *dest, char *src) {
     return len;
 }
 
+/*
+ *  Sets all n bytes starting from pointer s to the character c
+ */
 void *memset(void *s, int c, unsigned int n) {
     unsigned char *p = s;
     while (n--)

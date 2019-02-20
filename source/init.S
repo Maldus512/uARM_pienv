@@ -60,6 +60,9 @@ set_stacks:
     /* Enable AArch64 in EL1 */
     mov     x0, #(1 << 31)      // AArch64
     orr     x0, x0, #(1 << 1)   // SWIO hardwired on Pi3
+/*    orr     x0, x0, #(1 << 3)
+    orr     x0, x0, #(1 << 4)
+    orr     x0, x0, #(1 << 5)*/
     msr     hcr_el2, x0
     mrs     x0, hcr_el2
 
