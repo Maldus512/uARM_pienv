@@ -9,10 +9,12 @@ uint32_t ISMMUACTIVE();
 void     RIGVBAR();
 
 uint64_t GETTTBR0();
+uint64_t GETTTBR1();
 uint64_t STELR();
 void     LDELR(uint64_t);
 uint64_t GETSP();
 uint32_t GETSAVEDEL();
 void     CoreExecute(unsigned int core, void *task);
 
+void restoreEL2SP();
 #endif

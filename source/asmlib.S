@@ -28,6 +28,11 @@ GETTTBR0:
     mrs x0, ttbr0_el1
     ret
 
+.globl GETTTBR1
+GETTTBR1:
+    mrs x0, ttbr1_el1
+    ret
+
 .global wait_lock
 .global WAIT
 WAIT:
@@ -171,7 +176,7 @@ system_el2:
     msr     elr_el2, x1   /* Exception Link Register */
 
     ldr     x1, [x0, #8]!
-    msr     ttbr0_el2, x1
+    msr     ttbr0_el1, x1
 
     ldr     x1, [x0, #8]!
     msr     spsr_el2, x1    /* Status Register */
@@ -271,33 +276,48 @@ STST_asm:
     stp     x22, x23, [x28, #16]!
     stp     x24, x25, [x28, #16]!
     stp     x26, x27, [x28, #16]!
-    str     x28, [x28, #16]!
+    ldp     x26, x27, [sp], #16
+    str     x26, [x28, #16]!
 
     ldp     x26, x27, [sp], #16
     str     x26, [x28, #8]! /* Frame Pointer */
     str     x27, [x28, #8]! /* Link Register */
 
-    mrs   x27, spsr_el1
-    and   x27, x27, #7
-    cmp   x27, #0
-    bne   savesp_el1_asm
-    mrs   x27, sp_el0
-    b     finish_asm
+    mrs     x0,CurrentEL
+    cmp     x0, #4
+    beq     1f
+
+    mrs     x1, spsr_el2
+    mrs     x2, elr_el2
+    mrs     x3, sp_el1
+    b       2f
+1:
+    mrs     x1, spsr_el1
+    mrs     x2, elr_el1
+    mov     x3, sp
+
+2:
+    mov     x27, x1//spsr_el1
+    and     x27, x27, #7
+    cmp     x27, #0
+    bne     savesp_el1_asm
+    mrs     x27, sp_el0
+    b       finish_asm
 savesp_el1_asm:
-    mov   x27, sp
-    add   x27, x27, #16
+    mov     x27, x3 //sp
+    add     x27, x27, #16
 finish_asm:
-    str   x27, [x28, #8]!
+    str     x27, [x28, #8]!
     
-    mrs   x27, elr_el1
-    str   x27, [x28, #8]! // Note: the 16 immediate value refers to the previously saved pair
+    mov     x27, x2//elr_el1
+    str     x27, [x28, #8]! // Note: the 16 immediate value refers to the previously saved pair
 
     //mrs   x27, ttbr0_el1
-    ldr   x27, [sp], #16
-    str   x27, [x28, #8]!
+    ldr     x27, [sp], #16
+    str     x27, [x28, #8]!
 
-    mrs   x27, spsr_el1
-    str   x27, [x28, #8]!
+    mov     x27, x1//spsr_el1
+    str     x27, [x28, #8]!
     ret
 
 .globl CoreExecute

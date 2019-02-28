@@ -61,7 +61,7 @@ interrupt_vector_el2:
 
 /* Lower EL using AARCH64 */
     stub 0x00000008
-    stub 0x00000009
+    vector irq_handler_el2
     vector fiq_handler_el2
     stub 0x0000000b
 
@@ -132,6 +132,8 @@ keep_current_stack_swi_handler:
     str     x28, [sp, #-16]!
     // save link register and stack pointer
     stp     x29, x30, [sp, #-16]!
+    // save x28
+    stp     x28, x28, [sp, #-16]!
     // save x26 general purpose register
     str     x26, [sp, #-8]!
 
@@ -164,6 +166,70 @@ fiq_handler_el2:
 
     msr   daifclr, #4
     eret
+
+irq_handler_el2:
+    msr     daifset, #7
+
+    str     x28, [sp, #-8]
+    mrs     x28, ttbr0_el1
+    // save ttbr0
+    str     x28, [sp, #-16]!
+    ldr     x28, [sp], #8
+    // save link register and stack pointer
+    stp     x29, x30, [sp, #-16]!
+    // save x28
+    stp     x28, x28, [sp, #-16]!
+
+    // save x26 general purpose register
+    stp     x26, x27, [sp, #-16]!
+    
+    mrs     x27, mpidr_el1
+    and     x27, x27, #0x3
+    mov     x28, #INTERRUPT_OLDAREA
+    mov     x26, #CORE_OFFSET
+    madd    x28, x26, x27, x28
+    ldp     x26, x27, [sp], #16
+    bl    STST_asm
+
+    // call c handler.
+    bl    c_irq_handler
+    /* The scheduler should manage returning */
+    b hang
+
+
+
+.global restoreEL2SP
+restoreEL2SP:
+    mrs     x0, CurrentEl
+    cmp     x0, #4
+    beq     6f
+
+    mrs     x0, mpidr_el1
+    and     x0, x0, #0x3
+    cmp     x0, #0
+    beq     1f
+    cmp     x0, #1
+    beq     2f
+    cmp     x0, #2
+    beq     3f
+    cmp     x0, #3
+    beq     4f
+1:
+    ldr     x0, =__EL2_stack_core0
+    b       5f
+2:
+    ldr     x0, =__EL2_stack_core1
+    b       5f
+3:
+    ldr     x0, =__EL2_stack_core2
+    b       5f
+4:
+    ldr     x0, =__EL2_stack_core3
+5:
+    mov     sp, x0
+6:
+    ret
+
    
 /* Interrupts run at level EL1; they are enabled only at level EL0, so there are
     no nested interrupts */
@@ -205,6 +271,8 @@ keep_current_stack_irq_handler:
     str     x28, [sp, #-16]!
     // save link register and stack pointer
     stp     x29, x30, [sp, #-16]!
+    // save x28
+    stp     x28, x28, [sp, #-16]!
     // save x26 general purpose register
     str     x26, [sp, #-8]!
     
@@ -260,6 +328,8 @@ keep_current_stack_abort_handler:
     str     x28, [sp, #-16]!
     // save link and frame pointers
     stp     x29, x30, [sp, #-16]!
+    // save x28
+    stp     x28, x28, [sp, #-16]!
     // save x26 general purpose register
     str     x26, [sp, #-8]!
     
