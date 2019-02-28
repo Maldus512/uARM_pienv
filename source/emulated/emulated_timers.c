@@ -31,7 +31,7 @@ void init_emulated_timers() {
     int            i;
     uint8_t *      deviceinstalled = (uint8_t *)DEVICE_INSTALLED;
 
-    deviceinstalled[IL_TIMER] = 0x01;
+    deviceinstalled[IL_TIMER] = 0x0F;
 
     for (i = 0; i < MAX_TIMERS; i++) {
         list_add_tail(&timerarray[i].list, &free_timers);

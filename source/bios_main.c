@@ -165,6 +165,8 @@ void bios_main() {
     CoreExecute(2, idle);
     CoreExecute(3, idle);
 
+    SYSCALL(0,0,0,0);
+
     STST(&kernel);
     kernel.exception_link_register = (uint64_t)main;
     kernel.status_register = 0x385;

@@ -23,26 +23,53 @@ interrupt_vector:
 /* Current EL with SP0 */
     vector keep_current_stack_syncronous_exception
     vector keep_current_stack_irq_handler
-    vector fiq_handler
+    stub 0x00000002
     stub 0x00000003
 
 /* Current EL with SPX */
     vector keep_current_stack_syncronous_exception
     vector keep_current_stack_irq_handler
-    vector fiq_handler
+    stub 0x00000005
     stub 0x00000006
 
 /* Lower EL using AARCH64 */
     vector syncronous_exception
     vector irq_handler
-    vector fiq_handler
+    stub 0x00000008
     stub 0x00000009
 
 /* Lower EL using AARCH32 */
     vector syncronous_exception
     vector irq_handler
-    vector fiq_handler
-    stub 0x0C
+    stub 0x0000000e
+    stub 0x0000000f
+
+.balign 0x800
+.global interrupt_vector_el2
+interrupt_vector_el2:
+/* Current EL with SP0 */
+    stub 0x00000000
+    stub 0x00000001
+    stub 0x00000002
+    stub 0x00000003
+
+/* Current EL with SPX */
+    stub 0x00000004
+    stub 0x00000005
+    stub 0x00000006
+    stub 0x00000007
+
+/* Lower EL using AARCH64 */
+    stub 0x00000008
+    stub 0x00000009
+    vector fiq_handler_el2
+    stub 0x0000000b
+
+/* Lower EL using AARCH32 */
+    stub 0x0000000c
+    stub 0x0000000d
+    stub 0x0000000e
+    stub 0x0000000f
 
 
 syncronous_exception:
@@ -123,30 +150,21 @@ keep_current_stack_swi_handler:
     
     b hang
 
+fiq_handler_el2:
+    msr     daifset, #7
 
-fiq_handler:
-    msr   daifset, #7
-
-    mrs     x28, ttbr0_el1
-    mrs     x27, ttbr1_el1
-    msr     ttbr0_el1, x27
-    isb
     /* save register values on the stack */
     stp   x29, x30, [sp, #-16]!
     bl    pushRegisters
-
-    // call c handler.
+    /* call c handler.  */
     bl    c_fiq_handler
-
-    /* Ideally the scheduler should manage returning */
+    /* Restore registers */
     bl    popRegisters
     ldp   x29, x30, [sp], #16
 
-    msr     ttbr0_el1, x28
-
     msr   daifclr, #4
     eret
-    
+   
 /* Interrupts run at level EL1; they are enabled only at level EL0, so there are
     no nested interrupts */
 irq_handler:

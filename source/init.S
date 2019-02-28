@@ -36,38 +36,43 @@ already_el2:
 
 
     ldr     x3, =__EL1_stack_core0
+    ldr     x4, =__EL2_stack_core0
     mrs     x6, mpidr_el1           // Read core id
 
     ands    x6, x6, #0x3
     beq     set_stacks
 
     ldr     x3, =__EL1_stack_core1
+    ldr     x4, =__EL2_stack_core1
     cmp     x6, #1	
     beq     set_stacks
 
     ldr     x3, =__EL1_stack_core2
+    ldr     x4, =__EL2_stack_core2
     cmp     x6, #2	
     beq     set_stacks
 
     ldr     x3, =__EL1_stack_core3
+    ldr     x4, =__EL2_stack_core3
     cmp     x6, #3	
     beq     set_stacks
 
 set_stacks:
     msr     sp_el1, x3
-    mov     sp, x3
+    mov     sp, x4
 
     /* Enable AArch64 in EL1 */
     mov     x0, #(1 << 31)      // AArch64
     orr     x0, x0, #(1 << 1)   // SWIO hardwired on Pi3
-/*    orr     x0, x0, #(1 << 3)
-    orr     x0, x0, #(1 << 4)
+    orr     x0, x0, #(1 << 3)
+    /*orr     x0, x0, #(1 << 4)
     orr     x0, x0, #(1 << 5)*/
     msr     hcr_el2, x0
     mrs     x0, hcr_el2
 
     ldr    x1, =interrupt_vector
     msr    vbar_el1, x1
+    ldr    x1, =interrupt_vector_el2
     msr    vbar_el2, x1
 
     /* change execution level to EL1 */

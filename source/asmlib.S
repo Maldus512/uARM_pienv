@@ -32,8 +32,12 @@ GETTTBR0:
 .global WAIT
 WAIT:
     dsb ish
-    mov  x1, 0
     ldr  x0, =wait_lock
+    mrs  x1, mpidr_el1
+    and  x1, x1, #0x3
+    mov  x2, #16
+    madd x0, x1, x2, x0
+    mov  x1, 0
     str  x1, [x0]
 waitloop:
     wfi

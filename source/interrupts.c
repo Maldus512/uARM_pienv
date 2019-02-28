@@ -14,7 +14,7 @@
 #include "emulated_disks.h"
 #include "emulated_timers.h"
 
-uint64_t wait_lock                    = 0;
+uint16_t wait_lock[4]                 = {0};
 uint64_t scheduled_physical_timers[4] = {0};
 
 // TODO: clean up
@@ -68,7 +68,7 @@ void setTIMER(uint64_t microseconds) {
     uint64_t     timer           = currentTime + microseconds;
     unsigned int core            = getCORE();
 
-    interrupt_lines[IL_TIMER]       = 0;
+    interrupt_lines[IL_TIMER] &= ~(1 << core);
     scheduled_physical_timers[core] = timer;
 
     // Only set the next timer if there are no pending interrupt lines
@@ -229,7 +229,7 @@ void c_irq_handler() {
 
         if (currentTime >= scheduled_physical_timers[core_id]) {
             /* Don't clear the timer interrupt on purpose; it's on the user to to that */
-            interrupt_lines[IL_TIMER]          = 1;
+            interrupt_lines[IL_TIMER] |= 1 << core_id;
             scheduled_physical_timers[core_id] = 0;
             disable_physical_counter();
         } else {
@@ -247,7 +247,7 @@ void c_irq_handler() {
     oldarea = (state_t *)(INTERRUPT_OLDAREA + CORE_OFFSET * core_id);
 
     if (handler_present != 0 && (pending_emulated_interrupt() || pending_real_interrupt(core_id))) {
-        wait_lock                      = 1;
+        wait_lock[core_id]             = 1;
         stack_pointer                  = *((uint64_t *)(KERNEL_CORE0_SP + 0x8 * core_id));
         interrupt_handler              = (void (*)(void *))handler_present;
         kernel.stack_pointer           = stack_pointer;
@@ -263,7 +263,7 @@ void c_irq_handler() {
 
 void c_abort_handler(uint64_t exception_code, uint64_t iss) {
     state_t kernel;
-    char string[64];
+    char    string[64];
     void (*interrupt_handler)();
     uint64_t     handler_present, stack_pointer;
     unsigned int core_id;

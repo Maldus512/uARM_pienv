@@ -16,9 +16,21 @@ SECTIONS
         . = . + 0x2000;    /* EL1 stack size */
         . = ALIGN(16);
         __EL1_stack_core3 = .;
+        . = . + 0x2000;
+        . = ALIGN(16);
+        __EL2_stack_core0 = .;
+        . = . + 0x2000;
+        . = ALIGN(16);
+        __EL2_stack_core1 = .;
+        . = . + 0x2000;
+        . = ALIGN(16);
+        __EL2_stack_core2 = .;
+        . = . + 0x2000;
+        . = ALIGN(16);
+        __EL2_stack_core3 = .;
         . = ALIGN(16);
         __stack_end__ = .;    
-        ASSERT((__stack_end__ < 0x70000), "Error: the stack takes up too much space");
+        ASSERT((__stack_end__ < 0x70000), "Error: the HAL stack takes up too much space");
     }
 
     . = 0x80000;
