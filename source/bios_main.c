@@ -128,7 +128,7 @@ int __attribute__((weak)) main() {
     char     string[128];
     state_t  state;
     uint64_t ttbr0;
-    void (*LDST_MMU)(void *addr);
+    //void (*LDST_MMU)(void *addr);
     state.exception_link_register = (uint64_t)echo;
     state.stack_pointer           = (uint64_t)0x2000000 + 0x4000;
     state.status_register         = 0x300;

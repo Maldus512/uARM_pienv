@@ -336,7 +336,7 @@ int main() {
     setTIMER(1000);
     initMMU((uint64_t*)&kernel0map1to1[0]);
 
-    LDST_MMU = ((uint64_t)&LDST | 0xFFFF000000000000);
+    LDST_MMU = (void*)((uint64_t)&LDST | 0xFFFF000000000000);
     LDST_MMU(current);
     //LDST(current);
     return 0;

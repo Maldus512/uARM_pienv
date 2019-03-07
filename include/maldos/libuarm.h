@@ -42,6 +42,8 @@ unsigned int getCORE();
 /* call kernel system call handler */
 int SYSCALL(unsigned int sysNum, unsigned int arg1, unsigned int arg2, unsigned int arg3);
 
+void initMMU(unsigned long *table);
+
 unsigned long getTOD();
 void         setTIMER(unsigned long us);
 

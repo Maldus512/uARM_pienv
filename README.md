@@ -43,6 +43,8 @@ This repository uses scons (https://scons.org/) as automated building tool. The 
 - `scons example` builds the example code
 - `scons all` builds both HAL and example code
 - `scons -c` clears the build
+- `scons run` runs the HAL on qemu with no guest kernel. By default it initializes all the peripherals and then just echoes everything on UART.
+- the `--app` option for scons specifies an application to be linked together with the HAL. The command `scons all && scons --app=example/app.elf run` runs the provided example.
 
 ## Running
 

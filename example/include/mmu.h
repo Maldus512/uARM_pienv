@@ -80,7 +80,8 @@ extern uint32_t table_loaded;
 
 extern uint32_t table_loaded;
 
-void init_page_table(void);
+void init_page_tables(VMSAv8_64_NEXTLEVEL_DESCRIPTOR *level0, VMSAv8_64_STAGE1_BLOCK_DESCRIPTOR *level1,
+                      APBITS_TYPE permission);
 
 void     mmu_init(void);
 
