@@ -14,8 +14,16 @@
 #include "emulated_disks.h"
 #include "emulated_timers.h"
 
-uint16_t wait_lock[4]                 = {0};
-uint64_t scheduled_physical_timers[4] = {0};
+extern char *__EL2_stack_core0, *__EL2_stack_core1, *__EL2_stack_core2, *__EL2_stack_core3;
+
+uint16_t     wait_lock[4]                 = {0};
+uint64_t     scheduled_physical_timers[4] = {0};
+static char **el2_stack_pointers[4]        = {
+    &__EL2_stack_core0,
+    &__EL2_stack_core1,
+    &__EL2_stack_core2,
+    &__EL2_stack_core3,
+};
 
 // TODO: clean up
 int pending_emulated_interrupt() {
@@ -183,6 +191,7 @@ void c_swi_handler(uint32_t code, uint32_t *registers) {
         kernel.exception_link_register = (uint64_t)synchronous_handler;
         kernel.status_register         = 0x385;
         kernel.TTBR0                   = GETTTBR0();
+        SETSP((uint64_t)el2_stack_pointers[core_id]);
         LDST(&kernel);
     }
 

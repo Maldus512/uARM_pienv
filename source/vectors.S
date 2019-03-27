@@ -27,7 +27,7 @@ interrupt_vector:
     stub 0x00000003
 
 /* Current EL with SPX */
-    vector keep_current_stack_syncronous_exception
+    vector syncronous_exception //keep_current_stack_syncronous_exception
     vector keep_current_stack_irq_handler
     stub 0x00000005
     stub 0x00000006
@@ -60,7 +60,7 @@ interrupt_vector_el2:
     stub 0x00000007
 
 /* Lower EL using AARCH64 */
-    stub 0x00000008
+    vector syncronous_exception_el2
     vector irq_handler_el2
     vector fiq_handler_el2
     stub 0x0000000b
@@ -72,8 +72,39 @@ interrupt_vector_el2:
     stub 0x0000000f
 
 
+syncronous_exception_el2:
+    msr    daifset, #2
+    stp   x29, x30, [sp, #-16]!
+    str   x5, [sp, #-16]!
+    stp   x0, x1, [sp, #-16]!
+    stp   x2, x3, [sp, #-16]!
+
+    mrs    x1, esr_el2
+    lsr    x0, x1, #26      // exception class
+    cmp    x0, #EC_HVC
+    bne    2f               // Not an hypervisor call, should not happen
+    mrs    x1, esr_el2
+    and    x1, x1, #0xFF
+    cmp    x1, #0
+    //beq    1f
+    //TODO: interrupts
+
+    // System call
+    mrs    x1, esr_el1
+    lsr    x0, x1, #26      // exception class
+    cmp    x0, #EC_SVC
+    beq    swi_handler_el2
+1:  // abort
+    and    x1, x1, #0x1FFFFFF
+    b      abort_handler
+
+2:
+    b hang
+
 syncronous_exception:
-    msr   daifset, #2
+    hvc    #0
+
+    msr    daifset, #2
     mrs    x28, esr_el1                     // read the syndrome register
     lsr    x27, x28, #26      // exception class
     cmp    x27, #EC_SVC           // SVC in 64-bit state
@@ -94,6 +125,22 @@ keep_current_stack_unrecognized:
     and    x1, x28, #0x1FFFFFF
     b      keep_current_stack_abort_handler
 
+swi_handler_el2:
+    // save state in oldarea
+    mrs     x5, mpidr_el1
+    and     x5, x5, #0x3
+    mov   x1, #EXCEPTION_OLDAREA
+    add   x1, x1, #SYNCHRONOUS_OFFSET
+    mov     x2, #CORE_OFFSET
+    madd   x1, x2, x5, x1
+    mov    x5, x1
+
+    ldp   x2, x3, [sp], #16
+    ldp   x0, x1, [sp], #16
+
+    bl    STST_asm_el2
+    bl    c_swi_handler
+    b hang
 
 swi_handler:
     msr   daifset, #2
@@ -149,7 +196,6 @@ keep_current_stack_swi_handler:
 
     // call c handler.
     bl    c_swi_handler
-    
     b hang
 
 fiq_handler_el2:

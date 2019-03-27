@@ -23,6 +23,10 @@ GETSP:
     mov x0, sp
     ret
 
+.globl SETSP
+SETSP:
+    mov sp, x0
+
 .globl GETTTBR0
 GETTTBR0:
     mrs x0, ttbr0_el1
@@ -180,7 +184,19 @@ system_el2:
 
     ldr     x1, [x0, #8]!
     msr     spsr_el2, x1    /* Status Register */
-    b system_end
+
+    ldr     x0, [sp, #-8]  /* Recover x0 and x1 */ 
+    and     x1, x1, #7
+    cmp     x1, #0
+    bne     1f
+    ldr     x1, [sp, #-16]
+    msr     sp_el0, x1      /* Recover stack pointer */
+    b       end
+1:
+    ldr     x1, [sp, #-16]
+    msr     sp_el1, x1          /* Recover stack pointer */
+
+    b end
 system_el1:
     ldr     x1, [x0, #8]!
     msr     elr_el1, x1   /* Exception Link Register */
@@ -190,17 +206,16 @@ system_el1:
 
     ldr     x1, [x0, #8]!
     msr     spsr_el1, x1    /* Status Register */
-system_end:
 
     ldr     x0, [sp, #-8]  /* Recover x0 and x1 */ 
 
     and     x1, x1, #7
     cmp     x1, #0
-    bne     eln_sp
+    bne     2f
     ldr     x1, [sp, #-16]
     msr     sp_el0, x1      /* Recover stack pointer */
     b       end
-eln_sp:
+2:
     ldr     x1, [sp, #-16]
     mov     sp, x1          /* Recover stack pointer */
 
@@ -256,6 +271,50 @@ RIGVBAR:
     mrs    x0, vbar_el1
     orr    x0, x0, 0xFFFF000000000000
     msr    vbar_el1, x0
+    ret
+
+.globl STST_asm_el2
+STST_asm_el2:
+    /* General purpose registers */
+    stp     x0, x1, [x5]
+    stp     x2, x3, [x5, #16]!
+    ldr     x0, [sp], #16
+    stp     x4, x0, [x5, #16]!
+    stp     x6, x7, [x5, #16]!
+    stp     x8, x9, [x5, #16]!
+    stp     x10, x11, [x5, #16]!
+    stp     x12, x13, [x5, #16]!
+    stp     x14, x15, [x5, #16]!
+    stp     x16, x17, [x5, #16]!
+    stp     x18, x19, [x5, #16]!
+    stp     x20, x21, [x5, #16]!
+    stp     x22, x23, [x5, #16]!
+    stp     x24, x25, [x5, #16]!
+    stp     x26, x27, [x5, #16]!
+    str     x28, [x5, #16]!
+
+    ldp     x1, x2, [sp], #16
+    str     x1, [x5, #8]! /* Frame Pointer */
+    str     x2, [x5, #8]! /* Link Register */
+
+    mrs     x1, spsr_el1
+    and     x1, x1, #7
+    cmp     x1, #0
+    bne     1f
+
+    mrs     x1, sp_el0
+    b       2f
+1:
+    mrs     x1, sp_el1
+2:
+    mrs     x2, elr_el1
+    mrs     x3, ttbr0_el1
+    mrs     x4, spsr_el1
+
+    str     x1, [x5, #8]!
+    str     x2, [x5, #8]!
+    str     x3, [x5, #8]!
+    str     x4, [x5, #8]!
     ret
 
 
