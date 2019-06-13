@@ -25,7 +25,8 @@ GETSP:
 
 .globl SETSP
 SETSP:
-    mov sp, x0
+    //mov sp, x0
+    ret
 
 .globl GETTTBR0
 GETTTBR0:
@@ -133,38 +134,28 @@ finish:
     str     x21, [x0, #8]! /* TTBR0 */
     ret
 
+.globl LDST_RESTORESP
+LDST_RESTORESP:
+    mov sp, x1
+    b LDST
+
 .globl LDST
 LDST:
     str     x0, [sp, #-8]
-    ldr     x2, [x0, #16]!
-    ldr     x3, [x0, #8]!
-    ldr     x4, [x0, #8]!
-    ldr     x5, [x0, #8]!
-    ldr     x6, [x0, #8]!
-    ldr     x7, [x0, #8]!
-    ldr     x8, [x0, #8]!
-    ldr     x9, [x0, #8]!
-    ldr     x10, [x0, #8]!
-    ldr     x11, [x0, #8]!
-    ldr     x12, [x0, #8]!
-    ldr     x13, [x0, #8]!
-    ldr     x14, [x0, #8]!
-    ldr     x15, [x0, #8]!
-    ldr     x16, [x0, #8]!
-    ldr     x17, [x0, #8]!
-    ldr     x18, [x0, #8]!
-    ldr     x19, [x0, #8]!
-    ldr     x20, [x0, #8]!
-    ldr     x21, [x0, #8]!
-    ldr     x22, [x0, #8]!
-    ldr     x23, [x0, #8]!
-    ldr     x24, [x0, #8]!
-    ldr     x25, [x0, #8]!
-    ldr     x26, [x0, #8]!
-    ldr     x27, [x0, #8]!
-    ldr     x28, [x0, #8]!
-
-    ldr     x29, [x0, #8]! /* frame pointer */
+    ldp     x2, x3, [x0, #24]!
+    ldp     x4, x5, [x0, #16]!
+    ldp     x6, x7, [x0, #16]!
+    ldp     x8, x9, [x0, #16]!
+    ldp     x10, x11, [x0, #16]!
+    ldp     x12, x13, [x0, #16]!
+    ldp     x14, x15, [x0, #16]!
+    ldp     x16, x17, [x0, #16]!
+    ldp     x18, x19, [x0, #16]!
+    ldp     x20, x21, [x0, #16]!
+    ldp     x22, x23, [x0, #16]!
+    ldp     x24, x25, [x0, #16]!
+    ldp     x26, x27, [x0, #16]!
+    ldp     x28, x29, [x0, #16]!
     ldr     x30, [x0, #8]! /* Link Register */
 
     ldr     x1, [x0, #8]!  /* Stack Pointer */

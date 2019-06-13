@@ -267,7 +267,7 @@ void interrupt() {
 
         if (interrupt_lines[IL_TIMER]) {
             /* This also clears pending interrupts */
-            setTIMER(10 * 1000);
+            setTIMER(3 * 1000);
 
             if (current == &t1) {
                 current = &t2;

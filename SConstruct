@@ -76,19 +76,13 @@ if alt_toolchain != None:
 if TOOLCHAIN == None:
     Exit(1)
 
-externalEnvironment = {}
-if 'PATH' in os.environ.keys():
-    externalEnvironment['PATH'] = os.environ['PATH']
-if 'DISPLAY' in os.environ.keys():
-    externalEnvironment['DISPLAY'] = os.environ['DISPLAY']
-
 env_options = {
     "CC":
     "{}gcc".format(TOOLCHAIN),
     "LINK":
     "{}ld".format(TOOLCHAIN),
     "ENV":
-    externalEnvironment,
+    os.environ,
     "CPPPATH": ['include', 'include/maldos'],
     "ASFLAGS":
     FLAGS,
@@ -119,7 +113,7 @@ env_options['LINKFLAGS'] = [
 
 if APP:
     env.Command(
-        ELF, HAL, '{}ld -nostdlib -nostartfiles -pie -T{} -o{} {} {}'.format(
+        ELF, [HAL, "example/app.elf"], '{}ld -nostdlib -nostartfiles -pie -T{} -o{} {} {}'.format(
             TOOLCHAIN, LDSCRIPT, ELF, HAL, APP))
 else:
     env.Command(
@@ -168,6 +162,11 @@ elif 'run' in COMMAND_LINE_TARGETS:
         Exit(1)
 
     print("running emulator...")
+    if APP:
+        dependencies = [boot, "example/app.elf"]
+    else:
+        dependencies = boot    
+
     PhonyTargets(
         env=env,
         target='run',

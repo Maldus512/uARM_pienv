@@ -5,6 +5,7 @@
 *.map
 *.swp
 .sconsign.dblite
+.vscode/
 test.dd
 *.pyc
 build/*

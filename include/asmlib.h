@@ -16,6 +16,6 @@ uint64_t GETSP();
 void SETSP(uint64_t sp);
 uint32_t GETSAVEDEL();
 void     CoreExecute(unsigned int core, void *task);
+void LDST_RESTORESP(void *state, uint64_t sp);
 
-void restoreEL2SP();
 #endif

@@ -191,12 +191,12 @@ void c_swi_handler(uint32_t code, uint32_t *registers) {
         kernel.exception_link_register = (uint64_t)synchronous_handler;
         kernel.status_register         = 0x385;
         kernel.TTBR0                   = GETTTBR0();
-        SETSP((uint64_t)el2_stack_pointers[core_id]);
-        LDST(&kernel);
+        //SETSP((uint64_t)el2_stack_pointers[core_id]);
+        LDST_RESTORESP(&kernel, (uint64_t)el2_stack_pointers[core_id]);
     }
 
     /* If there is no user-defined handler simply start again the last process */
-    LDST((void *)(SYNCHRONOUS_OLDAREA + CORE_OFFSET * core_id));
+    LDST_RESTORESP((void *)(SYNCHRONOUS_OLDAREA + CORE_OFFSET * core_id),  (uint64_t)el2_stack_pointers[core_id]);
 }
 
 void c_irq_handler() {
